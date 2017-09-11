@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="ISO-8859-1" standalone="no"?>
+<annotation-spec>
+  <head>
+    <valuetype-def>
+      <valueset name="ActionTypes">
+        <value-el color="#66FF66" key="c">AbdominalContraction</value-el>
+        <value-el color="#9999FF" key="l">Locomotion</value-el>
+        <value-el color="#FF3333" key="g">Grooming</value-el>
+        <value-el color="#66FFFF" key="i">IsolatedLegMovement</value-el>
+      </valueset>
+      <valueset name="WindOn">
+        <value-el color="magenta">WindOn</value-el>
+      </valueset>
+      <valueset name="Binary">
+        <value-el color="#FF0033" key="a">Active</value-el>
+        <value-el color="#3366FF" key="q">Quiescent</value-el>
+      </valueset>
+    </valuetype-def>
+  </head>
+  <body>
+    <font color="#000000" face="SansSerif.plain" size="12" style="plain"/>
+    <track-spec color-attr="Binary" name="Behavior" type="primary">
+      <font color="#000000" face="Dialog.plain" size="10" style="plain"/>
+      <attribute name="Binary" valuetype="Binary"/>
+    </track-spec>
+    <track-spec color-attr="ActionTypes" name="ActionTypes" type="primary">
+      <font color="#000000" face="Dialog.plain" size="10" style="plain"/>
+      <attribute name="ActionTypes" valuetype="ActionTypes"/>
+    </track-spec>
+    <track-spec color-attr="WindOn" name="Wind" type="primary">
+      <attribute name="WindOn" valuetype="WindOn"/>
+    </track-spec>
+  </body>
+</annotation-spec>

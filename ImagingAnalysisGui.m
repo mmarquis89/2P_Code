@@ -22,7 +22,7 @@ if ~isempty(myData) % Abort initialization if no data was loaded
     % Create global variables
     myData.maxIntensity = 700; maxIntensity = myData.maxIntensity;
     myData.volumeRate = 6.5; volumeRate = myData.volumeRate;
-    myData.stimDuration = [2 4]; stimDuration = myData.stimDuration; % [start time, length] in seconds
+    myData.stimDuration = [4 2]; stimDuration = myData.stimDuration; % [start time, length] in seconds
     myData.ROIs= [];
     myData.dffData = [];
     index = 1;

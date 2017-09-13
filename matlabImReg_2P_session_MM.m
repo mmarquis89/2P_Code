@@ -1,6 +1,6 @@
-
 function matlabImReg_2P_session_MM(path,refVol,refTrial)
-% Align session to a single volume (translation)
+%===================================================================================================
+% Align all data from imaging session to a single volume (translation)
 
 % Input:
 %   path = session folder containeing unregistered cdata files 
@@ -8,9 +8,10 @@ function matlabImReg_2P_session_MM(path,refVol,refTrial)
 %   refTrial = trial # to pull the reference volume from
 % Output:
 %   filename_reg1 (regProduct')
-%
+% 
+% Code from AKM, modified by MM
 % Last modified: 14-Aug-2017
-
+%===================================================================================================
 cd(path);
 
 % Load the unregistered session file

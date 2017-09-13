@@ -1,6 +1,12 @@
 function [ output ] = readTif( tifPath )
-% Input: String with path to .tif file
-% Output: [Lines, Pixels, Planes, Volumes]
+%===================================================================================================
+% Reads a .tif stack of 2P data into an array
+% 
+% Input: 
+%       tifPath = String with path to .tif file
+% Output: 
+%       output = image data array: [Lines, Pixels, Planes, Volumes]
+% ==================================================================================================
 
 % Open .tif file
 tifObj = Tiff(tifPath,'r');

@@ -4,6 +4,8 @@ function CreateAnatomyStack(dirPath, fileStr, zipFileName)
 % Will average together all stacks in the directory that meet the requirement specified by 'fileStr'
 % and save as .tif files the mean stack as well as a max Z-projection. Then, moves all the original 
 % stack files to a zipped folder.
+% 
+% Inputs:
 %    dirPath = folder with stack files, e.g. 'D:\Dropbox (HMS)\2P Data\Imaging Data\2017_09_05'
 %    fileStr = filter string for dir() selection to get anatomy stack files, e.g. '*stack_*'. Be 
 %              careful to ensure that only the desired files will meet this specification.

@@ -1,16 +1,18 @@
-function msg = concatVids_2P(sid, vidDir, frameRate)
+function concatVids_2P(sid, vidDir, frameRate)
 %============================================================================================================================
 % CONCATENATE ALL COMBINED PLOTTING VIDEOS FOR THE EXPERIMENT
 % Concatenates the behavioral videos for each trial of a 2P experiment, and returns a message string indicating whether
 % the operation was a success (and if not, which trial it failed on). The new video will be saved in the same folder as the
 % source videos.
+%
+% Inputs:
 %       sid = the session ID of the videos you want to process
 %       vidDir = the directory containing the videos you want to combine
 %               e.g. 'U:\2P Behavior Video\2017_07_30\_Movies'
 %============================================================================================================================
 
 FRAME_RATE = frameRate;
-vidFiles = dir(fullfile(vidDir, ['sid_', num2str(sid), '*.mp4']));
+vidFiles = dir(fullfile(vidDir, ['sid_', num2str(sid), '*tid*.mp4']));
 vidNames = sort({vidFiles.name});
 nTrials = length(vidNames);
 
@@ -27,10 +29,11 @@ assert(exist(fullfile(vidDir, ['sid_', num2str(sid),'_AllTrials.mp4']), 'file')=
 myVidWriter = VideoWriter(fullfile(vidDir, ['sid_', num2str(sid),'_AllTrials.mp4']), 'MPEG-4');
 myVidWriter.FrameRate = FRAME_RATE;
 open(myVidWriter)
+frameCount = 0;
 
 disp('Concatenating videos...')
 try
-    for iTrial = 82:nTrials      
+    for iTrial = 1:nTrials      
         
         % Pad the trial number if necessary to ensure correct filename sorting
         if iTrial < 10
@@ -57,6 +60,7 @@ try
             % Add frames to movie
             for iFrame = 1:length(myMovie)
                 writeVideo(myVidWriter, myMovie{iFrame});
+                frameCount = frameCount + 1;
             end
         end%if
     end%for
@@ -64,8 +68,11 @@ try
     close(myVidWriter)
     clear('myMovie')
     
-    msg = 'Videos concatenated successfully!';
+    % Save frame count log
+    save(fullfile(vidDir, ['sid_', num2str(sid) '_AllTrials_frameCountLog.mat']), 'frameCount')
+    
+    disp(['Videos concatenated successfully! Total frames = ', num2str(frameCount)])
 catch       
-    msg = ['Error - video making failed on trial #', num2str(iTrial)];
+    disp(['Error - video making failed on trial #', num2str(iTrial)])
 end%try
-end
+end%function

@@ -21,7 +21,7 @@ parentDir = 'D:\Dropbox (HMS)\2P Data\Behavior Vids\2017_09_06';
 makeVids_2P(0, parentDir, frameRate)
 
 %%% Zip raw video frames
-zipRawFrames(0, 'D:\Dropbox (HMS)\2P Data\Behavior Vids\2017_07_30')
+zipRawFrames(0, 'D:\Dropbox (HMS)\2P Data\Behavior Vids\2017_09_06')
 
 %%% Concatenate vids
 parentDir = 'D:\Dropbox (HMS)\2P Data\Behavior Vids\2017_09_06\_Movies';
@@ -41,5 +41,25 @@ test = processAnvilAnnotations(sid, parentDir, saveDir, annotationFileName, fram
 
 
 
+
+
+
+% COUNT VIDEO FRAMES
+% parentDir = 'D:\Dropbox (HMS)\2P Data\Behavior Vids\2017_09_06\_Movies';
+% sid = 0;
+% vidFiles = dir(fullfile(parentDir, ['sid_', num2str(sid), '*tid*.mp4']));
+% vidNames = sort({vidFiles.name});
+% nTrials = length(vidNames);
+% frameCounts = []; 
+% 
+% for iTrial = 1:nTrials
+%     
+%     disp(num2str(iTrial))
+%     frameCounts(iTrial) = countFrames(fullfile(parentDir, vidNames{iTrial}));
+%     
+% end
+% 
+% % Save frame count log
+% save(fullfile(parentDir, ['sid_', num2str(sid) '_frameCountLog.mat']), 'frameCounts')
 
 

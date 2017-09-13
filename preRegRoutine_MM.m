@@ -1,8 +1,12 @@
 function preRegRoutine_MM(parentDir)
+%===================================================================================================
 %% Load ScanImage 5.1 imaging data
-
-% parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\2017_09_05_exp2'; % Update - new data directory that you want to process
+% 
+% Inputs:
+%       parentDir = directory containing the raw data that you want to process
+%
 % Note that the files should be sorted in chronological order due to the timestamp at the beginning of the filename
+%===================================================================================================
 
 % Identify data files for each session
 myFiles = dir(fullfile([parentDir, '\*sid*tid*']));

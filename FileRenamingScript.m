@@ -2,7 +2,7 @@
 
 % Reorder file/folder names with timestamp first so I can sort them in the order they were created 
 
-parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\2017_07_28';
+parentDir = 'D:\Dropbox (HMS)\2P Data\Behavior Vids\2017_09_06';
 
 % D:\Dropbox (HMS)\2P Data\Imaging Data\2017_09_06
 %

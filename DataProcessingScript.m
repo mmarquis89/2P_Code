@@ -21,7 +21,9 @@ parentDir = 'D:\Dropbox (HMS)\2P Data\Behavior Vids\2017_09_06';
 makeVids_2P(0, parentDir, frameRate)
 
 %%% Zip raw video frames
-zipRawFrames(0, 'D:\Dropbox (HMS)\2P Data\Behavior Vids\2017_07_30')
+parentDir = 'D:\Dropbox (HMS)\2P Data\Behavior Vids\2017_07_30'
+archiveName = 'sid_5_RawFrames';
+test = system7zip(parentDir, archiveName, '7z', '*sid_5_tid*');
 
 %%% Concatenate vids
 parentDir = 'D:\Dropbox (HMS)\2P Data\Behavior Vids\2017_09_06\_Movies';

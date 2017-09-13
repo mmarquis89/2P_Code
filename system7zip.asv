@@ -28,12 +28,18 @@ disp(['Adding files to ', fullFileName, '...'])
 cmdStr_1 = [parentDir(1:2), ' & ']; % Switch working directory to the correct drive if necessary
 cmdStr_2 = ['cd ', parentDir, ' & ']; % Set working directory to parentDir
 cmdStr_3 = '"C:\Program Files\7-Zip\7z.exe"'; % Need to provide the entire path for some reason
-cmdStr_4 = [' a ', fullFileName, ' ', filterString, ' & ']; % Create 7zip command
-cmdStr_5 = [' t ', fullFileName, ' >', fullFileName, '_log.txt & ']; % Archive testing command
+cmdStr_4 = [' a ', fullFileName, ' ', filterString, ' &']; % Create 7zip command
+cmdStr_5 = [' t ', fullFileName, ' >', fullFileName, '_log.txt &'] % Archive testing command
+
 if test
-    system([cmdStr_1, cmdStr_2, cmdStr_3, cmdStr_4, cmdStr_3, cmdStr_5]);
+    system([cmdStr_1, cmdStr_2, cmdStr_3, cmdStr_4]);
 else
     system([cmdStr_1, cmdStr_2, cmdStr_3, cmdStr_4]);
 end
 
-end%function
+
+
+
+
+
+end

@@ -7,7 +7,7 @@ function trialAnnotations = processAnvilAnnotations(sid, parentDir, saveDir, ann
 % 'sid_0_AllTrials_frameCountLog.mat', respectively (with the appropriate session ID #).
 %
 % Processed annotation data will be saved as a .mat file in the specified directory containing a table with the 
-% annotation data as well as a cell array with labels for the behavioral codes.
+% annotation data as well as a cell array with labels for the behavioral codes and a logical vector of valid trials.
 %
 % Inputs:
 %       sid  =  session ID of the data you want to process
@@ -34,14 +34,6 @@ function trialAnnotations = processAnvilAnnotations(sid, parentDir, saveDir, ann
 % Remember to update this if annotation coding changes
 behaviorLabels = {'None', 'AbdominalContraction', 'Locomotion', 'Grooming', 'IsolatedLegMovement'};
 
-% Use default values for optional variables if necessary
-if isempty(frameRate)
-    
-end
-if isempty(trialDuration)
-    
-end
-
 % Read and parse annotation table data
 annotationData = readtable(fullfile(parentDir, annotationFileName));
 frameNum = annotationData.Frame;
@@ -60,7 +52,7 @@ allTrialsFrameCount = concatenatedFrameCounts.frameCount;
 % Check for trials with expected number of frames
 goodTrials = (frameCounts == frameRate * trialDuration);
 
-% Calculate frame times for good trials
+% Calculate frame times in seconds for good trials
 frameTimes = (1:frameRate*trialDuration) * (1/frameRate);
 
 % Make sure frame counts are consistent with each other and annotation data

@@ -5,18 +5,18 @@ parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\2017_09_06';
 CreateAnatomyStack(parentDir, fileStr, []);
 
 %%% Archive raw anatomy stacks
-parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\2017_07_30\ZippedAnatomyStacks_stack';
+parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\2017_09_06';
 archiveName = 'AnatomyStacks';
-filterString = '*stack*';
-system7zip(parentDir, archiveName, '7z', filterString)
+filterString = '*stack_*';
+system7zip(parentDir, archiveName, '7z', filterString, 1)
 
 %%% PRE-REGISTRATION PROCESSING --------------------------------------------------------------------
 parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\2017_09_06';
 preRegRoutine_MM(parentDir);
 
 %%% Archive raw imaging data files
-parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\2017_07_30\TrialData_sid_0+5_OldNames';
-archiveName = 'testArchive';
+parentDir = 'D:\Dropbox (HMS)\2P Data\Imaging Data\2017_09_06';
+archiveName = 'TrialData_sid_0_OldNames';
 filterString = '*sid_0_t*';
 system7zip(parentDir, archiveName, '7z', filterString, 1)
 

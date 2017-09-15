@@ -360,7 +360,7 @@ function myData = loadData()
         if ~isfield(myData, 'wholeSession')
             myData.wholeSession = myData.regProduct;
         end
-        myData.sessionData = squeeze(myData.wholeSession(:,:,:,:,1)); %squeeze(mean(wholeSession(:,:,:,:,1), 3));
+        myData.sessionData = squeeze(myData.wholeSession(:,:,:,:,1)); %squeeze(mean(wholeSession(:,:,:,:,1), 3)); [x y plane vol trial]
         myData.nPlanes = size(myData.sessionData, 3);
         myData.nVolumes = size(myData.sessionData, 4);
 

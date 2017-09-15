@@ -1,0 +1,210 @@
+
+% Load registered data file and behavioral annotation data
+
+% Prompt user for data file
+[dataFile, pathName, ~] = uigetfile('*.mat', 'Select an imaging data session file', 'D:\Dropbox (HMS)\2P Data\Imaging Data\');
+if dataFile == 0
+    disp('Initialization cancelled')
+    myData = []; % Skip loading if user clicked "Cancel"
+else
+    disp(['Loading ' dataFile, '...'])
+    imgData = load([pathName, dataFile]);
+    disp([dataFile, ' loaded'])
+end
+
+% dataFileName = 'D:\Dropbox (HMS)\2P Data\Imaging Data\170712_op6s_TH-C_prime_01\sid_2\sessionOutfile_Reg1.mat';
+annotFileName = 'D:\Dropbox (HMS)\2P Data\Imaging Data\2017_09_06\sid_0\sid_0_BehavioralAnnotations.mat';
+% imgData = load(dataFileName);
+annotData = load(annotFileName);
+myData = setstructfields(imgData, annotData); % Combine into one structure
+
+% Process raw data structure
+if ~isfield(myData, 'wholeSession') % myData.wholeSession = [x, y, plane, volume, trial]
+    myData.wholeSession = myData.regProduct;
+end
+myData.nTrials = size(myData.wholeSession, 5);
+singleTrial = squeeze(myData.wholeSession(:,:,:,:,1)); % --> [x, y, plane, volume]
+myData.nPlanes = size(singleTrial, 3);
+myData.nVolumes = size(singleTrial, 4);
+
+% Create reference image for each plane
+myData.refImg = [];
+for iPlane = 1:myData.nPlanes
+    myData.refImg{iPlane} = squeeze(mean(mean(myData.wholeSession(:,:,iPlane,:,:),4),5)); % --> [x, y]
+end
+
+% Add hardcoded parameters
+myData.volumeRate = 6.5; volumeRate = myData.volumeRate;
+myData.stimDuration = [4 2]; % [start time, length] in seconds
+myData.maxIntensity = 500;
+stimStart = myData.stimDuration(1);
+stimEnd = sum(myData.stimDuration);
+stimTypes = sort(unique(myData.trialType));
+
+%% For each stimulus type...
+stimSepTrials = []; trialAvg = []; baselineAvg = []; baselineF = []; dff = []; dffRaw = [];
+for iStim = 1:length(stimTypes)
+    
+    % Separate trials by stimulus type
+    stimSepTrials.(stimTypes{iStim}) = logical(cellfun(@(x) strcmp(x, stimTypes{iStim}), myData.trialType));
+    
+    % For each plane...
+    for iPlane = 1:myData.nPlanes
+        
+        % Get trial averaged baseline and stimulus data and calculate dF/F
+        % myData.wholeSession = [x, y, plane, volume, trial]
+        trialAvg{iPlane}{iStim} = mean(squeeze(myData.wholeSession(:,:,iPlane,:,stimSepTrials.(stimTypes{iStim}))),4); % --> [x, y, volume]
+        baselineAvg{iPlane}{iStim} = mean(trialAvg{iPlane}{iStim}(:,:,1:(stimStart*volumeRate)),3); % --> [x, y]
+        stimAvg{iPlane}{iStim} = mean(trialAvg{iPlane}{iStim}(:,:,(stimStart*volumeRate):(stimEnd*volumeRate)),3); % --> [x, y]
+        dffAvg{iPlane}{iStim} = (stimAvg{iPlane}{iStim} - baselineAvg{iPlane}{iStim}) ./ baselineAvg{iPlane}{iStim}; % --> [x, y]        
+    end    
+end%for 
+
+% Calculate absolute max dF/F value across all planes and stim types
+minMax = [];
+for iPlane = 1:myData.nPlanes
+    for iStim = 1:length(stimTypes)
+        minMax(iStim, iPlane, 1) = max(dffAvg{iPlane}{iStim}(:));
+        minMax(iStim, iPlane, 2) = min(dffAvg{iPlane}{iStim}(:));
+    end
+end
+range(2) = max([abs(min(min(minMax(:,:,2)))) max(max(minMax(:,:,1)))]);
+range(1) = -range(2);
+
+%% PLOT MEAN dF/F ACROSS BEHAVIORAL STATES
+
+% Identify behavioral state during each volume
+runVols = zeros(myData.nTrials, myData.nVolumes); stoppedVols = runVols;
+for iTrial = 1:myData.nTrials
+    if myData.goodTrials(iTrial)
+        
+        % Match frame times to volumes
+        volTimes = (1:myData.nVolumes)' ./ myData.volumeRate;
+        frameTimes = myData.trialAnnotations{find(myData.goodTrials, 1)}.frameTime;
+        for iVol = 1:myData.nVolumes
+            [~, volFrames(iVol)] = min(abs(frameTimes - volTimes(iVol)));
+            volFrames = volFrames';
+        end
+        
+        % Pull out action numbers for each volume
+        currActions = myData.trialAnnotations{iTrial}.actionNums;
+        volActions = currActions(volFrames);
+        
+        % Identify volume actions
+        locomotionLabel = 2; noActionLabel = 0;
+        runVols(iTrial, :) = (volActions == locomotionLabel); % [trial, vol]
+        stoppedVols(iTrial, :) = (volActions == noActionLabel); % [trial, vol]
+    else
+        % So data from invalid trials won't ever be matched to an action state
+        runVols(iTrial, :) = 0;
+        stoppedVols(iTrial, :) = 0;
+    end
+end
+
+% Calculate average values for each plane across behavioral states
+meanRunVols = [];
+meanStoppedVols = [];
+imgData = myData.wholeSession;
+for iTrial = 1:myData.nTrials
+   currRunVols = logical(runVols(iTrial,:));
+   currStoppedvols = logical(stoppedVols(iTrial,:));
+   
+   % Pull out running volumes, if any exist, from the current trial
+   if sum(currRunVols) > 0
+       meanRunVols(:,:,:,end+1) = mean(imgData(:,:,:,currRunVols,iTrial),4); %--> [x, y, plane, trial]
+   end 
+   
+   % Pull out stopping volumes, if any exist, from the current trial
+   if sum(currStoppedvols) > 0
+       meanStoppedVols(:,:,:,end+1) = mean(imgData(:,:,:,currStoppedvols,iTrial),4); %--> [x, y, plane, trial]
+   end  
+end
+runMean = mean(meanRunVols, 4); %--> [x, y, plane] 
+stoppedMean = mean(meanStoppedVols, 4); %--> [x, y, plane] 
+
+% Get dF/F values for running relative to quiescence
+runDff = (runMean - stoppedMean) ./ stoppedMean; % --> [x, y, plane]
+
+% Calculate absolute max dF/F value across all planes and action states
+minMax = [];
+minMax(1) = max(runDff(:));
+minMax(2) = min(runDff(:));
+range(2) = max([abs(min(minMax)) max(minMax)]);
+range(1) = -range(2);
+
+%% Plot behavioral response heatmaps for each plane
+for iPlane = myData.nPlanes:1
+    
+     % Create fig
+    f = figure(iPlane); clf
+    f.Position = [50 45, 1800, 950];
+    
+    % Plot reference image for the current plane
+    ax1 = subplot(121);
+    imshow(myData.refImg{iPlane}, [0 myData.maxIntensity])
+    
+    % Plot dF/F for behavioral state
+    ax2 = subplot(122);
+    imagesc(runDff(:,:,iPlane))
+    caxis(range)
+    colormap(ax2, bluewhitered) %bluewhitered % 'parula'
+    axis equal 
+    axis off
+    title('dF/F - Locomotion vs. Quiescent')
+    colorbar
+    
+end
+
+
+
+%% Plot wind stim response heatmaps for each plane
+for iPlane = 1:myData.nPlanes 
+    
+    % Create fig
+    f = figure(iPlane); clf
+    f.Position = [50 45, 1800, 950];
+    
+    % Plot reference image for the current plane
+    ax1 = subplot(221);
+    imshow(myData.refImg{iPlane}, [0 myData.maxIntensity])
+       
+    % Plot first stim type
+    ax2 = subplot(222);
+    imagesc(dffAvg{iPlane}{1})
+    caxis(range)
+    colormap(ax2, bluewhitered) %bluewhitered % 'parula'
+    axis equal 
+    axis off
+    title(stimTypes{1})
+    colorbar
+    
+    % Second stim type
+    ax3 = subplot(223);
+    imagesc(dffAvg{iPlane}{3})
+    caxis(range)
+    colormap(ax3, bluewhitered)
+    axis equal 
+    axis off
+    title(stimTypes{3})
+    colorbar
+    
+    % Third stim type
+    ax4 = subplot(224);
+    imagesc(dffAvg{iPlane}{4})
+    caxis(range)
+    colormap(ax4, bluewhitered)
+    axis equal 
+    axis off
+    title(stimTypes{4})
+    colorbar
+    
+end
+
+
+
+
+
+
+
+
+

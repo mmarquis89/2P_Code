@@ -61,7 +61,7 @@ if ~isempty(myData) % Abort initialization if no data was loaded
     
 % Should maybe have a "load ROIs" button as well?
     
-    % Change "Units" to normalized so components resize automatically with window
+    % Change "Units" to normalized so components resize automatically.
     f.Units = 'normalized';
     tabGroup.Units = 'normalized';
     drawROIButton.Units = 'normalized';
@@ -282,7 +282,7 @@ end%if
                 % Calculate min and max dF/F values across all stim types for setting yLims.
                 dffVals = [];
                 for iStim = 1:length(stimTypes)
-                    dffVals = [dffVals, dff{iStim}(2:end)]; % Dropping the first volume of each set.
+%                 dffVals = [dff{1}(2:end), dff{2}(2:end), dff{3}(2:end)]; % Dropping the first volume of each set.
                 end
                 yMax = max(dffVals(:));
                 yMin = min(dffVals(:));
@@ -341,7 +341,7 @@ end%if
                 
             end%for
             
-            subtabGroup.Units = 'normalized'; % So subtabs will resize automatically with window
+            subtabGroup.Units = 'normalized';
             dffPlotCounter = dffPlotCounter + 1; % For naming df/f subtabs
             disp('Plotting complete');
         end%if
@@ -379,7 +379,6 @@ function myData = loadData()
         if ~isfield(myData, 'wholeSession')
             myData.wholeSession = myData.regProduct;
         end
-        myData.nTrials = size(myData.wholeSession, 5);
         myData.singleTrial = squeeze(myData.wholeSession(:,:,:,:,1)); % [x y plane vol trial]
         myData.nPlanes = size(myData.singleTrial, 3);
         myData.nVolumes = size(myData.singleTrial, 4);

@@ -9,20 +9,15 @@ function CreateAnatomyStack(dirPath, fileStr, outputFilePrefix)
 %    dirPath = folder with stack files, e.g. 'D:\Dropbox (HMS)\2P Data\Imaging Data\2017_09_05'
 %    fileStr = filter string for dir() selection to get anatomy stack files, e.g. '*stack_*'. Be 
 %              careful to ensure that only the desired files will meet this specification.
-%    outputFilePrefix = name to prepend to the names of output files and archive. Can be [].
+%    zipFileName = name to prepend to names of output files and archive. Can be [].
 %===================================================================================================
 
 stacks = dir(fullfile(dirPath, fileStr));
 nStacks = length(stacks);
 
-% Add underscore to prefix if one is provided
-if ~isempty(outputFilePrefix)
-   outputFilePrefix = [outputFilePrefix, '_']; 
-end
-
 % Throw error if the files about to be created already exist
-assert(exist(fullfile(dirPath, [outputFilePrefix, 'MeanMaxZ.tif']), 'file')==0 ... 
-    && exist(fullfile(dirPath, [outputFilePrefix, 'MeanStack.tif']), 'file')==0 ...
+assert(exist(fullfile(dirPath, [outputFilePrefix, '_', 'MeanMaxZ.tif']), 'file')==0 ... % Not sure if this naming is going to cause a problem....
+    && exist(fullfile(dirPath, [outputFilePrefix, '_', 'MeanStack.tif']), 'file')==0 ...
     , 'Error: output .tif files already exist in this directory');
 
 % Get sum of all stacks
@@ -50,17 +45,27 @@ maxZ = max(avgStack, [], 3);
 maxZScaled = maxZ ./ max(maxZ(:));
 
 % Write averaged stack and Z-projection to .tif files after checking for existing files
-imwrite(maxZScaled, fullfile(dirPath, [outputFilePrefix, 'MeanMaxZ.tif']));
-imwrite(avgStackScaled(:,:,1), fullfile(dirPath, [outputFilePrefix, 'MeanStack.tif']));
+imwrite(maxZScaled, fullfile(dirPath, [zipFileName(2:end-1), 'MeanMaxZ.tif']));
+imwrite(avgStackScaled(:,:,1), fullfile(dirPath, [zipFileName(2:end-1), 'MeanStack.tif']));
 for iPlane = 2:size(avgStackScaled, 3)
-    imwrite(avgStackScaled(:,:,iPlane), fullfile(dirPath, [outputFilePrefix, 'MeanStack.tif']), 'writemode','append');
+    imwrite(avgStackScaled(:,:,iPlane), fullfile(dirPath, 'MeanStack.tif'), 'writemode','append');
 end
 
 % Zip raw anatomy stack images
 tic
 disp('Mean stack creation complete')
 disp('Archiving individual anatomy stacks...')
-system7zip(dirPath, [outputFilePrefix, 'ZippedAnatomyStacks'], '7z', fileStr, 1);
+zipPaths = strcat([dirPath, '\'], {stacks.name});
+
+system7zip(dirPath, [zipFileName(2:end-1), 'ZippedAnatomyStacks'], '7z', fileStr, 1);
+
+
+if isempty(zipFileName)
+    zip(fullfile(dirPath,'ZippedAnatomyStacks'), zipPaths);
+else
+    zip(fullfile(dirPath,['ZippedAnatomyStacks_', zipFileName]), zipPaths);
+end
+disp(['Zipping complete. Duration = ', num2str(toc), ' sec'])
 
 
 

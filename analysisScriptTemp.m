@@ -1,5 +1,5 @@
 
-% LOAD REGISTERED DATA FILE AND BEHAVIORAL ANNOTATION DATA
+%% LOAD REGISTERED DATA FILE AND BEHAVIORAL ANNOTATION DATA
 
 % Prompt user for data file
 [dataFile, pathName, ~] = uigetfile('*.mat', 'Select an imaging data session file', 'D:\Dropbox (HMS)\2P Data\Imaging Data\');
@@ -187,8 +187,6 @@ range(1) = -range(2);
 
 %% PLOT dF/F OVER TIME DURING MOVEMENT ONSET
 
-
-
 % Create save directory and open video writer
 savePath = 'D:\Dropbox (HMS)\2P Data\Imaging Data\2017_09_06\sid_0\Analysis';
 if ~isdir(savePath)
@@ -275,11 +273,6 @@ for iPlane = 1:myData.nPlanes
     end
     close(myVid)
 end
-
-
-
-
-
 
 %% PLOT MOVEMENT ONSET HEATMAPS FOR EACH PLANE
 
@@ -371,6 +364,7 @@ for iPlane = myData.nPlanes:-1:1 % Plot windows arranged from dorsal --> ventral
      % Create fig
     f = figure(iPlane); clf
     f.Position = [50 45, 1800, 950];
+    f.PaperOrientation = 'landscape';
     
     % Plot reference image for the current plane
     ax1 = subplot(121);
@@ -385,6 +379,7 @@ for iPlane = myData.nPlanes:-1:1 % Plot windows arranged from dorsal --> ventral
     axis off
     title('dF/F - Locomotion vs. Quiescent')
     colorbar
+
 end
 
 

@@ -178,6 +178,13 @@ timeCourseMean = mean(onsetData(:,:,:,:,:),5); % --> [x, y, plane, onsetVolume]
 timeCourseBaseline = repmat(baselineMean, 1, 1, 1, size(timeCourseMean, 4)); % --> [x, y, plane, onsetVolume]
 timeCourseDff = (timeCourseMean - timeCourseBaseline) ./ timeCourseBaseline;
 
+% Calculate absolute max dF/F value across all planes and action states
+minMax = [];
+minMax(1) = max(onsetDff(:));
+minMax(2) = min(onsetDff(:));
+range(2) = max([abs(min(minMax)) max(minMax)]);
+range(1) = -range(2);
+
 %% PLOT dF/F OVER TIME DURING MOVEMENT ONSET
 
 % Create save directory and open video writer
@@ -186,36 +193,66 @@ if ~isdir(savePath)
     mkdir(savePath);
 end
 
-for iPlane = myData.nPlanes:-1:1 % Plot windows arranged from dorsal --> ventral
+% for iPlane = myData.nPlanes:-1:1 % Plot windows arranged from dorsal --> ventral
+%     
+%     % Create video writer
+%     myVid = VideoWriter(fullfile(savePath, ['Move_Onset_Plane_', num2str(iPlane)]));
+%     myVid.FrameRate = 0.5;
+%     open(myVid)
+%     
+%     % Create fig
+%     f = figure(iPlane); clf
+%     f.Position = [50 45, 1800, 950];
+%     
+%     % Plot reference image for the current plane
+%     ax1 = subplot(3,5,1);
+%     imshow(myData.refImg{iPlane}, [0 myData.maxIntensity])
+%     
+%     for iVol = 1:patternLen
+% 
+%         % Plot dF/F for each volume
+%         ax = subplot(3,5,iVol+1);
+%         imagesc(timeCourseDff(:,:,iPlane,iVol))
+%         caxis(range)
+%         colormap(ax, bluewhitered) %bluewhitered % 'parula'
+%         axis equal
+%         axis off
+%         if iVol == patternLen/2 + 1
+%             title(['Vol #', num2str(iVol), ' (Movement onset)'])
+%         else
+%             title(['Vol #', num2str(iVol)])
+%         end
+% 
+%         ax = subplot(212);
+%         imagesc(timeCourseDff(:,:,iPlane,iVol))
+%         caxis(range)
+%         colormap(ax, bluewhitered) %bluewhitered % 'parula'
+%         axis equal
+%         axis off
+%         
+%         % Write frame to video
+%         writeFrame(iVol) = getframe(ax);
+%         writeVideo(myVid, writeFrame);
+%     end    
+%     close(myVid)
+% end
+
+
+for iPlane = 1:myData.nPlanes
     
     % Create video writer
     myVid = VideoWriter(fullfile(savePath, ['Move_Onset_Plane_', num2str(iPlane)]));
-    myVid.FrameRate = 0.5;
+    myVid.FrameRate = 5;
     open(myVid)
-    
-    % Create fig
-    f = figure(iPlane); clf
-    f.Position = [50 45, 1800, 950];
-    
-    % Plot reference image for the current plane
-    ax1 = subplot(3,5,1);
-    imshow(myData.refImg{iPlane}, [0 myData.maxIntensity])
-    
     for iVol = 1:patternLen
-
-        % Plot dF/F for each volume
-        ax = subplot(3,5,iVol+1);
-        imagesc(timeCourseDff(:,:,iPlane,iVol))
-        caxis(range)
-        colormap(ax, bluewhitered) %bluewhitered % 'parula'
-        axis equal
-        axis off
-        if iVol == patternLen/2 + 1
-            title(['Vol #', num2str(iVol), ' (Movement onset)'])
-        else
-            title(['Vol #', num2str(iVol)])
-        end
-
+        % Create fig
+        f = figure(iPlane); clf
+        f.Position = [50 45, 1800, 950];
+        
+        % Plot reference image for the current plane
+        ax1 = subplot(211);
+        imshow(myData.refImg{iPlane}, [0 myData.maxIntensity])
+        
         ax = subplot(212);
         imagesc(timeCourseDff(:,:,iPlane,iVol))
         caxis(range)
@@ -223,44 +260,19 @@ for iPlane = myData.nPlanes:-1:1 % Plot windows arranged from dorsal --> ventral
         axis equal
         axis off
         
+        %     if iVol == patternLen/2 + 1
+        %         title(['Vol #', num2str(iVol), ' (Movement onset)'])
+        %     else
+        %         title(['Vol #', num2str(iVol)])
+        %     end
+        
         % Write frame to video
-        writeFrame(iVol) = getframe(ax);
+        drawnow()
+        writeFrame = getframe(ax);
         writeVideo(myVid, writeFrame);
-    end    
+    end
     close(myVid)
 end
-
-
-
-% Create video writer
-myVid = VideoWriter(fullfile(savePath, ['Move_Onset_Plane_', num2str(iPlane)]));
-myVid.FrameRate = 0.5;
-open(myVid)
-for iVol = 1:patternLen
-    % Create fig
-    f = figure(iPlane); clf
-    f.Position = [50 45, 1800, 950];
-    
-    % Plot reference image for the current plane
-    ax1 = subplot(211);
-    imshow(myData.refImg{iPlane}, [0 myData.maxIntensity])
-    
-    ax = subplot(212);
-    imagesc(timeCourseDff(:,:,iPlane,iVol))
-    caxis(range)
-    colormap(ax, bluewhitered) %bluewhitered % 'parula'
-    axis equal
-    axis off
-    % Write frame to video
-    writeFrame(iVol) = getframe(ax);
-    writeVideo(myVid, writeFrame);
-end
-close(myVid)
-
-
-
-
-
 
 %% PLOT MOVEMENT ONSET HEATMAPS FOR EACH PLANE
 
@@ -352,6 +364,7 @@ for iPlane = myData.nPlanes:-1:1 % Plot windows arranged from dorsal --> ventral
      % Create fig
     f = figure(iPlane); clf
     f.Position = [50 45, 1800, 950];
+    f.PaperOrientation = 'landscape';
     
     % Plot reference image for the current plane
     ax1 = subplot(121);
@@ -366,6 +379,7 @@ for iPlane = myData.nPlanes:-1:1 % Plot windows arranged from dorsal --> ventral
     axis off
     title('dF/F - Locomotion vs. Quiescent')
     colorbar
+
 end
 
 

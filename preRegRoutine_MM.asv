@@ -12,7 +12,7 @@ function preRegRoutine_MM(parentDir, sids)
 %===================================================================================================
 
 % Identify data files for each session
-myFiles = dir(fullfile(parentDir, '*sid*tid*'));
+myFiles = dir(fullfile([parentDir, '*sid*tid*']));
 fileNames = sort({myFiles.name})';
 sidLocs = strfind(fileNames, 'sid_');
 for iFile = 1:length(fileNames)
@@ -21,13 +21,13 @@ end
 
 % Identify session numbers to be processed
 if isempty(sids)
-    mySessions = unique(sessionNums);
+    
 else
-    mySessions = sids;
+    
 end
 
 disp('Processing...')
-for iSession = mySessions
+for iSession = unique(sessionNums)
     
     % Make session folder for new files if necessary
     sessionDir=[parentDir sprintf('\\sid_%.0f',iSession)];
@@ -95,9 +95,41 @@ for iSession = mySessions
     % Save session data ( [x, y , plane, volume, trialNum] )
     save(fullfile(sessionDir, sprintf('sid_%.0f_sessionFile.mat',iSession)),'wholeSession','trialType','origFileNames');
     clear wholeSession trialTypes origFileNames
+    
+    
+    % Zip raw anatomy stack images
+    tic
+    disp('Archiving individual trial data files...')
+    system7zip(dirPath, ['TrialData_sid_', num2str(iSession)], '7z', ['*sid_', num2str(iSession), '*tid*'], 1);
+    disp(['Archival complete. Duration = ', num2str(toc), ' sec'])
 
+    
+    
+%     % Make sure zipped archive doesn't already exist
+%     if exist(fullfile(parentDir,['TrialData_sid_', num2str(iSession), '.zip']), 'file') == 0
+%         
+%         % Zip raw data files
+%         disp('All session data saved')
+%         zipFiles = dir(fullfile(parentDir, ['*sid_', num2str(iSession), '_tid*']));
+%         disp('Zipping individual trial data files...')
+%         zipPaths = strcat([parentDir, '\'], {zipFiles.name});
+%         zip(fullfile(parentDir,['TrialData_sid_', num2str(iSession)]), zipPaths);
+%         disp('Zipping complete')
+%         
+%         % Delete raw trial data files after if zipping was successful
+%         disp('Deleting raw trial data files...')
+%         delFiles = zipFiles;
+%         zipDir = dir(fullfile(parentDir, ['TrialData_sid_', num2str(iSession), '.zip']));
+%         assert(~isempty(zipDir), 'Error: no zipped folder was found for these files');
+%         for iFile = 1:length(delFiles)
+%             delete(fullfile(parentDir, delFiles(iFile).name));
+%         end
+%         disp('Raw stacks deleted')
+%     else
+%         disp('Error: zip archive already exists for session ', num2str(iSession), '...skipping archival and deletion')
+%     end%if
+    
 end%for
-
 end%function
 
 

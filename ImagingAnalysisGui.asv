@@ -19,11 +19,14 @@ if ~isempty(myData) % Abort initialization if no data was loaded
     nVolumes = myData.nVolumes;
     refImg = myData.refImg;
     
-    % Create global variables
-    myData.maxIntensity = 700; maxIntensity = myData.maxIntensity; % To control 
+    % Create global/hardcoded variables
+    myData.maxIntensity = 1000; maxIntensity = myData.maxIntensity; % To control 
     myData.volumeRate = 6.5; volumeRate = myData.volumeRate;
     myData.stimDuration = [4 2]; stimDuration = myData.stimDuration; % [stim start time, stim length] in seconds
-    myData.ROIs= [];
+    myData.stimStart = myData.stimDuration(1); stimStart = myData.stimStart;
+    myData.stimEnd = sum(myData.stimDuration); stimEnd = myData.stimEnd;
+    myData.stimTypes = sort(unique(myData.trialType)); stimTypes = myData.stimTypes;
+    myData.ROIs = [];
     myData.dffData = [];
     index = 1;
     planeAxes = [];
@@ -61,7 +64,7 @@ if ~isempty(myData) % Abort initialization if no data was loaded
     
 % Should maybe have a "load ROIs" button as well?
     
-    % Change "Units" to normalized so components resize automatically.
+    % Change "Units" to normalized so components resize automatically with window
     f.Units = 'normalized';
     tabGroup.Units = 'normalized';
     drawROIButton.Units = 'normalized';
@@ -247,7 +250,7 @@ end%if
                 
                 
                 %----------Plot mean dF/F across all trials for the current ROI----------
-                stimTypes = sort(unique(myData.trialType)); myData.dffData(iROI).stimTypes = stimTypes;
+                myData.dffData(iROI).stimTypes = stimTypes;
                 currData = squeeze(myData.wholeSession(:,:,str2double(myData.ROIs.planes{iROI}),:,:)); % --> [x, y, volume, trial]
 
                 % For each stimulus type...
@@ -282,7 +285,7 @@ end%if
                 % Calculate min and max dF/F values across all stim types for setting yLims.
                 dffVals = [];
                 for iStim = 1:length(stimTypes)
-%                 dffVals = [dff{1}(2:end), dff{2}(2:end), dff{3}(2:end)]; % Dropping the first volume of each set.
+                    dffVals = [dffVals, dff{iStim}(2:end)]; % Dropping the first volume of each set.
                 end
                 yMax = max(dffVals(:));
                 yMin = min(dffVals(:));
@@ -341,7 +344,7 @@ end%if
                 
             end%for
             
-            subtabGroup.Units = 'normalized';
+            subtabGroup.Units = 'normalized'; % So subtabs will resize automatically with window
             dffPlotCounter = dffPlotCounter + 1; % For naming df/f subtabs
             disp('Plotting complete');
         end%if
@@ -362,8 +365,11 @@ function myData = loadData()
         imgData = load([pathName, dataFile]);
         disp([dataFile, ' loaded'])
         
+        % P
+        
+        
         % Prompt user for behavioral annotation data file
-        [annotDataFile, pathName, ~] = uigetfile('*.mat', 'Select an imaging data session file if desired', 'D:\Dropbox (HMS)\2P Data\Imaging Data\');
+        [annotDataFile, pathName, ~] = uigetfile('*.mat', 'Select a behavioral annotation data file if desired', 'D:\Dropbox (HMS)\2P Data\Imaging Data\');
         if annotDataFile == 0
             disp('No behavioral annotation data selected')
             annotData = [];
@@ -377,16 +383,17 @@ function myData = loadData()
         
         % Process raw data structure
         if ~isfield(myData, 'wholeSession')
-            myData.wholeSession = myData.regProduct;
+            myData.wholeSession = myData.regProduct; % myData.wholeSession = [x, y, plane, volume, trial]
         end
-        myData.singleTrial = squeeze(myData.wholeSession(:,:,:,:,1)); % [x y plane vol trial]
+        myData.nTrials = size(myData.wholeSession, 5);
+        myData.singleTrial = squeeze(myData.wholeSession(:,:,:,:,1));  % --> [x, y, plane, volume]
         myData.nPlanes = size(myData.singleTrial, 3);
         myData.nVolumes = size(myData.singleTrial, 4);
 
         % Create mean reference image for each plane
         myData.refImg = [];
         for iPlane = 1:myData.nPlanes
-            myData.refImg{iPlane} = squeeze(mean(mean(myData.wholeSession(:,:,iPlane,:,:),4),5));
+            myData.refImg{iPlane} = squeeze(mean(mean(myData.wholeSession(:,:,iPlane,:,:),4),5)); % --> [x, y]
         end
     end%if
 end%function

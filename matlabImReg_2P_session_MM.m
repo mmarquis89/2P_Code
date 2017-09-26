@@ -48,6 +48,6 @@ end
 tE_sec=toc;
 
 % Save output
-save('sessionOutfile_Reg1','regProduct','trialType','origFileNames','tE_sec');
+save('sessionOutfile_Reg1','regProduct','trialType','origFileNames','tE_sec', 'expDate');
     
 end

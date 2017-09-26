@@ -19,11 +19,14 @@ if ~isempty(myData) % Abort initialization if no data was loaded
     nVolumes = myData.nVolumes;
     refImg = myData.refImg;
     
-    % Create global variables
-    myData.maxIntensity = 700; maxIntensity = myData.maxIntensity; % To control 
+    % Create global/hardcoded variables
+    myData.maxIntensity = 1500; maxIntensity = myData.maxIntensity; % To control 
     myData.volumeRate = 6.5; volumeRate = myData.volumeRate;
-    myData.stimDuration = [4 2]; stimDuration = myData.stimDuration; % [stim start time, stim length] in seconds
-    myData.ROIs= [];
+    myData.stimDuration = [6 3]; stimDuration = myData.stimDuration; % [stim start time, stim length] in seconds
+    myData.stimStart = myData.stimDuration(1); stimStart = myData.stimStart;
+    myData.stimEnd = sum(myData.stimDuration); stimEnd = myData.stimEnd;
+    myData.stimTypes = sort(unique(myData.trialType)); stimTypes = myData.stimTypes;
+    myData.ROIs = [];
     myData.dffData = [];
     index = 1;
     planeAxes = [];
@@ -247,7 +250,7 @@ end%if
                 
                 
                 %----------Plot mean dF/F across all trials for the current ROI----------
-                stimTypes = sort(unique(myData.trialType)); myData.dffData(iROI).stimTypes = stimTypes;
+                myData.dffData(iROI).stimTypes = stimTypes;
                 currData = squeeze(myData.wholeSession(:,:,str2double(myData.ROIs.planes{iROI}),:,:)); % --> [x, y, volume, trial]
 
                 % For each stimulus type...
@@ -259,7 +262,9 @@ end%if
                     
                     % Get trial averaged and baseline data
                     trialAvg{iStim} = mean(currData(:,:,:,stimSepTrials.(stimTypes{iStim})),4); % --> [x, y, volume]
-                    baselineAvg{iStim} = mean(trialAvg{iStim},3); % --> [x, y] %(:,:,1:(2*volumeRate))
+                    stimLength = stimEnd - stimStart;
+                    baselineStart = stimStart - stimLength;
+                    baselineAvg{iStim} =  mean(trialAvg{iStim}(:,:,floor(baselineStart*volumeRate):floor(stimStart*volumeRate)),3); % --> [x, y] %(:,:,1:(2*volumeRate)) mean(trialAvg{iStim},3);
                     
                     % Zero baseline and trial averaged data outside of ROI
                     baselineAvg{iStim}(~myData.ROIs.masks{iROI}) = 0;
@@ -359,11 +364,16 @@ function myData = loadData()
         myData = []; % Skip loading if user clicked "Cancel"
     else
         disp(['Loading ' dataFile, '...'])
-        imgData = load([pathName, dataFile]);
-        disp([dataFile, ' loaded'])
+        imgData = load([pathName, dataFile]); % Fields are: 'regProduct','trialType','origFileNames','tE_sec', 'expDate'
+        disp([dataFile, ' loaded']) 
+        
+        
+        % Unregistered imaging data fields: 'wholeSession','trialType','origFileNames', 'expDate'
+        
+        
         
         % Prompt user for behavioral annotation data file
-        [annotDataFile, pathName, ~] = uigetfile('*.mat', 'Select an imaging data session file if desired', 'D:\Dropbox (HMS)\2P Data\Imaging Data\');
+        [annotDataFile, pathName, ~] = uigetfile('*.mat', 'Select a behavioral annotation data file if desired', 'D:\Dropbox (HMS)\2P Data\Imaging Data\');
         if annotDataFile == 0
             disp('No behavioral annotation data selected')
             annotData = [];
@@ -377,17 +387,28 @@ function myData = loadData()
         
         % Process raw data structure
         if ~isfield(myData, 'wholeSession')
-            myData.wholeSession = myData.regProduct;
+            myData.wholeSession = myData.regProduct; % myData.wholeSession = [x, y, plane, volume, trial]
         end
         myData.nTrials = size(myData.wholeSession, 5);
-        myData.singleTrial = squeeze(myData.wholeSession(:,:,:,:,1)); % [x y plane vol trial]
+        myData.singleTrial = squeeze(myData.wholeSession(:,:,:,:,1));  % --> [x, y, plane, volume]
         myData.nPlanes = size(myData.singleTrial, 3);
         myData.nVolumes = size(myData.singleTrial, 4);
+        
+        % For compatibility with early experiments
+        if ~isfield(myData, 'expDate')
+            cellDate = inputdlg('Please enter experiment date in YYYY_MM_DD format');
+            myData.expDate = cellDate{1};
+        end
 
+        % Extract session number
+        origFileName = myData.origFileNames{1};
+        sidLoc = strfind(origFileName, 'sid_');
+        myData.sessionNum = origFileName(sidLoc+4);
+        
         % Create mean reference image for each plane
         myData.refImg = [];
         for iPlane = 1:myData.nPlanes
-            myData.refImg{iPlane} = squeeze(mean(mean(myData.wholeSession(:,:,iPlane,:,:),4),5));
+            myData.refImg{iPlane} = squeeze(mean(mean(myData.wholeSession(:,:,iPlane,:,:),4),5)); % --> [x, y]
         end
     end%if
 end%function

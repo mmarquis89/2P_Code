@@ -1,4 +1,4 @@
-function preRegRoutine_MM(parentDir, sids)
+function preRegRoutine_MM(parentDir, sids, expDate)
 %===================================================================================================
 %% Load ScanImage 5.1 imaging data
 % 
@@ -93,7 +93,7 @@ for iSession = mySessions
     end%for
     
     % Save session data ( [x, y , plane, volume, trialNum] )
-    save(fullfile(sessionDir, sprintf('sid_%.0f_sessionFile.mat',iSession)),'wholeSession','trialType','origFileNames');
+    save(fullfile(sessionDir, sprintf('sid_%.0f_sessionFile.mat',iSession)),'wholeSession','trialType','origFileNames', 'expDate');
     clear wholeSession trialTypes origFileNames
 
 end%for

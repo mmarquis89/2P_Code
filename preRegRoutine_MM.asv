@@ -24,6 +24,8 @@ end
 % expDateStr = fileNames{1}(dateInd:dateInd+7);
 % expDate = datestr(datetime(expDateStr, 'InputFormat', 'yyyyMMdd'), 'yyyy_mm_dd');
 
+
+
 % Identify session numbers to be processed
 if isempty(sids)
     mySessions = unique(sessionNums);
@@ -35,7 +37,7 @@ disp('Processing...')
 for iSession = mySessions
     
     % Make session folder for new files if necessary
-    sessionDir = [parentDir sprintf('\\sid_%.0f',iSession)];
+    sessionDir=[parentDir sprintf('\\sid_%.0f',iSession)];
     if ~isdir(sessionDir)
         mkdir(sessionDir)
     end
@@ -46,29 +48,29 @@ for iSession = mySessions
     for iFile = 1:length(currFiles)
         
         % Load a .tif file, subract baseline, and crop edges
-        workingFile = readTif(fullfile(parentDir, currFiles{iFile}));
-        workingFile = squeeze(workingFile); % [Lines Pixels Planes Volumes]
-        workingFile = workingFile-min(workingFile(:));
-        workingFile = workingFile+1;
-        yrange = 2:size(workingFile,1)-2;
-        xrange = 2:size(workingFile,2)-2;
-        croppedFile = workingFile(yrange,xrange,:,:);
+        workingFile=readTif(fullfile(parentDir, currFiles{iFile}));
+        workingFile=squeeze(workingFile); % [Lines Pixels Planes Volumes]
+        workingFile=workingFile-min(workingFile(:));
+        workingFile=workingFile+1;
+        yrange=2:size(workingFile,1)-2;
+        xrange=2:size(workingFile,2)-2;
+        croppedFile=workingFile(yrange,xrange,:,:);
         
         % Discard flyback frames
-        croppedFile(:,:,1:4,:) = []; % ScanImage should tell you
+        croppedFile(:,:,1:4,:)=[]; % ScanImage should tell you
         
         % Median filter each plane
-        filtFile = uint16(zeros(size(croppedFile)));
-        for iVol = 1:size(croppedFile,4)
-            for iPlane = 1:size(croppedFile,3)
-                working_frame = medfilt2(croppedFile(:,:,iPlane,iVol),[1 1]);
-                filtFile(:,:,iPlane,iVol) = working_frame+1; % Offset 0
+        filtFile=uint16(zeros(size(croppedFile)));
+        for iVol=1:size(croppedFile,4)
+            for iPlane=1:size(croppedFile,3)
+                working_frame=medfilt2(croppedFile(:,:,iPlane,iVol),[1 1]);
+                filtFile(:,:,iPlane,iVol)=working_frame+1; % Offset 0
             end
         end       
         
         %----- Save to session structure -----
-        fName = currFiles{iFile};
-        trialNum = iFile;
+        fName=currFiles{iFile};
+        trialNum=iFile;
 
         % Get trial type (LeftWind, RightWind, CenterWind, OdorNoWind)
         if ~isempty(strfind(fName, 'LeftWind'))

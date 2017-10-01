@@ -12,10 +12,10 @@ function matlabImReg_2P_session_MM(path,refVol,refTrial)
 % Code from AKM, modified by MM
 % Last modified: 14-Aug-2017
 %===================================================================================================
-% cd(path);
+cd(path);
 
 % Load the unregistered session file
-files=dir(fullfile(path, '*sessionFile.mat'));
+files=dir('./*sessionFile.mat');
 in=load(files(1).name);
 
 movingFile=in.wholeSession; % [x y plane vol trial]
@@ -49,6 +49,6 @@ end
 tE_sec=toc;
 
 % Save output
-save(fullfile(path, 'sessionOutfile_Reg1'),'regProduct','trialType','origFileNames','tE_sec','expDate');
+save('sessionOutfile_Reg1','regProduct','trialType','origFileNames','tE_sec','expDate');
     
 end

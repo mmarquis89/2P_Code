@@ -20,9 +20,9 @@ if ~isempty(myData) % Abort initialization if no data was loaded
     refImg = myData.refImg;
     
     % Create global/hardcoded variables
-    myData.maxIntensity = 1500; maxIntensity = myData.maxIntensity; % To control 
+    myData.maxIntensity = 1800; maxIntensity = myData.maxIntensity; % To control 
     myData.volumeRate = 6.5; volumeRate = myData.volumeRate;
-    myData.stimDuration = [6 3]; stimDuration = myData.stimDuration; % [stim start time, stim length] in seconds
+    myData.stimDuration = [6 4]; stimDuration = myData.stimDuration; % [stim start time, stim length] in seconds
     myData.stimStart = myData.stimDuration(1); stimStart = myData.stimStart;
     myData.stimEnd = sum(myData.stimDuration); stimEnd = myData.stimEnd;
     myData.stimTypes = sort(unique(myData.trialType)); stimTypes = myData.stimTypes;
@@ -31,6 +31,8 @@ if ~isempty(myData) % Abort initialization if no data was loaded
     index = 1;
     planeAxes = [];
     dffPlotCounter = 1;
+    
+    
     
     %----------CONSTRUCTING COMPONENTS----------
     

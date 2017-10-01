@@ -2,14 +2,13 @@ function CreateAnatomyStack(dirPath, fileStr, outputFilePrefix)
 %===================================================================================================
 % MAKE AVERAGED ANATOMY STACK FROM INDIVIDUAL 2P VOLUMES
 % Will average together all stacks in the directory that meet the requirement specified by 'fileStr'
-% and save as .tif files the mean stack as well as a max Z-projection. Then, moves all the original 
-% stack files to a zipped folder.
+% and save as .tif files the mean stack as well as a max Z-projection. 
 % 
 % Inputs:
 %    dirPath = folder with stack files, e.g. 'D:\Dropbox (HMS)\2P Data\Imaging Data\2017_09_05'
 %    fileStr = filter string for dir() selection to get anatomy stack files, e.g. '*stack_*'. Be 
 %              careful to ensure that only the desired files will meet this specification.
-%    outputFilePrefix = name to prepend to the names of output files and archive. Can be [].
+%    outputFilePrefix = name to prepend to the names of output files. Can be [].
 %===================================================================================================
 
 stacks = dir(fullfile(dirPath, fileStr));
@@ -55,12 +54,6 @@ imwrite(avgStackScaled(:,:,1), fullfile(dirPath, [outputFilePrefix, 'MeanStack.t
 for iPlane = 2:size(avgStackScaled, 3)
     imwrite(avgStackScaled(:,:,iPlane), fullfile(dirPath, [outputFilePrefix, 'MeanStack.tif']), 'writemode','append');
 end
-
-% Zip raw anatomy stack images
-tic
-disp('Mean stack creation complete')
-disp('Archiving individual anatomy stacks...')
-system7zip(dirPath, [outputFilePrefix, 'ZippedAnatomyStacks'], '7z', fileStr, 1);
 
 
 

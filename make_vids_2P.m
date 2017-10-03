@@ -1,4 +1,4 @@
-function msg = makeVids_2P(sid, parentDir, frameRate)
+function msg = make_vids_2P(sid, parentDir, frameRate)
 %============================================================================================================================
 % CREATE MOVIES FROM .TIF FILES FROM 2P EXPERIMENT
 % Creates an .avi movie for each trial of a 2P imaging experiment from the .tif files captured by the fly behavior camera,

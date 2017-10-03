@@ -1,4 +1,4 @@
-function CreateAnatomyStack(dirPath, fileStr, outputFilePrefix)
+function create_anatomy_stack(dirPath, fileStr, outputFilePrefix)
 %===================================================================================================
 % MAKE AVERAGED ANATOMY STACK FROM INDIVIDUAL 2P VOLUMES
 % Will average together all stacks in the directory that meet the requirement specified by 'fileStr'
@@ -29,10 +29,10 @@ summedStacks = [];
 for iVol = 1:nStacks
     disp(['Reading ' stacks(iVol).name, '...']);
     if iVol == 1
-        firstStack = uint32(readTif(fullfile(dirPath,stacks(iVol).name)));
+        firstStack = uint32(read_tif(fullfile(dirPath,stacks(iVol).name)));
         summedStacks = uint32(firstStack);
     else
-        summedStacks = summedStacks + uint32(readTif(fullfile(dirPath,stacks(iVol).name)));
+        summedStacks = summedStacks + uint32(read_tif(fullfile(dirPath,stacks(iVol).name)));
     end
 end
 % disp(['Max summed value = ', num2str(max(summedStacks(:)))]);

@@ -2,8 +2,9 @@ function preRegRoutine_MM(parentDir, sids, expDate)
 %===================================================================================================
 %% Load ScanImage 5.1 imaging data
 % 
-% Inputs:
-%       parentDir   = directory containing the raw data that you want to process
+% INPUTS:
+%       parentDir   = directory containing the raw data that you want to process.
+%
 %       sids        = array containing the session IDs you want to process. Pass [] to default to 
 %                     detecting and processing all sids present in the parent directory
 %
@@ -46,7 +47,7 @@ for iSession = mySessions
     for iFile = 1:length(currFiles)
         
         % Load a .tif file, subract baseline, and crop edges
-        workingFile = readTif(fullfile(parentDir, currFiles{iFile}));
+        workingFile = read_tif(fullfile(parentDir, currFiles{iFile}));
         workingFile = squeeze(workingFile); % [Lines Pixels Planes Volumes]
         workingFile = workingFile-min(workingFile(:));
         workingFile = workingFile+1;
@@ -84,8 +85,6 @@ for iSession = mySessions
         else
             error(['Error: "', trType, '" is not a valid trial type']);
         end
-        
-        
         
         % Create session file on first loop
         if iFile==1

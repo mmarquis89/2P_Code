@@ -1,13 +1,14 @@
 function matlabImReg_2P_session_MM(path,refVol,refTrial)
 %===================================================================================================
 % Align all data from imaging session to a single volume (translation)
-
-% Input:
-%   path = session folder containeing unregistered cdata files 
-%   refVol = the volume number to use as a reference for registration
-%   refTrial = trial # to pull the reference volume from
-% Output:
-%   filename_reg1 (regProduct')
+%
+% INPUTS:
+%       path = session folder containing unregistered cdata files.
+%       refVol = the volume number to use as a reference for registration.
+%       refTrial = trial # to pull the reference volume from.
+%
+% OUTPUTS:
+%       filename_reg1 (regProduct')
 % 
 % Code from AKM, modified by MM
 % Last modified: 14-Aug-2017

@@ -13,19 +13,22 @@ close all
 %----------INITIALIZATION TASKS----------
 
 % Prompt user for data file and load data
-myData = loadData();
+myData = load_data();
 if ~isempty(myData) % Abort initialization if no data was loaded
+    
     nPlanes = myData.nPlanes;
     nVolumes = myData.nVolumes;
     refImg = myData.refImg;
+    nFrames = myData.nFrames;
+    stimTypes = myData.stimTypes;
     
     % Create global/hardcoded variables
     myData.maxIntensity = 1800; maxIntensity = myData.maxIntensity; % To control 
     myData.volumeRate = 6.5; volumeRate = myData.volumeRate;
-    myData.stimDuration = [6 4]; stimDuration = myData.stimDuration; % [stim start time, stim length] in seconds
+    myData.stimDuration = [4 9]; stimDuration = myData.stimDuration; % [stim start time, stim length] in seconds
     myData.stimStart = myData.stimDuration(1); stimStart = myData.stimStart;
     myData.stimEnd = sum(myData.stimDuration); stimEnd = myData.stimEnd;
-    myData.stimTypes = sort(unique(myData.trialType)); stimTypes = myData.stimTypes;
+    
     myData.ROIs = [];
     myData.dffData = [];
     index = 1;
@@ -160,7 +163,7 @@ end%if
         currcolor = cm(mod(index,size(cm,1))+1,:); % index starts at 1 when gui initializes
         
         % Prompt user to create a polygon ROI
-        [myData.ROIs.masks{index}, xi, yi] = roipoly;
+        [myData.ROIs.masks(:,:,index), xi, yi] = roipoly; % --> [x, y, ROInum]
         currAxes = gca;
         
         % Save other useful information about the ROI
@@ -254,47 +257,44 @@ end%if
                 %----------Plot mean dF/F across all trials for the current ROI----------
                 myData.dffData(iROI).stimTypes = stimTypes;
                 currData = squeeze(myData.wholeSession(:,:,str2double(myData.ROIs.planes{iROI}),:,:)); % --> [x, y, volume, trial]
-
+                
                 % For each stimulus type...
-                stimSepTrials = []; trialAvg = []; baselineAvg = []; ROIdata = []; baselineF = []; dff = []; dffRaw = [];
+                stimSepTrials = []; trialAvg = []; baselineAvg = []; ROIdata = []; baselineF = []; dffOffset = []; dffRaw = [];
                 for iStim = 1:length(stimTypes)
                     
                     % Separate trials by stimulus type
                     stimSepTrials.(stimTypes{iStim}) = logical(cellfun(@(x) strcmp(x, stimTypes{iStim}), myData.trialType));
                     
                     % Get trial averaged and baseline data
-                    trialAvg{iStim} = mean(currData(:,:,:,stimSepTrials.(stimTypes{iStim})),4); % --> [x, y, volume]
+                    trialAvg(:,:,:,iStim) = mean(currData(:,:,:,stimSepTrials.(stimTypes{iStim})),4);   % --> [x, y, volume, stimType]
                     stimLength = stimEnd - stimStart;
-                    baselineStart = stimStart - stimLength;
-                    baselineAvg{iStim} =  mean(trialAvg{iStim}(:,:,floor(baselineStart*volumeRate):floor(stimStart*volumeRate)),3); % --> [x, y] %(:,:,1:(2*volumeRate)) mean(trialAvg{iStim},3);
-                    
+                    if stimStart - stimLength > 0
+                        baselineStart = stimStart - stimLength;
+                    else
+                        % if stimDuration > preStimDuration, start baseline one second after beginning of trial
+                        baselineStart = 1;
+                    end
+                    baselineAvg(:,:,iStim) =  mean(trialAvg(:,:,floor(baselineStart*volumeRate):floor(stimStart*volumeRate),iStim),3);  % --> [x, y, stimType]     %(:,:,1:(2*volumeRate)) mean(trialAvg{iStim},3);
+                                    
                     % Zero baseline and trial averaged data outside of ROI
-                    baselineAvg{iStim}(~myData.ROIs.masks{iROI}) = 0;
-                    volumeMask = repmat(myData.ROIs.masks{iROI}, [1 1 nVolumes]); % Expand ROI mask to cover all volumes
-                    ROIdata{iStim} = trialAvg{iStim};
-                    ROIdata{iStim}(~volumeMask) = 0;
-                    
-                    % Calculate dF/F within ROIs
-                    baselineF{iStim} = sum(baselineAvg{iStim}(:));
-                    ROIdataF{iStim} = squeeze(sum(sum(ROIdata{iStim},1),2));
-                    dffRaw{iStim} = (ROIdataF{iStim} - baselineF{iStim}) ./ baselineF{iStim};
-                    
-                    % Offset all mean dF/F values so that the average value from the
-                    % first two seconds of the trial is at zero
-                    preStimMean = mean(dffRaw{iStim}(1 : (2*volumeRate) - 1));
-                    dff{iStim} = dffRaw{iStim} - preStimMean;
-                    
-                end%for                                
+                    repMask = repmat(myData.ROIs.masks(:,:,iROI), [1 1 nVolumes]);                      % Expand ROI mask to cover all volumes --> [x, y, volume]
+                    baselineAvgROI(:,:,iStim) = baselineAvg(:,:,iStim) .* myData.ROIs.masks(:,:,iROI);  % --> [x, y, stimType]
+                    baselineRepROI = permute(repmat(baselineAvgROI, [1 1 1, nVolumes]), [1 2 4 3]);     % --> [x, y, volume, stimType]                    
+                    ROIdata(:,:,:,iStim) = trialAvg(:,:,:,iStim) .* repMask;                            % --> [x, y, volume, stimType]
+
+                end%for
                 
+                % Calculate mean dF/F within ROIs
+                dffRaw = (ROIdata - baselineRepROI) ./ baselineRepROI;                                  % --> [x, y, volume, stimType]
+                dffMean = squeeze(mean(mean(dffRaw, 1), 2));                                            % --> [volume, stimType]
+                
+                % Offset all mean dF/F values so the average value from the baseline period is zero
+                preStimMean = mean(dffMean((baselineStart:stimStart)*volumeRate, :), 1);                % --> [stimType]
+                dffOffset = dffMean - repmat(preStimMean, [nVolumes, 1]);                               % --> [volume, stimType]
+
                 % Calculate min and max dF/F values across all stim types for setting yLims.
-                dffVals = [];
-                for iStim = 1:length(stimTypes)
-                    dffVals = [dffVals, dff{iStim}(2:end)]; % Dropping the first volume of each set.
-                end
-                yMax = max(dffVals(:));
-                yMin = min(dffVals(:));
-                padFactor = 0.1 * diff([yMin, yMax]); % To give a little extra padding
-                yL = [yMin - padFactor, yMax + padFactor];
+                dffTrim = dffOffset(2:end-1, :); % Drop the first and last volumes
+                yL = calc_ylims(dataArr);
                 
                 % Plot mean ROI dF/F for each stim type
                 nPlots = length(stimTypes);
@@ -315,7 +315,7 @@ end%if
                     % Plot data for current stim type
                     dffAxes{iROI}.(stimTypes{iPlot}) = axes(ROItabs{iROI}, 'Position', plotPos);
                     hold on
-                    plot(dffTime(2:end), dff{iPlot}(2:end)); % Dropping first volume of each trial
+                    plot(dffTime(2:end-1), dffOffset(2:end-1, iPlot)); % Dropping first and last volume of each trial
                     title(stimTypes{iPlot},'FontSize', 10, 'FontWeight', 'normal')
                     ylabel('dF/F');
                     ylim(yL);
@@ -343,7 +343,7 @@ end%if
                 myData.dffData(iROI).baselineF = baselineF;
                 myData.dffData(iROI).ROIdataF = ROIdataF;
                 myData.dffData(iROI).dffRaw = dffRaw;
-                myData.dffData(iROI).dff = dff;
+                myData.dffData(iROI).dffOffset = dffOffset;
                 myData.dffData(iROI).dffCaptures = dffCaptures;
                 
             end%for
@@ -356,7 +356,7 @@ end%if
 end%function
 
 
-function myData = loadData()
+function myData = load_data()
 % Prompts user for input data file(s) and loads data
 
     % Prompt user for imaging data file
@@ -395,6 +395,12 @@ function myData = loadData()
         myData.singleTrial = squeeze(myData.wholeSession(:,:,:,:,1));  % --> [x, y, plane, volume]
         myData.nPlanes = size(myData.singleTrial, 3);
         myData.nVolumes = size(myData.singleTrial, 4);
+        myData.stimTypes = sort(unique(myData.trialType));
+        if ~isempty(annotData)
+            myData.nFrames = max(cellfun(@height, myData.trialAnnotations));
+        else
+            myData.nFrames = [];
+        end
         
         % For compatibility with early experiments
         if ~isfield(myData, 'expDate')

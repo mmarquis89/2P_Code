@@ -9,25 +9,27 @@ function trialAnnotations = processAnvilAnnotations(sid, parentDir, saveDir, ann
 % Processed annotation data will be saved as a .mat file in the specified directory containing a table with the 
 % annotation data as well as a cell array with labels for the behavioral codes and a logical vector of valid trials.
 %
-% Inputs:
-%       sid  =  session ID of the data you want to process
-%       parentDir  =  path to the directory containing the annotation file and the frame count logs
-%       saveDir  =  directory to save processed annotation data in
-%       annotationFileName = name of the Anvil-exported .txt file with annotations
-%       frameRate = frame rate that the behavioral video was acquired at
-%       trial Duration = duration of each trial in seconds (must be the same for all trials)
+% INPUTS:
+%       sid  =  session ID of the data you want to process.
+%       parentDir  =  path to the directory containing the annotation file and the frame count logs.
+%       saveDir  =  directory to save processed annotation data in.
+%       annotationFileName = name of the Anvil-exported .txt file with annotations.
+%       frameRate = frame rate that the behavioral video was acquired at.
+%       trial Duration = duration of each trial in seconds (must be the same for all trials).
 %
-% Outputs:
+% OUTPUS:
 %       trialAnnotations = a 1xn cell array (where n is the number of trials in the session), with each cell containing an 
 %                          mx3 table (where m is the number of video frames for that trial) with the following column 
 %                          names: [frameNum, actionNums, frameTime]. [actions] contains a behavioral code for each frame, 
 %                          corresponding to an entry in the "behaviorLabels" array. [frameTime] is the trial time in 
 %                          seconds corresponding to each frame.
-%       behaviorLabels = an array of strings containing the various strings that correspond to numbers in the [actionNums]
+%
+%       behaviorLabels   = an array of strings containing the various strings that correspond to numbers in the [actionNums]
 %                          field of the trialAnnotations tables (0 = first entry in behaviorLabels, etc.) Note hardcoded
 %                          values for this variable below.
-%       goodTrials = a 1xn logical array (where n is the number of trials in the session) indicating which trials are 
-%                          missing one or more video frames.
+%
+%       goodTrials =       a 1 x n logical array (where n is the number of trials in the session) indicating which trials 
+%                          are missing one or more video frames.
 %                           
 %==========================================================================================================================
 

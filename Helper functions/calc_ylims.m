@@ -18,8 +18,8 @@ if isempty(padFactor)
     padFactor = 0.1;
 end
 
-yMax = min(dataArr(:));
-yMin = max(dataArr(:));
+yMax = max(dataArr(:));
+yMin = min(dataArr(:));
 padding = 0.1 * (yMax - yMin);  % To give a little extra padding
 ylims = [yMin - padding, yMax + padding];
 

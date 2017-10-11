@@ -1,18 +1,18 @@
 function msg = make_vids_2P(sid, parentDir, frameRate)
-%============================================================================================================================
+%==============================================================================================================================
 % CREATE MOVIES FROM .TIF FILES FROM 2P EXPERIMENT
 % Creates an .avi movie for each trial of a 2P imaging experiment from the .tif files captured by the fly behavior camera,
 % and returns a message string indicating whether the operation was a success (and if not, which trial it failed on).
 % The videos are saved in a folder within the parent directory named '_Movies'.
 %
 % Inputs:
-%       sid = the session ID of the videos you want to process
-%       parentDir = the directory containing the subfolders with videos from all sessions
-%               e.g. 'U:\2P Behavior Video\2017_07_30' with subfolder e.g. '\bdata_OdorCenterWind_20170730_170018_sid_0_tid_0'
-%============================================================================================================================
+%       sid       = the session ID of the videos you want to process.
+%       parentDir = the directory containing the subfolders with videos from all sessions.
+%                   e.g. 'U:\2P Behavior Video\2017_07_30' with subfolder e.g. '\bdata_OdorCenterWind_20170730_170018_sid_0_tid_0'
+%       frameRate = the frame rate that the behavior camera was acquiring at.
+%===============================================================================================================================
 
 savePath = fullfile(parentDir, '_Movies');
-FRAME_RATE = frameRate;
 sessionDirs = dir(fullfile(parentDir, ['*sid_', num2str(sid), '_t*']));
 
 disp('Creating videos...')
@@ -51,7 +51,7 @@ try
                 
                 % Create video writer object using MPEG-4 H.264 compression for Anvil compatibility
                 outputVid = VideoWriter(fullfile(savePath, [trialStr, '.mp4']), 'MPEG-4');
-                outputVid.FrameRate = FRAME_RATE;
+                outputVid.FrameRate = frameRate;
                 open(outputVid)
                 
                 % Write each .tif file to video

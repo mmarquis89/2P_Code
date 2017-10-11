@@ -1,5 +1,5 @@
 
-expDate = '2017_09_27';
+expDate = '2017_09_27_exp2';
 tic
 
 %% CREATE ANATOMY STACKS --------------------------------------------------------------------------
@@ -60,7 +60,7 @@ concat_vids_2P(0, parentDir, frameRate)
 disp(['Concatenating behavior vids took ', round(num2str(toc)) ' sec']);
 %%%
 
-%%% PROCESS ANVIL ANNOTATION DATA ------------------------------------------------------------------
+%% PROCESS ANVIL ANNOTATION DATA ------------------------------------------------------------------
 frameRate = 25;
 trialDuration = 16;
 

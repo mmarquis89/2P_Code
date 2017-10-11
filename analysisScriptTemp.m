@@ -1,4 +1,3 @@
-
 %% LOAD REGISTERED DATA FILE AND BEHAVIORAL ANNOTATION DATA
 
 % Prompt user for data file
@@ -52,10 +51,10 @@ else
         cellDate = inputdlg('Please enter experiment date in YYYY_MM_DD format');
         myData.expDate = cellDate{1};
     end 
-
+    
     % Add hardcoded parameters
     myData.volumeRate = 6.5; volumeRate = myData.volumeRate;
-    myData.trialDuration = 15; trialDuration = myData.trialDuration;
+    myData.trialDuration = 16; trialDuration = myData.trialDuration;
     if ~isempty(annotData)
         myData.nFrames = max(cellfun(@height, myData.trialAnnotations)); nFrames = myData.nFrames;
     end
@@ -65,6 +64,13 @@ else
     stimEnd = sum(myData.stimDuration);
     stimTypes = sort(unique(myData.trialType));
     
+    % Separate out wind trials
+    stimSepTrials = [];
+    for iStim = 1:length(stimTypes)
+        stimSepTrials.(stimTypes{iStim}) = logical(cellfun(@(x) strcmp(x, stimTypes{iStim}), myData.trialType));
+    end
+    stimSepTrials.windTrials = logical(stimSepTrials.LeftWind);
+    
 end%if
 
 %% PLOT AND SAVE VISUALIZATION OF BEHAVIOR DATA ANNOTATIONS
@@ -72,62 +78,30 @@ end%if
 expDate = myData.expDate;
 frameRate = 25;
 
-% Separate out wind trials
-for iStim = 1:length(stimTypes)
-    stimSepTrials.(stimTypes{iStim}) = logical(cellfun(@(x) strcmp(x, stimTypes{iStim}), myData.trialType));
-end
-stimSepTrials.windTrials = logical(stimSepTrials.CenterWind + stimSepTrials.RightWind);
-
 % Create array of annotation data (row = trial, col = frame)
 annotationArr = [];
 annotTrials = 1:myData.nTrials;
-for iTrial = annotTrials(annotData.goodTrials) % Skip any trials with dropped frames     ~logical(cellfun(@(x) strcmp(x, 'OdorNoWind'), myData.trialType)))
-   annotationArr(iTrial,:) = myData.trialAnnotations{iTrial}.actionNums; 
+for iTrial = annotTrials(annotData.goodTrials) % Skip any trials with dropped frames 
+   annotationArr(iTrial,:) = myData.trialAnnotations{iTrial}.actionNums; %--> [trial, frame]
 end
+
+%----------Plot 2D data with seconds on X-axis----------
+trialGroups = stimSepTrials.windTrials + 2*(~stimSepTrials.windTrials);
+titleStr = [regexprep(expDate, '_(?<num>..)', '\\_$<num>'), '  Behavior Summary  (top: wind trials,  bottom: control trials)']; % regex to add escape characters
+[~, ~, f] = plot_behavior_summary_2D(myData, annotationArr, [], titleStr, trialGroups);
+
+%----- Plot 1D trial-averaged movement data -----
 
 % Average across trials for wind and control trials
 annotArrLog = annotationArr ~= 0;
-annotArrMean_wind = sum(annotArrLog(stimSepTrials.windTrials,:), 1);
-annotArrMean_noWind = sum(annotArrLog(~stimSepTrials.windTrials,:), 1);
+annotArrSum_wind = sum(annotArrLog(stimSepTrials.windTrials,:), 1);
+annotArrSum_noWind = sum(annotArrLog(~stimSepTrials.windTrials,:), 1);
 
-%----------Plot 2D data with seconds on X-axis----------
-
-% Create figure and plot data
-f = figure(1); clf; ax = axes();
-f.Position = [200 100 1120 840]; 
-imagesc([annotationArr(stimSepTrials.windTrials,:) ; annotationArr(~stimSepTrials.windTrials,:)*1.25]);
-
-% Format figure
-f.Color = [1 1 1];
-ax.FontSize = 12;
-ax.XLabel.String = 'Time (sec)';
-ax.XLabel.FontSize = 16;
-ax.YLabel.String = 'Trial number';
-ax.YLabel.FontSize = 14;
-ax.Title.String = [regexprep(expDate, '_(?<num>..)', '\\_$<num>'), '  Behavior Summary  (top: wind trials,  bottom: control trials)']; % regex to add escape characters
-ax.XTick = [0:(1/trialDuration):1]*nFrames;
-ax.XTickLabel = [0:(1/trialDuration):1]*trialDuration;
-
-%----------Plot total number of movement frames across trials for wind stim and control trials ----------
-
-%----- Create figure and plot wind trial data -----
+% Plot stimulus trial data
 h = figure(2); clf;
 h.Position = [100 50 1600 950];
-subplot(2,1,1); ax2 = gca();
-plt = plot(smooth(annotArrMean_wind,3));
-
-% Format figure
-h.Color = [1 1 1];
-plt.LineWidth = 1;
-ax2.FontSize = 12;
-ax2.XLabel.String = 'Time (sec)';
-ax2.XLabel.FontSize = 16;
-ax2.YLabel.String = 'Total movement frames';
-ax2.YLabel.FontSize = 14;
-ax2.Title.String = 'Wind Trials';
-ax2.XTick = [0:(1/trialDuration):1]*nFrames;
-ax2.XTickLabel = [0:(1/trialDuration):1]*trialDuration;
-ax2.XLim = [0 nFrames];
+subplot(2,1,1); ax1 = gca();
+[~, ~, h] = plot_behavior_summary_1D(myData, annotArrSum_wind, ax1, 'Wind Trials');
 
 % Add shading during stimulus presentation
 yL = ylim();
@@ -135,22 +109,10 @@ rectPos = [stimStart*frameRate, yL(1), (stimEnd-stimStart)*frameRate, diff(yL)];
 rectangle('Position', rectPos, 'FaceColor', [rgb('red'), 0.05], 'EdgeColor', 'none');                    
 ylim(yL);
 
-% ----- Plot control trial data-----
+% Plot control trial data
 subplot(2,1,2); ax2 = gca();
-plt = plot(smooth(annotArrMean_noWind,3));
+[~, ~, h] = plot_behavior_summary_1D(myData, annotArrSum_noWind, ax2, 'Control Trials');
 
-% Format figure
-h.Color = [1 1 1];
-plt.LineWidth = 1;
-ax2.FontSize = 12;
-ax2.XLabel.String = 'Time (sec)';
-ax2.XLabel.FontSize = 16;
-ax2.YLabel.String = 'Total movement frames';
-ax2.YLabel.FontSize = 14;
-ax2.Title.String = 'Control Trials';
-ax2.XTick = [0:(1/trialDuration):1]*nFrames;
-ax2.XTickLabel = [0:(1/trialDuration):1]*trialDuration;
-ax2.XLim = [0 nFrames];
 suptitle([regexprep(expDate, '_(?<num>..)', '\\_$<num>'), '  Summed Movement Frames']) % regex to add escape characters
 
 
@@ -275,7 +237,7 @@ dffAvgPost = (postStimAvg - stimAvg) ./ stimAvg; % --> [x, y, plane, StimType]
 range = calc_range(dffAvg, []);
 
 % Plot figures
-[f, plotAxes] = plot_heatmaps(dffAvg, myData, range, stimTypes, [], []);
+[~, ~] = plot_heatmaps(dffAvg, myData, range, stimTypes, [], []);
 
 
     %% PLOT WIND STIM OFFSET RESPONSE HEATMAPS FOR EACH PLANE
@@ -284,7 +246,7 @@ range = calc_range(dffAvg, []);
 range = calc_range(dffAvgPost,[]);
     
 % Plot figures
-[f, plotAxes] = plot_heatmaps(dffAvgPost, myData, range, stimTypes, [], []);
+[~, ~] = plot_heatmaps(dffAvgPost, myData, range, stimTypes, [], []);
 
 
 %% CALCULATE MEAN dF/F AROUND WIND RESPONSES
@@ -295,107 +257,56 @@ stimSepTrials = [];
 for iStim = 1:length(stimTypes)
     stimSepTrials.(stimTypes{iStim}) = logical(cellfun(@(x) strcmp(x, stimTypes{iStim}), myData.trialType));  
 end 
-centerWindTrials = myData.wholeSession(:,:,:,:,logical(stimSepTrials.CenterWind));                                                   % --> [x, y, plane, volume, trial]
+windTrials = myData.windTrials;  % --> [x, y, plane, volume, trial]
 
 % Calculate dF/F before and after wind onset using an equal period before onset as baseline
 stimLength = stimEnd - stimStart;
 stimLengthVols = floor(stimLength * volumeRate);
 if floor(stimStart*volumeRate) - stimLengthVols > 0
-    baselineVols = centerWindTrials(:,:,:,floor(stimStart*volumeRate) - stimLengthVols:floor(stimStart*volumeRate),:);               % --> [x, y, plane, volume, trial]
+    baselineVols = windTrials(:,:,:,floor(stimStart*volumeRate) - stimLengthVols:floor(stimStart*volumeRate),:);  % --> [x, y, plane, volume, trial]
 else
     % If stimDuration > preStimDuration, start baseline one second after beginning of trial
-    baselineVols = centerWindTrials(:,:,:,floor(volumeRate):floor(stimStart*volumeRate),:);                                          % --> [x, y, plane, volume, trial]
+    baselineVols = windTrials(:,:,:,floor(volumeRate):floor(stimStart*volumeRate),:);                             % --> [x, y, plane, volume, trial]
 end
 
 
-stimVols = centerWindTrials(:,:,:,ceil((stimStart*volumeRate)-size(baselineVols, 4)):ceil((stimStart*volumeRate)+2*volumeRate +stimLengthVols),:); % --> [x, y, plane, volume, trial]  
-stimVolsMean = mean(stimVols, 5);                                                                                                    % --> [x, y, plane, volume]
-nVols = size(stimVols, 4);
-baselineMean = mean(mean(baselineVols, 5), 4);                                                                                       % --> [x, y, plane]
-baselineMeanRep = repmat(baselineMean, 1, 1, 1, nVols);                                                                              % --> [x, y, plane, volume]
-windDffVols = (stimVolsMean - baselineMeanRep) ./ baselineMeanRep;                                                                   % --> [x, y, plane, volume]
+stimVols = windTrials(:,:,:,ceil((stimStart*volumeRate)-size(baselineVols, 4)):ceil((stimStart*volumeRate)+2*volumeRate +stimLengthVols),:);       % --> [x, y, plane, volume, trial]  
+stimVolsMean = mean(stimVols, 5);                                                                                                                  % --> [x, y, plane, volume]
+baselineMean = mean(mean(baselineVols, 5), 4);                                                                                                     % --> [x, y, plane]
+baselineMeanRep = repmat(baselineMean, 1, 1, 1, size(stimVols, 4));                                                                                % --> [x, y, plane, volume]
+windDffVols = (stimVolsMean - baselineMeanRep) ./ baselineMeanRep;                                                                                 % --> [x, y, plane, volume]
+
+
+    %% CREATE VIDEO OF MEAN dF/F THROUGHOUT WIND RESPONSES
 
 % Calculate absolute max dF/F value across all planes and action states
 range = calc_range(windDffVols,[]);
 
-    %% CREATE VIDEO OF MEAN dF/F THROUGHOUT WIND RESPONSES
+% Calculate volume times in seconds relative to wind onset
+baselineVolTimes = -(1:size(baselineVols, 4))/myData.volumeRate;
+stimVolTimes = ((1:(size(stimVols, 4)-size(baselineVols,4)))/myData.volumeRate);
+relTimes = [baselineVolTimes(end:-1:1), stimVolTimes];
 
-% Create save directory and open video writer
+% Create cell array with titles for each frame
+titleStrings = [];
+for iVol = 1:size(windDffVols, 4)
+    if iVol <= size(baselineVols, 4)
+        titleStrings{iVol} = ['Time = ', sprintf('%05.2f', relTimes(iVol)), ' sec before wind onset'];
+    else
+        titleStrings{iVol} = ['Time = ', sprintf('%05.2f', relTimes(iVol)), ' sec after wind onset'];
+    end
+end
+
+% Create video
 savePath = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_0\Analysis'];
-fileName = 'Wind_Onset_Responses2';
-if ~isdir(savePath)
-    mkdir(savePath);
-end
-
-% Warn user and offer to cancel save if this will overwrite an existing file
- overwrite = 1;
-if exist(fullfile(savePath, [fileName, '.avi']), 'file') ~= 0
-    dlgAns = questdlg('Creating this video will overwrite one or more existing files in this directory...are you sure you want to do this?', 'Warning', 'Yes', 'No', 'No');
-    if strcmp(dlgAns, 'No')
-        overwrite = 0;
-        disp('Saving cancelled')
-    end
-end
-
-if overwrite
-    
-    % Calculate volume times in seconds relative to wind onset
-    baselineVolTimes = -(1:size(baselineVols, 4))/myData.volumeRate;
-    stimVolTimes = ((1:(size(stimVols, 4)-size(baselineVols,4)))/myData.volumeRate);
-    relTimes = [baselineVolTimes(end:-1:1), stimVolTimes];
-    
-    % Create video writer
-    myVid = VideoWriter(fullfile(savePath, fileName));
-    myVid.FrameRate = 7;
-    open(myVid)
-    
-    for iVol = 1:nVols
-        
-        % Create fig
-        f = figure(iPlane); clf
-        f.Position = [50 45, 1620, 855];
-        
-        %     % Plot reference image for the current plane
-        %     ax1 = subplot(3,5,1);
-        %     imshow(myData.refImg{iPlane}, [0 myData.maxIntensity])
-        
-        for iPlane = myData.nPlanes:-1:1 % Plot planes from dorsal --> ventral
-            
-            % Plot dF/F for each plane
-            ax = subaxis(3, 4, iPlane, 'Spacing', 0, 'MB', 0.025);
-            imagesc(windDffVols(:, :, iPlane, iVol))
-            caxis(range)
-            colormap(ax, bluewhitered) %bluewhitered % 'parula'
-            axis equal
-            axis off
-            
-            % Label positions
-            if iPlane == myData.nPlanes
-                title('Ventral')
-            elseif iPlane == 1
-                title('Dorsal')
-            end
-        end
-        
-        % Add title above all subplots
-        if iVol <= size(baselineVols, 4)
-            suptitle(['Time = ', sprintf('%05.2f', relTimes(iVol)), ' sec before wind onset'])
-        else
-            suptitle(['Time = ', sprintf('%05.2f', relTimes(iVol)), ' sec after wind onset'])
-        end
-        
-        % Write frame to video
-        writeFrame = getframe(f);
-        writeVideo(myVid, writeFrame);
-    end
-    close(myVid)
-end
-
+fileName = 'Wind_Onset_Responses';
+make_heatmap_vid(windDffVols, myData, range, fileName, titleStrings, savePath, [], [], []);
+     
 
 %% CALCULATE MEAN dF/F ACROSS BEHAVIORAL STATES
 
 % Identify behavioral state during each volume
-runVols = zeros(myData.nTrials, myData.nVolumes); stoppedVols = runVols;
+actionVols = zeros(myData.nTrials, myData.nVolumes); stoppedVols = actionVols;
 for iTrial = 1:myData.nTrials
     if myData.goodTrials(iTrial)
         
@@ -412,47 +323,47 @@ for iTrial = 1:myData.nTrials
         volActions = currActions(volFrames);
         
         % Identify volume actions
-        locomotionLabel = 2; noActionLabel = 0;
-        runVols(iTrial, :) = (volActions == locomotionLabel); %--> [trial, vol]
-        stoppedVols(iTrial, :) = (volActions == noActionLabel); %--> [trial, vol]
+        locomotionLabel = 2; noActionLabel = 0; groomingLabel = 3; isoMovementLabel = 4;
+        actionVols(iTrial, :) = (volActions == locomotionLabel);    %--> [trial, vol]
+        stoppedVols(iTrial, :) = (volActions == noActionLabel);     %--> [trial, vol]
     else
         % So data from invalid trials won't ever be matched to an action state
-        runVols(iTrial, :) = 0;
+        actionVols(iTrial, :) = 0;
         stoppedVols(iTrial, :) = 0;
     end
 end
 
 % Calculate average values for each plane across behavioral states
-meanRunVols = [];
+meanActionVols = [];
 meanStoppedVols = [];
 imgData = myData.wholeSession;
 for iTrial = 1:myData.nTrials
-   currRunVols = logical(runVols(iTrial,:));
+   currActionVols = logical(actionVols(iTrial,:));
    currStoppedvols = logical(stoppedVols(iTrial,:));
    
    % Pull out running volumes, if any exist, from the current trial
-   if sum(currRunVols) > 0
-       meanRunVols(:,:,:,end+1) = mean(imgData(:,:,:,currRunVols,iTrial),4); %--> [x, y, plane, trial]
+   if sum(currActionVols) > 0
+       meanActionVols(:,:,:,end+1) = mean(imgData(:,:,:,currActionVols,iTrial),4);    %--> [x, y, plane, trial]
    end 
    
    % Pull out stopping volumes, if any exist, from the current trial
    if sum(currStoppedvols) > 0
-       meanStoppedVols(:,:,:,end+1) = mean(imgData(:,:,:,currStoppedvols,iTrial),4); %--> [x, y, plane, trial]
+       meanStoppedVols(:,:,:,end+1) = mean(imgData(:,:,:,currStoppedvols,iTrial),4);  %--> [x, y, plane, trial]
    end  
 end
-runMean = mean(meanRunVols, 4); %--> [x, y, plane] 
+actionMean = mean(meanActionVols, 4);   %--> [x, y, plane] 
 stoppedMean = mean(meanStoppedVols, 4); %--> [x, y, plane] 
 
-% Get dF/F values for running relative to quiescence
-runDff = (runMean - stoppedMean) ./ stoppedMean; % --> [x, y, plane]
+% Get dF/F values for action relative to quiescence
+actionDff = (actionMean - stoppedMean) ./ stoppedMean; % --> [x, y, plane]
 
     %% PLOT BEHAVIORAL STATE HEATMAPS FOR EACH PLANE
     
 % Calculate absolute max dF/F value across all planes and action states
-range = calc_range(runDff,[]);
+range = calc_range(actionDff,[]);
 
 % Plot figures
-[f, plotAxes] = plot_heatmaps(runDff, myData, range, {'dF/F - Locomotion vs. Quiescent'}, [], []);
+[~, ~] = plot_heatmaps(actionDff, myData, range, {'dF/F - Locomotion vs. Quiescent'}, [], []);
 
 
 %% CALCULATE MEAN dF/F AROUND LOCOMOTION ONSET
@@ -478,14 +389,14 @@ for iTrial = 1:myData.nTrials
         
         % Identify volume actions
         locomotionLabel = 2; noActionLabel = 0; legMoveLabel = 4;
-        runVols(iTrial, :) = (volActions(iTrial,:) == locomotionLabel);   % [trial, vol]
-        stoppedVols(iTrial, :) = (volActions(iTrial,:) == noActionLabel); % [trial, vol]
-        legMoveVols(iTrial, :) = (volActions(iTrial,:) == legMoveLabel);  % [trial, vol]
+        runVols(iTrial, :) = (volActions(iTrial,:) == locomotionLabel);       % [trial, vol]
+        stoppedVols(iTrial, :) = (volActions(iTrial,:) == noActionLabel);     % [trial, vol]
+        legMoveVols(iTrial, :) = (volActions(iTrial,:) == isoMovementLabel);  % [trial, vol]
         
-        % Find onsets of running bouts > 1 sec in duration and preceded by > 1 sec of quiescence
+        % Find onsets of running bouts >respLen volumes in duration and preceded by >baseLen volumes of quiescence
         baseLen = 12;
-        respLen = 12;
-        actionPattern = [zeros(1,baseLen), ones(1,respLen)*2];   % [0 0 0 0 0 0 0 2 2 2 2 2 2 2];
+        respLen = 30;
+        actionPattern = [zeros(1,baseLen), ones(1,respLen)*2];
         patternLen = length(actionPattern);
         currTrialOnsets = strfind(volActions(iTrial, :), actionPattern);
         onsetVols{iTrial} = currTrialOnsets;
@@ -514,101 +425,49 @@ for iTrial = 1:myData.nTrials
 end
 
 % Calculate dF/F before and after movment onset using pre-movement period as baseline
-onsetBaselines = onsetData(:,:,:, 1:baseLen,:);                            % --> [x, y, plane, onsetVolume, onsetNum]
+onsetBaselines = onsetData(:,:,:, 1:baseLen,:);                            % --> [x, y, plane, volume, onsetNum]
 onsetBaselineMean = mean(mean(onsetBaselines, 5), 4);                      % --> [x, y, plane]
-onsetBaselineMeanRep = repmat(onsetBaselineMean, 1, 1, 1, patternLen);     % --> [x, y, plane, onsetVolume]
-onsetMean = mean(onsetData, 5);                                            % --> [x, y, plane, onsetVolume]
-onsetDffVols = (onsetMean - onsetBaselineMeanRep) ./ onsetBaselineMeanRep; % --> [x, y, plane, onsetVolume]
+onsetBaselineMeanRep = repmat(onsetBaselineMean, 1, 1, 1, patternLen);     % --> [x, y, plane, volume]
+onsetMean = mean(onsetData, 5);                                            % --> [x, y, plane, volume]
+onsetDffVols = (onsetMean - onsetBaselineMeanRep) ./ onsetBaselineMeanRep; % --> [x, y, plane, volume]
 onsetMeanDff = mean(onsetDffVols, 4);                                      % --> [x, y, plane]
 
     %% PLOT MOVEMENT ONSET HEATMAPS FOR EACH PLANE
 
 % Calculate dF/F range
-rangeScalar = 0.75;
+rangeScalar = 1;
 range = calc_range(onsetMeanDff, rangeScalar);
 
 % Plot figures
-[f, plotAxes] = plot_heatmaps(onsetMeanDff, myData, range, {'dF/F - Locomotion onset'}, [], []);
+[~, ~] = plot_heatmaps(onsetMeanDff, myData, range, {'dF/F - Locomotion onset'}, [], []);
 
 
     %% CREATE VIDEO OF MEAN dF/F FOR EACH PLANE THROUGHOUT MOVEMENT ONSET
 
 % Calculate absolute max dF/F value across all planes and action states
-rangeScalar = 0.4;
+rangeScalar = 1;
 range = calc_range(onsetDffVols, rangeScalar);
 
-% Create save directory and open video writer
+% Calculate volume times in seconds relative to movement onset
+baselineVolTimes = -(1:size(onsetBaselines, 4))/myData.volumeRate;
+stimVolTimes = ((1:(size(onsetData, 4)-size(onsetBaselines,4)))/myData.volumeRate);
+relTimes = [baselineVolTimes(end:-1:1), stimVolTimes];
+
+% Generate titles for each volume
+titleStrings = {};
+for iVol = 1:size(onsetDffVols, 4)
+    if iVol <= size(onsetBaselines, 4);
+        titleStrings{iVol} = ['Time = ', sprintf('%05.2f', relTimes(iVol)), ' sec before movement onset'];
+    else
+        titleStrings{iVol} = ['Time = ', sprintf('%05.2f', relTimes(iVol)), ' sec after movement onset'];
+    end
+end
+
+% Create video
 savePath = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_0\Analysis'];
-fileName = 'Move_Onset_Responses_1_2';
-if ~isdir(savePath)
-    mkdir(savePath);
-end
+fileName = 'Move_Onset_Responses_2_5';
+make_heatmap_vid(onsetDffVols, myData, range, fileName, titleStrings, savePath, [], [], []);
 
-% Warn user and offer to cancel save if this will overwrite an existing file
-overwrite = 1;
-if exist(fullfile(savePath, [fileName, '.avi']), 'file') ~= 0
-    dlgAns = questdlg('Creating this video will overwrite one or more existing files in this directory...are you sure you want to do this?', 'Warning', 'Yes', 'No', 'No');
-    if strcmp(dlgAns, 'No')
-        overwrite = 0;
-        disp('Saving cancelled')
-    end
-end
-
-
-
-if overwrite
-    
-    % Calculate volume times in seconds relative to wind onset
-    baselineVolTimes = -(1:size(onsetBaselines, 4))/myData.volumeRate;
-    stimVolTimes = ((1:(size(onsetData, 4)-size(onsetBaselines,4)))/myData.volumeRate);
-    relTimes = [baselineVolTimes(end:-1:1), stimVolTimes];
-    
-    % Create video writer
-    myVid = VideoWriter(fullfile(savePath, fileName));
-    myVid.FrameRate = 5;
-    open(myVid)
-    
-    for iVol = 1:patternLen
-        
-        % Create fig
-        f = figure(iPlane); clf
-        f.Position = [50 45, 1620, 855];
-        
-        %     % Plot reference image for the current plane
-        %     ax1 = subplot(3,5,1);
-        %     imshow(myData.refImg{iPlane}, [0 myData.maxIntensity])
-        
-        for iPlane = myData.nPlanes:-1:1 % Plot planes from dorsal --> ventral
-            
-            % Plot dF/F for each plane
-            ax = subaxis(3, 4, iPlane, 'Spacing', 0, 'MB', 0.025);
-            imagesc(onsetDffVols(:, :, iPlane, iVol))
-            caxis(range)
-            colormap(ax, bluewhitered) %bluewhitered % 'parula'
-            axis equal
-            axis off
-            
-            % Label positions
-            if iPlane == myData.nPlanes
-                title('Ventral')
-            elseif iPlane == 1
-                title('Dorsal')
-            end
-        end
-        
-        % Add title above all subplots
-        if iVol <= baseLen
-            suptitle(['Time = ', sprintf('%05.2f', relTimes(iVol)), ' sec before movement onset'])
-        else
-            suptitle(['Time = ', sprintf('%05.2f', relTimes(iVol)), ' sec after movement onset'])
-        end
-        
-        % Write frame to video
-        writeFrame = getframe(f);
-        writeVideo(myVid, writeFrame);
-    end
-    close(myVid)
-end
 
     %% CREATE VIDEO OF dF/F FOR ALL INDIVIDUAL MOVEMENT BOUT ONSETS
 
@@ -846,166 +705,66 @@ close(myVid)
 
 %% CREATE VIDEO OF MEAN dF/F THROUGHOUT ENTIRE TRIAL
 
-%----------Calculate whole-trial dF/F using overall mean as baseline----------
+%++++++++++ Calculate whole-trial dF/F using overall mean as baseline ++++++++++
 
-% Separate out wind trials
-stimSepTrials = [];
-for iStim = 1:length(stimTypes)
-    stimSepTrials.(stimTypes{iStim}) = logical(cellfun(@(x) strcmp(x, stimTypes{iStim}), myData.trialType));  
-end 
-centerWindTrials = myData.wholeSession(:,:,:,:,stimSepTrials.CenterWind);                                   % --> [x, y, plane, volume, trial]   
-allWindTrials = myData.wholeSession(:,:,:,:,logical(stimSepTrials.CenterWind + stimSepTrials.RightWind));   % --> [x, y, plane, volume, trial]   
-nVols = size(allWindTrials, 4);
+allWindTrials = myData.wholeSession(:,:,:,:,logical(stimSepTrials.windTrials));   % --> [x, y, plane, volume, trial]   
 
 % Calculate dF/F using whole trial average as baseline
-baseline = mean(mean(allWindTrials, 5), 4);                 % --> [x, y, plane]
-baselineMeanRep = repmat(baseline, 1, 1, 1, nVols);         % --> [x, y, plane, volume]
-trialAvg = mean(allWindTrials, 5);                          % --> [x, y, plane, volume]
-trialDff = (trialAvg - baselineMeanRep) ./ baselineMeanRep; % --> [x, y, plane, volume]
+baseline = mean(mean(allWindTrials, 5), 4);                           % --> [x, y, plane]
+baselineMeanRep = repmat(baseline, 1, 1, 1, size(allWindTrials, 4));  % --> [x, y, plane, volume]
+trialAvg = mean(allWindTrials, 5);                                    % --> [x, y, plane, volume]
+wholeTrialDff = (trialAvg - baselineMeanRep) ./ baselineMeanRep;      % --> [x, y, plane, volume]
 
 % Calculate absolute max dF/F value across all planes and action states
-rangeScalar = 0.25;
-range = calc_range(trialDff, rangeScalar);
+rangeScalar = .3;
+range = calc_range(wholeTrialDff, rangeScalar);
 
 %----------Create video of dF/F for each plane throughout trial----------
 
-% Create save directory and open video writer
+% Add title above all subplots
+titleStrings = [];
+for iVol = 1:size(wholeTrialDff, 4)
+    if iVol <= stimStart * volumeRate
+        titleStr = 'Before wind onset';
+    elseif iVol <= stimEnd * volumeRate
+        titleStr = 'During wind stimulus';
+    else
+        titleStr = 'After wind stimulus';
+    end
+    titleStrings{iVol} = [titleStr, '  -  time = ', num2str(round(iVol./volumeRate, 1))];
+end
+
+% Create video
 savePath = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', myData.expDate, '\sid_0\Analysis'];
 fileName = 'Full_Trial_dFF';
-if ~isdir(savePath)
-    mkdir(savePath);
-end
+make_heatmap_vid(wholeTrialDff, myData, range, fileName, titleStrings, savePath, [], [], []);
 
-% Warn user and offer to cancel save if this will overwrite an existing file
-overwrite = 1;
-if exist(fullfile(savePath, [fileName, '.avi']), 'file') ~= 0
-    dlgAns = questdlg('Creating this video will overwrite one or more existing files in this directory...are you sure you want to do this?', 'Warning', 'Yes', 'No', 'No');
-    if strcmp(dlgAns, 'No')
-        overwrite = 0;
-        disp('Saving cancelled')
-    end
-end
-
-if overwrite
-    % Create video writer
-    myVid = VideoWriter(fullfile(savePath, fileName));
-    myVid.FrameRate = 7;
-    open(myVid)
-    
-    for iVol = 1:nVols
-        
-        % Create fig
-        f = figure(iPlane); clf
-        f.Position = [50 45, 1620, 855];
-        
-        for iPlane = myData.nPlanes:-1:1 % Planes going from dorsal --> ventral
-            
-            % Plot dF/F for each plane
-            ax = subaxis(3, 4, iPlane, 'Spacing', 0, 'MB', 0.025);
-            imagesc(trialDff(:, :, iPlane, iVol))
-            caxis(range)
-            colormap(ax, bluewhitered) %bluewhitered % 'parula'
-            axis equal
-            axis off
-            
-            % Label positions
-            if iPlane == myData.nPlanes
-                title('Ventral')
-            elseif iPlane == 1
-                title('Dorsal')
-            end
-        end
-        
-        % Add title above all subplots
-        if iVol <= stimStart * volumeRate
-            titleStr = 'Before wind onset';
-        elseif iVol <= stimEnd * volumeRate
-            titleStr = 'During wind stimulus';
-        else
-            titleStr = 'After wind stimulus';
-        end
-        suptitle([titleStr, '  -  time = ', num2str(round(iVol./volumeRate, 1))]);
-        
-        % Write frame to video
-        writeFrame = getframe(f);
-        writeVideo(myVid, writeFrame);
-    end%for
-    close(myVid)
-end%if
 %----------Create video of mean raw fluorescence signal throughout trial----------
 
 % Calculate range
 rangeScalar = 0.25;
 range = calc_range(trialAvg, rangeScalar);
 
-% Update file name
-fileName = 'Full_Trial_RawF';
-
-% Warn user and offer to cancel save if this will overwrite an existing file
-overwrite = 1;
-if exist(fullfile(savePath, [fileName, '.avi']), 'file') ~= 0
-    dlgAns = questdlg('Creating this video will overwrite one or more existing files in this directory...are you sure you want to do this?', 'Warning', 'Yes', 'No', 'No');
-    if strcmp(dlgAns, 'No')
-        overwrite = 0;
-        disp('Saving cancelled')
+% Add title above all subplots
+titleStrings = [];
+for iVol = 1:size(wholeTrialDff, 4)
+    if iVol <= stimStart * volumeRate
+        titleStr = 'Before wind onset';
+    elseif iVol <= stimEnd * volumeRate
+        titleStr = 'During wind stimulus';
+    else
+        titleStr = 'After wind stimulus';
     end
+    titleStrings{iVol} = [titleStr, '  -  time = ', num2str(round(iVol./volumeRate, 1))];
 end
 
-if overwrite
-    % Create video writer
-    myVid = VideoWriter(fullfile(savePath, fileName));
-    myVid.FrameRate = 7;
-    open(myVid)
-    
-    for iVol = 1:nVols
-        
-        % Create fig
-        f = figure(iPlane); clf
-        f.Position = [50 45, 1620, 855];
-        
-        for iPlane = myData.nPlanes:-1:1 % Planes going from dorsal --> ventral
-            
-            % Plot dF/F for each plane
-            ax = subaxis(3, 4, iPlane, 'Spacing', 0, 'MB', 0.025);
-            imagesc(trialAvg(:, :, iPlane, iVol))
-            caxis(range)
-            colormap(ax, 'bluewhitered') %bluewhitered % 'parula'
-            axis equal
-            axis off
-            
-            % Label positions
-            if iPlane == myData.nPlanes
-                title('Ventral')
-            elseif iPlane == 1
-                title('Dorsal')
-            end
-        end
-        
-        % Add title above all subplots
-        if iVol <= stimStart * volumeRate
-            titleStr = 'Before wind onset';
-        elseif iVol <= stimEnd * volumeRate
-            titleStr = 'During wind stimulus';
-        else
-            titleStr = 'After wind stimulus';
-        end
-        suptitle([titleStr, '  -  time = ', num2str(round(iVol./volumeRate, 1))]);
-        
-        % Write frame to video
-        writeFrame = getframe(f);
-        writeVideo(myVid, writeFrame);
-    end%for
-    close(myVid)
-end%if
+% Update file name and create video
+savePath = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', myData.expDate, '\sid_0\Analysis'];
+fileName = 'Full_Trial_RawF';
+make_heatmap_vid(trialAvg, myData, range, fileName, titleStrings, savePath, [], [], []);
 
 
 %% SEPARATE TRIALS BASED ON WHETHER FLY WAS MOVING DURING WIND STIM
-
-% Separate out wind trials
-for iStim = 1:length(stimTypes)
-    stimSepTrials.(stimTypes{iStim}) = logical(cellfun(@(x) strcmp(x, stimTypes{iStim}), myData.trialType));
-end
-stimSepTrials.windTrials = stimSepTrials.CenterWind + stimSepTrials.RightWind;
 
 %---------- Identify behavioral state during each volume ----------
 volActions = zeros(myData.nTrials, myData.nVolumes);
@@ -1048,7 +807,7 @@ for iTrial = 1:myData.nTrials
     end        
 end
 
-% Separate trials
+% Separate trials 
 trialConditions = [preStimMove, stimMove.*3, stimSepTrials.windTrials'.*5];
 windNoMove = (sum(trialConditions,2) == 5);
 windStartMove = (sum(trialConditions,2) == 8);
@@ -1088,14 +847,14 @@ dffAvg(isinf(dffAvg)) = 0;
  %% PLOT WIND STIM ONSET RESPONSE HEATMAPS FOR SOME TRIAL CONDITIONS
     
 % Calculate absolute max dF/F value across all planes and stim types
-currConds = [2 5 6];
-rangeScalar = 0.25;
+currConds = [1 2 5];
+rangeScalar = 1;
 dffConds = reshape(dffAvg(:,:,:,currConds), [1 numel(dffAvg(:,:,:,currConds))]);
 range = calc_range(dffConds, rangeScalar);
 
 % Plot figures
 dffCurrConds = dffAvg(:,:,:,currConds);
-[f, plotAxes] = plot_heatmaps(dffCurrConds, myData, range, trialCondNames, [], []);
+[f, plotAxes] = plot_heatmaps(dffCurrConds, myData, range, trialCondNames(currConds), [], []);
 
 
 
@@ -1104,7 +863,7 @@ dffCurrConds = dffAvg(:,:,:,currConds);
 
 baselineDur = 2;
 responseDur = 4;
-planeNum = 4;
+planeNum = 6;
 
 % WIND RESPONSE DATA
 stimSepTrials = [];
@@ -1185,11 +944,11 @@ for iTrial = 1:myData.nTrials
 end
 
 % Calculate dF/F before and after movment onset using pre-movement period as baseline
-onsetBaselines = onsetData(:,:,:, 1:baseLen,:);                            % --> [x, y, plane, onsetVolume, onsetNum]
+onsetBaselines = onsetData(:,:,:, 1:baseLen,:);                            % --> [x, y, plane, volume, onsetNum]
 onsetBaselineMean = mean(mean(onsetBaselines, 5), 4);                      % --> [x, y, plane]
-onsetBaselineMeanRep = repmat(onsetBaselineMean, 1, 1, 1, patternLen);     % --> [x, y, plane, onsetVolume]
-onsetMean = mean(onsetData, 5);                                            % --> [x, y, plane, onsetVolume]
-onsetDffVols = (onsetMean - onsetBaselineMeanRep) ./ onsetBaselineMeanRep; % --> [x, y, plane, onsetVolume]
+onsetBaselineMeanRep = repmat(onsetBaselineMean, 1, 1, 1, patternLen);     % --> [x, y, plane, volume]
+onsetMean = mean(onsetData, 5);                                            % --> [x, y, plane, volume]
+onsetDffVols = (onsetMean - onsetBaselineMeanRep) ./ onsetBaselineMeanRep; % --> [x, y, plane, volume]
 onsetMeanDff = mean(onsetDffVols, 4);                                      % --> [x, y, plane]
 
 
@@ -1199,7 +958,7 @@ onsetMeanDff = mean(onsetDffVols, 4);                                      % -->
 windRange = calc_range(windDffVols, []);
 moveRange = calc_range(onsetDffVols,[]);
 
-% Create save directory and open video writer
+% Create save directory if necessary
 savePath = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_0\Analysis'];
 fileName = ['CombinedResponses_Plane_', num2str(planeNum)];
 if ~isdir(savePath)
@@ -1282,19 +1041,95 @@ if overwrite
         titleText.Position = [0.45 0.3];
         titleText.FontSize = 16;
         
-%         % Add title above all subplots
-%         if iVol <= size(baselineVols, 4)
-%             suptitle(['Time = ', sprintf('%05.2f', relTimes(iVol))])
-%         else
-%             suptitle(['Time = ', sprintf('%05.2f', relTimes(iVol))])
-%         end
-        
         % Write frame to video
         writeFrame = getframe(f);
         writeVideo(myVid, writeFrame);
     end
     close(myVid)
 end
+
+%% PCA
+
+% Need rows = volumes and columns = pixels (linearized)
+
+windTrials = myData.wholeSession(:,:,:,:,logical(stimSepTrials.windTrials));   % --> [x, y, plane, volume, trial]
+%%
+
+
+% Pull out data for one plane
+planeNum = 11;
+planeData = squeeze(windTrials(:,:,planeNum,:,:)); % --> [x, y, volume, trial]
+[w,x,y,z] = size(planeData);
+planeDataRS = reshape(planeData, [w, x, y*z]); % --> [x, y, volume]
+
+
+pcaData = mean(squeeze(myData.wholeSession(:,:,planeNum,:,:)),4); % --> [x, y, volume]
+[n,m,d] = size(pcaData);
+data2D = double(reshape(pcaData, [(n*m), d])); % --> [pixel, volume]
+
+tData2D = data2D'; % --> [volume, pixel]
+
+[coeff, score, latent, ~, explained] = pca(tData2D);
+
+figure(1);clf;plot(explained(1:10))
+
+coeffReshaped = reshape(coeff, [n, m, d-1]);
+
+figure(2); clf;
+subplot(2,2,1)
+imshow(mean(pcaData,3),[0 myData.maxIntensity])
+colormap(gca, 'gray')
+% colormap('parula')
+for iPlot = 2:4
+    subplot(2, 2, iPlot); imagesc(coeffReshaped(:,:,iPlot-1));
+    colormap(gca, 'bluewhitered')
+end
+
+figure(3); clf;
+subplot(2,2,1)
+for iPlot = 1:4
+    subplot(2, 2, iPlot); imagesc(coeffReshaped(:,:,iPlot+3));
+    colormap(gca, 'bluewhitered')
+end
+
+%% ICA
+
+icaData = tData2D;
+nIC = 3;
+[icasig, A, W] = fastica(icaData, 'numOfIC', nIC);
+
+output = W * icaData;
+% icasig = output;
+
+icasigReshaped = reshape(icasig', [n, m, nIC]);
+
+% imagesc(icasigReshaped(:,:,6))
+
+figure(4); clf;
+subplot(2,2,1)
+imshow(mean(pcaData,3),[0 myData.maxIntensity])
+colormap(gca, 'gray')
+colormap('parula')
+for iPlot = 2:4
+    subplot(2, 2, iPlot); imagesc(icasigReshaped(:,:,iPlot-1));
+end
+
+figure(5); clf;
+subplot(2,2,1)
+% colormap(gca, 'gray')
+for iPlot = 1:4
+   
+    subplot(2, 2, iPlot); imagesc(icasigReshaped(:,:,iPlot+3));
+%      colormap(gca, 'gray')
+end
+
+
+
+
+
+
+
+
 
 
 

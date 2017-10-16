@@ -85,7 +85,7 @@ if overwrite
     for iVol = 1:nVols
         
         % Create fig
-        f = figure(1); clf
+        f = figure(523); clf % Choosing a weird number so it doesn't overwrite my GUI or other figs
         f.Position = figPos;
         
         % Figure out how many subplots are needed
@@ -115,9 +115,8 @@ if overwrite
         % Write frame to video
         writeFrame = getframe(f);
         writeVideo(myVid, writeFrame);
-
     end%iVol
-    
+    close(f);
 end%if
 close(myVid);
 end%function

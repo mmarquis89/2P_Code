@@ -1,27 +1,31 @@
-function single_plane_heatmap_vid(dataArr, planeNum, infoStruct, cLimRanges, fileName, saveDir, plotTitles, volTitles, frameRate, figPos, cMapName)
+function single_plane_heatmap_vid(dataArr, planeNum, infoStruct, cLimRanges, fileName, saveDir, plotTitles, volTitles, figPos, cMapName, frameRate)
 %========================================================================================================================
 % CREATE VIDEO OF MULTIPLE dF/F HEATMAP RESPONSES IN A SINGLE PLANE
 % 
-% Creates a .avi video from a figure broken into a grid of subplots, one for each imaging plane. Each subplot will 
+% Creates a .avi video from a figure broken into a grid of subplots, one for each stimulus type. Each subplot will 
 % contain a dF/F heatmap that will be displayed in the video over a number of volumes. The figure can optionally have a 
 % title at the top which can change with every volume/frame.
 % 
 % INPUTS:
-%       plotData    =  a 4-D numeric array with dims [x, y, plane, volume] containing the dF/F data. The "volume" 
-%                     dimension will determine how many frames long the video is.
+%       dataArr     =  a 4-D numeric array with dims [x, y, volume, stimType] containing the dF/F data. The "volume" 
+%                      dimension will determine how many frames long the video is.
+%
+%       planeNum    =  the number of the imaging plane to use for the video
 %
 %       infoStruct  =  the main imaging data structure containing metadata for the experiment. Specifically, must contain 
-%                     the fields "nPlanes" and "volumeRate".
+%                     the fields "refImg", "maxIntensity" and "volumeRate".
 %
-%       cLimRange   =  a two-element vector [min max] to set the colormap bounds.
+%       cLimRanges  =  an n x 2 vector where each row is in the form [min max] to set the colormap bounds for one plot.
 %
 %       fileName    =  a string containing the name of the output video file.
 %
-%       titleStings =  a cell array of strings with length == nVols. Each cell will be used as the title for a single 
-%                      video frame. 
-%
 %       saveDir     =  <OPTIONAL> the directory to save the video file in. Pass [] to generate a popup folder selection 
 %                      box instead.
+%
+%       plotTitles  =  <OPTIONAL> a cell array of strings with length = nStimTypes. Each cell will be the title for a single plot. 
+%
+%       volTitles  =   <OPTIONAL> a cell array of strings with length == nVols. Each cell will be used as the title for a single 
+%                      video frame. 
 %
 %       figPos      =  <OPTIONAL> position values [x y width height] for the figure window. Pass [] 
 %                     to use the default figPos of [50 45 1800 950]
@@ -65,7 +69,7 @@ if isempty(volTitles)
     volTitles = cell(1, nVols);
 end
 if isempty(plotTitles)
-    plotTitles = cell(1, size(dataArr, 5));
+    plotTitles = cell(1, size(dataArr, 4));
 end
 
 % Warn user and offer to cancel save if this video will overwrite an existing file
@@ -81,17 +85,17 @@ end
 if overwrite
     
     % Create video writer
-    myVid = VideoWriter(fullfile(savePath, fileName));
+    myVid = VideoWriter(fullfile(saveDir, fileName));
     myVid.FrameRate = frameRate;
     open(myVid)
     
     % Figure out how many subplots are needed
-    nAxes = numSubPlots(size(dataArr, 5) + 1);
+    nAxes = numSubplots(size(dataArr, 4) + 1);
     
-    for iVol = 1:size(dataArr, 4)
+    for iVol = 1:size(dataArr, 3)
         
         % Create figure
-        f = figure(1); clf
+        f = figure(652); clf % Choosing arbitrary large number so it doesn't overwrite other figs or the GUI
         f.Position = figPos;
         
         % Plot reference image for the appropriate plane in first subplot
@@ -99,10 +103,10 @@ if overwrite
         imshow(infoStruct.refImg{planeNum}, [0 infoStruct.maxIntensity]);
         
         % Plot each dF/F heatmap
-        for iPlot = 1:size(dataArr, 5)
+        for iPlot = 1:size(dataArr, 4)
             
-            plotAxes{iPlot + 1} = subaxis(subaxis(nAxes(1), nAxes(2), iPlot+1, 'Spacing', 0.01, 'MB', 0.025);
-            imagesc(dataArr(:, :, planeNum, iVol, iPlot))
+            plotAxes{iPlot + 1} = subaxis(nAxes(1), nAxes(2), iPlot+1, 'Spacing', 0.01, 'MB', 0.025);
+            imagesc(dataArr(:, :, iVol, iPlot))
             caxis(cLimRanges(iPlot, :));
             colormap(plotAxes{iPlot + 1}, cMapName);
             axis equal; axis off;
@@ -118,6 +122,7 @@ if overwrite
         writeVideo(myVid, writeFrame);
         
     end%iVol
+    close(f)
     close(myVid)
 end%if
 end%function

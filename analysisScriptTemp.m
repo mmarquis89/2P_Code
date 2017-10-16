@@ -953,100 +953,100 @@ onsetMeanDff = mean(onsetDffVols, 4);                                      % -->
 
 
 
-%% MAKE COMBINED VIDEO
-% Calculate dF/F ranges
-windRange = calc_range(windDffVols, []);
-moveRange = calc_range(onsetDffVols,[]);
+    %% MAKE COMBINED VIDEO
+    % Calculate dF/F ranges
+    windRange = calc_range(windDffVols, []);
+    moveRange = calc_range(onsetDffVols,[]);
 
-% Create save directory if necessary
-savePath = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_0\Analysis'];
-fileName = ['CombinedResponses_Plane_', num2str(planeNum)];
-if ~isdir(savePath)
-    mkdir(savePath);
-end
-
-% Warn user and offer to cancel save if this will overwrite an existing file
- overwrite = 1;
-if exist(fullfile(savePath, [fileName, '.avi']), 'file') ~= 0
-    dlgAns = questdlg('Creating this video will overwrite one or more existing files in this directory...are you sure you want to do this?', 'Warning', 'Yes', 'No', 'No');
-    if strcmp(dlgAns, 'No')
-        overwrite = 0;
-        disp('Saving cancelled')
+    % Create save directory if necessary
+    savePath = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_0\Analysis'];
+    fileName = ['CombinedResponses_Plane_', num2str(planeNum)];
+    if ~isdir(savePath)
+        mkdir(savePath);
     end
-end
 
-if overwrite
-    
-    % Calculate volume times in seconds relative to wind onset
-    baselineVolTimes = -(1:size(baselineVols, 4))/myData.volumeRate;
-    stimVolTimes = ((1:(size(stimVols, 4)-size(baselineVols,4)))/myData.volumeRate);
-    relTimes = [baselineVolTimes(end:-1:1), stimVolTimes];
-    
-    % Create video writer
-    myVid = VideoWriter(fullfile(savePath, fileName));
-    myVid.FrameRate = 7;
-    open(myVid)
-    
-    for iVol = 1:nVols
-        
-        % Create figure
-        f = figure(1); clf
-        f.Position = [50 45, 1620, 950];
-        
-        % Plot reference image for the current plane
-        ax1 = subaxis(2,2,1, 'Spacing', 0.01, 'MB', 0.025);
-        imshow(myData.refImg{planeNum}, [0 myData.maxIntensity])
-        
-        % Plot wind dF/F
-        ax2 = subaxis(2, 2, 3, 'Spacing', 0.01, 'MB', 0.025);
-        imagesc(windDffVols(:, :, planeNum, iVol))
-        caxis(windRange)
-        colormap(ax2, bluewhitered) %bluewhitered % 'parula'
-        axis equal
-        axis off
-        
-        textAx = axes();
-        textAx.Position = [0.14 0.42 0.2 0.1];
-        textAx.Visible = 'Off';
-        txt = text();
-        txt.String = 'Wind Onset';
-        txt.Units = 'Normalized';
-        txt.Position = [0.6 0.12];
-        txt.FontSize = 16;
-        
-        % Plot movement dF/F
-        ax3 = subaxis(2, 2, 4, 'Spacing', 0.01, 'MB', 0.025);
-        imagesc(onsetDffVols(:, :, planeNum, iVol))
-        caxis(moveRange)
-        colormap(ax3, bluewhitered) %bluewhitered % 'parula'
-        axis equal
-        axis off
-        
-        textAx2 = axes();
-        textAx2.Position = [0.565 0.40 0.2 0.1];
-        textAx2.Visible = 'Off';
-        txt2 = text();
-        txt2.String = 'Movement Onset';
-        txt2.Units = 'Normalized';
-        txt2.Position = [0.45 0.3];
-        txt2.FontSize = 16;
-        
-        % Display time relative to wind/movment onset
-        titleTextAx = axes();
-        titleTextAx.Position = [0.38 0.40 0.2 0.1];
-        titleTextAx.Visible = 'Off';
-        titleText = text();
-        titleText.String = ['Time = ', sprintf('%04.2f', relTimes(iVol))];
-        titleText.Units = 'Normalized';
-        titleText.Position = [0.45 0.3];
-        titleText.FontSize = 16;
-        
-        % Write frame to video
-        writeFrame = getframe(f);
-        writeVideo(myVid, writeFrame);
+    % Warn user and offer to cancel save if this will overwrite an existing file
+     overwrite = 1;
+    if exist(fullfile(savePath, [fileName, '.avi']), 'file') ~= 0
+        dlgAns = questdlg('Creating this video will overwrite one or more existing files in this directory...are you sure you want to do this?', 'Warning', 'Yes', 'No', 'No');
+        if strcmp(dlgAns, 'No')
+            overwrite = 0;
+            disp('Saving cancelled')
+        end
     end
-    close(myVid)
-end
+
+    if overwrite
+
+        % Calculate volume times in seconds relative to wind onset
+        baselineVolTimes = -(1:size(baselineVols, 4))/myData.volumeRate;
+        stimVolTimes = ((1:(size(stimVols, 4)-size(baselineVols,4)))/myData.volumeRate);
+        relTimes = [baselineVolTimes(end:-1:1), stimVolTimes];
+
+        % Create video writer
+        myVid = VideoWriter(fullfile(savePath, fileName));
+        myVid.FrameRate = 7;
+        open(myVid)
+
+        for iVol = 1:nVols
+
+            % Create figure
+            f = figure(1); clf
+            f.Position = [50 45, 1620, 950];
+
+            % Plot reference image for the current plane
+            ax1 = subaxis(2,2,1, 'Spacing', 0.01, 'MB', 0.025);
+            imshow(myData.refImg{planeNum}, [0 myData.maxIntensity])
+
+            % Plot wind dF/F
+            ax2 = subaxis(2, 2, 3, 'Spacing', 0.01, 'MB', 0.025);
+            imagesc(windDffVols(:, :, planeNum, iVol))
+            caxis(windRange)
+            colormap(ax2, bluewhitered) %bluewhitered % 'parula'
+            axis equal
+            axis off
+
+            textAx = axes();
+            textAx.Position = [0.14 0.42 0.2 0.1];
+            textAx.Visible = 'Off';
+            txt = text();
+            txt.String = 'Wind Onset';
+            txt.Units = 'Normalized';
+            txt.Position = [0.6 0.12];
+            txt.FontSize = 16;
+
+            % Plot movement dF/F
+            ax3 = subaxis(2, 2, 4, 'Spacing', 0.01, 'MB', 0.025);
+            imagesc(onsetDffVols(:, :, planeNum, iVol))
+            caxis(moveRange)
+            colormap(ax3, bluewhitered) %bluewhitered % 'parula'
+            axis equal
+            axis off
+
+            textAx2 = axes();
+            textAx2.Position = [0.565 0.40 0.2 0.1];
+            textAx2.Visible = 'Off';
+            txt2 = text();
+            txt2.String = 'Movement Onset';
+            txt2.Units = 'Normalized';
+            txt2.Position = [0.45 0.3];
+            txt2.FontSize = 16;
+
+            % Display time relative to wind/movment onset
+            titleTextAx = axes();
+            titleTextAx.Position = [0.38 0.40 0.2 0.1];
+            titleTextAx.Visible = 'Off';
+            titleText = text();
+            titleText.String = ['Time = ', sprintf('%04.2f', relTimes(iVol))];
+            titleText.Units = 'Normalized';
+            titleText.Position = [0.45 0.3];
+            titleText.FontSize = 16;
+
+            % Write frame to video
+            writeFrame = getframe(f);
+            writeVideo(myVid, writeFrame);
+        end
+        close(myVid)
+    end
 
 %% PCA
 

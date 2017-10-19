@@ -4,9 +4,9 @@ function dffData = calc_dFF(respData, baselineData)
 % averaged across volumes to get a steady baseline. 
 %
 % INPUTS:
-%       respData = data from the response period of form [x, y, plane, volume, trial]
+%       respData = data from the period you want to get dF/F for, as: [x, y, plane, volume, trial]
 %
-%       baselineData = data in the same format, but from the baseline period
+%       baselineData = data in the same format, but from the baseline period only
 %
 % OUTPUTS:
 %       dffData = trial-averaged dF/F data of form [x, y, plane, volume]

@@ -25,9 +25,9 @@ if ~isempty(myData) % Abort initialization if no data was loaded
     stimTypes = myData.stimTypes;
     
     % Create global/hardcoded variables
-    myData.maxIntensity = 1800; maxIntensity = myData.maxIntensity; % To control brightness of ref images
+    myData.maxIntensity = 2000; maxIntensity = myData.maxIntensity; % To control brightness of ref images
     myData.volumeRate = 6.5; volumeRate = myData.volumeRate;
-    myData.trialDuration = 16; trialDuration = myData.trialDuration;
+    myData.trialDuration = 15; trialDuration = myData.trialDuration;
     myData.stimDuration = [4 trialDuration-7]; stimDuration = myData.stimDuration; % [stim start time, stim length] in seconds
     myData.stimStart = myData.stimDuration(1); stimStart = myData.stimStart;
     myData.stimEnd = sum(myData.stimDuration); stimEnd = myData.stimEnd;
@@ -244,6 +244,16 @@ end%if
             'Plot stim trials vs. control trials', 'Units', 'Normalized', 'Tag', 'stimControlRadio', ...
             'Position', [0.05, 0.2, 0.95, 0.2], 'FontSize', 12);
         
+        % Create onset/offset toggle button group
+        stimAlignmentButtonGroup = uibuttongroup(stimRespParams, 'Position', [0.40 0.8 0.18 0.15], ...
+            'Tag', 'stimAlignmentButtonGroup');
+        stimOnsetRadio = uicontrol(stimAlignmentButtonGroup, 'Style', 'radiobutton', 'String', ...
+            'Align analysis to stim onset', 'Units', 'Normalized', 'Tag', 'stimOnsetRadio', ...
+            'Position', [0.05 0.6 0.95 0.2], 'FontSize', 12);
+        stimOffsetRadio = uicontrol(stimAlignmentButtonGroup, 'Style', 'radiobutton', 'String', ...
+            'Align analysis to stim offset', 'Units', 'Normalized', 'Tag', 'stimOffsetRadio', ...
+            'Position', [0.05, 0.2, 0.95, 0.2], 'FontSize', 12);
+        
         % Create baseline and response duration text boxes and labels
         baselineDurBox_stim = uicontrol(stimRespParams, 'Units', 'Normalized', 'Style', 'edit', ...
             'Position', [0.33 0.89 0.025 0.05], 'FontSize', 12, 'Tag', 'baselineDurBox_stim');
@@ -302,6 +312,17 @@ end%if
             'Plot locomotion vs. quiescence trials', 'Units', 'Normalized', 'Tag', 'behavBinaryRadio', ...
             'Position', [0.05, 0.2, 0.95, 0.2], 'FontSize', 12);
         
+        % Create behav onset/offset toggle button group
+        behavAlignmentButtonGroup = uibuttongroup(behavRespParams, 'Position', [0.40 0.8 0.18 0.15], ...
+            'Tag', 'behavAlignmentButtonGroup');
+        behavOnsetRadio = uicontrol(behavAlignmentButtonGroup, 'Style', 'radiobutton', 'String', ...
+            'Align analysis to behavior onset', 'Units', 'Normalized', 'Tag', 'behavOnsetRadio', ...
+            'Position', [0.05 0.6 0.95 0.2], 'FontSize', 12);
+        behavOffsetRadio = uicontrol(behavAlignmentButtonGroup, 'Style', 'radiobutton', 'String', ...
+            'Align analysis to behavior offset', 'Units', 'Normalized', 'Tag', 'behavOffsetRadio', ...
+            'Position', [0.05, 0.2, 0.95, 0.2], 'FontSize', 12);
+        
+        
         % Create baseline and response duration text boxes and labels
         baselineDurBox_behav = uicontrol(behavRespParams, 'Units', 'Normalized', 'Style', 'edit', ...
             'Position', [0.33 0.89 0.025 0.05], 'FontSize', 12, 'Tag', 'baselineDurBox_behav');
@@ -349,8 +370,18 @@ end%if
         
         % Find parameter objects
         stimTypeButtonGroup = findobj('Tag', 'stimTypeButtonGroup');
+        stimAlignmentButtonGroup = findobj('Tag', 'stimAlignmentButtonGroup');
         baselineDurBox_stim = findobj('Tag', 'baselineDurBox_stim');
         respDurBox_stim = findobj('Tag', 'respDurBox_stim');
+        combineStimTrials = ~strcmp(stimTypeButtonGroup.SelectedObject.Tag, 'trialTypeRadio');
+        offsetAlign = strcmp(stimAlignmentButtonGroup.SelectedObject.Tag, 'stimOffsetRadio');
+        
+        % Set alignment time to onset or offset as appropriate
+        if offsetAlign
+            onsetTime = stimEnd;
+        else
+            onsetTime = stimStart;
+        end
         
         % Delete previous dF/F heatmap tab if it exists
         if ~isempty(findobj('Tag', 'stimHeatmapsTab'))
@@ -374,9 +405,10 @@ end%if
                 'Callback', {@heatmapSaveButton_Callback}, 'Tag', 'stimHeatmapSaveButton');
             
             %----- Calculate mean dF/F for baseline and response periods -----
-                        
+            
+            disp('Plotting dF/F heatmaps...')
+            
             % Divide data into different stim types
-            combineStimTrials = ~strcmp(stimTypeButtonGroup.SelectedObject.Tag, 'trialTypeRadio');
             stimTypeData = sep_stim_types(myData, combineStimTrials); % --> [x, y, plane, volume, trial, stimType]
             
             % Pull out volumes from the baseline and response periods
@@ -387,11 +419,11 @@ end%if
             stimTypeDff = [];
             for iStim = 1:size(stimTypeData)
                 currStimData = stimTypeData{iStim};
-                [~, baselineData, stimData] = extract_target_volumes(currStimData, myData, baselineDurSec, respDurSec); % --> [x, y, plane, volume, trial]
-                stimAvg = squeeze(mean(mean(stimData, 5), 4));                                                          % --> [x, y, plane]
-                baselineAvg = squeeze(mean(mean(baselineData, 5), 4));                                                  % --> [x, y, plane]
-                currStimDff = (stimAvg - baselineAvg) ./ baselineAvg;                                                   % --> [x, y, plane]
-                stimTypeDff(:,:,:, iStim) = currStimDff;                                                                % --> [x, y, plane, stimType]
+                [~, baselineData, respData] = extract_target_volumes(currStimData, onsetTime, volumeRate, baselineDurSec, respDurSec);  % --> [x, y, plane, volume, trial]
+                respAvg = squeeze(mean(mean(respData, 5), 4));                                                                          % --> [x, y, plane]
+                baselineAvg = squeeze(mean(mean(baselineData, 5), 4));                                                                  % --> [x, y, plane]
+                currStimDff = (respAvg - baselineAvg) ./ baselineAvg;                                                                   % --> [x, y, plane]
+                stimTypeDff(:,:,:, iStim) = currStimDff;                                                                                % --> [x, y, plane, stimType]
             end
             
             % Calculate absolute max dF/F value across all planes and stim types
@@ -438,10 +470,10 @@ end%if
                     for iPlane = 1:nPlanes
                         currAxes = allPlanesAxes{iPlane};
                         axes(currAxes);
-                        axis image; hold on
                         allPlanesHeatmapPlots{iPlane} = imagesc(stimTypeDff(:,:,iPlane, 1));
                         caxis(range);
                         colormap(currAxes, 'bluewhitered');
+                        colorbar;
                         axis image; axis off;
                         currAxes.Title.String = ['Plane #' num2str(iPlane)];
                         currAxes.Tag = ['Plane #' num2str(iPlane)];
@@ -486,7 +518,12 @@ end%if
                     stimHeatmapAxes{1} = axes(stimHeatmapSubtabs{iTab}, 'Units', 'Normalized', ...
                         'Position', axesPosSort(1,:), 'Tag', 'heatmapRefImg');
                     imshow(myData.refImg{jTab}, [0 maxIntensity]);
-                    title(['Baseline duration = ', baselineDurBox_stim.String, ',  Response duration = ', respDurBox_stim.String])
+                    if offsetAlign
+                        alignStr = 'offset';
+                    else
+                        alignStr = 'onset';
+                    end
+                    title(['Aligned to stim ', alignStr, ':  Baseline duration = ', baselineDurBox_stim.String, ',  Response duration = ', respDurBox_stim.String])
                     stimHeatmapAxes{1}.Tag = 'heatmapRefImg';
                     
                     % Plot dF/F heatmaps for each of the trial types in the other axes
@@ -507,10 +544,13 @@ end%if
                     end
                 end%if
             end%for
+            disp('Plotting complete')
         end
     end%function
 %---------------------------------------------------------------------------------------------------
     function plotBehavHeatmapsButton_Callback(~,~)
+        
+        disp('Plotting behavior dF/F heatmaps')
         
         % Find parameter object
         behavTypeButtonGroup = findobj('Tag', 'behavTypeButtonGroup');
@@ -536,21 +576,26 @@ end%if
         % Identify behavioral state during each volume
         behaviorVols = match_behavior_annotations(myData); %--> [trial, behavior, volume]
         
-        
         %----- Calculate average dF/F values for each plane across behavioral states -----
-            meanBehavVols = [];
+        
             imgData = myData.wholeSession; %--> [x, y, plane, volume, trial]
+            
+            % Preallocate for speed
+            dataSize = size(imgData);
+            meanBehavVols = nan([dataSize([1:3, 5]), size(behaviorVols, 2)]);
             for iTrial = 1:nTrials
+                
+                disp(['Trial ', num2str(iTrial), ' of ', num2str(nTrials)])
                 
                 % Pull out behavior volumes, if any exist, from the current trial
                 currBehaviorVols = logical(squeeze(behaviorVols(iTrial,:,:))); % --> [behavior, volume]
                 for iBehav = 1:size(behaviorVols, 2)
                     if sum(currBehaviorVols(iBehav, :)) > 0
-                        meanBehavVols(:,:,:,end+1,iBehav) = mean(imgData(:,:,:,currBehaviorVols(iBehav,:), iTrial), 4); %--> [x, y, plane, trial, behavior]
+                        meanBehavVols(:,:,:,iTrial,iBehav) = mean(imgData(:,:,:,currBehaviorVols(iBehav,:), iTrial), 4); %--> [x, y, plane, trial, behavior]
                     end
                 end
             end
-            behaviorMean = squeeze(mean(meanBehavVols, 4)); %--> [x, y, plane, behavior]
+            behaviorMean = squeeze(nanmean(meanBehavVols, 4)); %--> [x, y, plane, behavior]
             
             % Drop any behaviors that never ocurred
             behaviorLabels = myData.behaviorLabels;
@@ -595,12 +640,15 @@ end%if
                     
                     % Place axes in correct locations
                     allPlanesAxes = [];
+                    test = []; count = 1;
                     for yDim = 1:subplotDim2
                         for xDim = 1:subplotDim1
                             xPos = (xDim * padSize) + ((xDim-1) * axWidth);
                             yPos = (yDim * padSize) + ((yDim-1) * axHeight);
                             allPlanesAxes{yDim, xDim} = axes(behavHeatmapSubtabs{1}, 'Units', 'Normalized', ...
                                 'Position', [xPos, yPos, axWidth, axHeight]);
+                            test(yDim,xDim) = count;
+                            count = count + 1;
                         end
                     end
                     
@@ -612,10 +660,10 @@ end%if
                     for iPlane = 1:nPlanes
                         currAxes = allPlanesAxes{iPlane};
                         axes(currAxes);
-                        axis image; hold on
                         allPlanesHeatmapPlots{iPlane} = imagesc(behaviorDff(:,:, iPlane, locomotionPos));
                         caxis(ranges(locomotionPos, :));
                         colormap(currAxes, 'bluewhitered');
+                        colorbar;
                         axis image; axis off;
                         currAxes.Title.String = ['Plane #' num2str(iPlane)];
                         currAxes.Tag = ['Plane #' num2str(iPlane)];
@@ -668,9 +716,9 @@ end%if
                     
                     % Plot dF/F heatmaps for each of the trial types in the other axes
                     if combineBehavTrials
-                        actionDff = behaviorDff(:,:,:,locomotionPos);
+                        actionDff = behaviorDff(:,:,:,locomotionPos);  %--> [x, y, plane, behavior]
                     else
-                        actionDff = behaviorDff(:,:,:,~quiescencePos);
+                        actionDff = behaviorDff(:,:,:,~quiescencePos); %--> [x, y, plane, behavior]
                         actionLabels = behaviorLabels(~quiescencePos);
                     end
                     for iBehav = 1:size(actionDff, 4)
@@ -690,6 +738,7 @@ end%if
                     
                 end%if
             end%for
+            disp('Plotting complete')
     end%function
 %---------------------------------------------------------------------------------------------------
     function plotROIstimResponsesButton_Callback(~,~)
@@ -700,8 +749,18 @@ end%if
             
             % Find parameter objects
             stimTypeButtonGroup = findobj('Tag', 'stimTypeButtonGroup');
+            stimAlignmentButtonGroup = findobj('Tag', 'stimAlignmentButtonGroup');
             baselineDurBox_stim = findobj('Tag', 'baselineDurBox_stim');
             respDurBox_stim = findobj('Tag', 'respDurBox_stim');
+            offsetAlign = strcmp(stimAlignmentButtonGroup.SelectedObject.Tag, 'stimOffsetRadio');
+            combineStimTrials = ~strcmp(stimTypeButtonGroup.SelectedObject.Tag, 'trialTypeRadio');
+            
+            % Set alignment time to onset or offset as appropriate
+            if offsetAlign
+                onsetTime = stimEnd;
+            else
+                onsetTime = stimStart;
+            end
             
             % Delete previous ROI stim plotting tab if it exists
             if ~isempty(findobj('Tag', 'stimROITab'))
@@ -725,6 +784,8 @@ end%if
             stimROItabs = []; dffAxes = []; refImgAxes = []; dffRefImages = []; dffROIplots = []; dffROItext = []; dffAxes = []; dffCaptures = [];
             for iROI = 1:length(myData.ROIs.plots)
                 
+                disp(['Plotting ROI #', num2str(iROI), ' of ', num2str(length(myData.ROIs.plots))]);
+                    
                 % Create new tab for current ROI
                 stimROItabs{iROI} = uitab(stimROISubtabGroup, 'Title', ['ROI #', num2str(iROI)]);
                 stimROItabs{iROI}.Tag = ['ROI #', num2str(iROI)];
@@ -732,7 +793,6 @@ end%if
                 %----- Calculate mean dF/F for baseline and response periods -----
                                 
                 % Divide data into different stim types
-                combineStimTrials = ~strcmp(stimTypeButtonGroup.SelectedObject.Tag, 'trialTypeRadio');
                 stimTypeData = sep_stim_types(myData, combineStimTrials); % --> [x, y, plane, volume, trial, stimType]
                 
                 % Pull out volumes from the baseline and response periods
@@ -740,12 +800,16 @@ end%if
                 respDurSec = str2num(respDurBox_stim.String);
                 
                 % Extract volumes from the correct time window and calculate average dF/F
-                stimTypeDff = [];
+                onsetVol = ceil(onsetTime * volumeRate);
+                baselineStartVol = onsetVol - floor(baselineDurSec * volumeRate);
+                respEndVol = floor(onsetVol + (respDurSec * volumeRate));
+                dataSize = size(myData.wholeSession);
+                stimTypeDff = zeros([dataSize(1:3), numel(baselineStartVol:respEndVol), numel(stimTypeData)]);
                 for iStim = 1:size(stimTypeData)
-                    currStimData = stimTypeData{iStim};
-                    [~, baselineData, stimData] = extract_target_volumes(currStimData, myData, baselineDurSec, respDurSec); % --> [x, y, plane, volume, trial]
-                    currStimDff = calc_dFF(stimData, baselineData);                                                         % --> [x, y, plane, volume]
-                    stimTypeDff(:,:,:,:, iStim) = currStimDff;                                                              % --> [x, y, plane, volume, stimType]
+                    currStimData = stimTypeData{iStim};                                                                                    % --> [x, y, plane, volume, trial]
+                    [~, baselineData, respData] = extract_target_volumes(currStimData, onsetTime, volumeRate, baselineDurSec, respDurSec); % --> [x, y, plane, volume, trial]
+                    currStimDff = calc_dFF(cat(4, baselineData, respData), baselineData);                                                  % --> [x, y, plane, volume]
+                    stimTypeDff(:,:,:,:, iStim) = currStimDff;                                                                             % --> [x, y, plane, volume, stimType]
                 end
                 
                 % Separate out data from the current ROI's plane
@@ -758,13 +822,9 @@ end%if
                 ROIdff = squeeze(nanmean(nanmean(currPlaneDff, 2),1));                                               % --> [volume, stimType]
                 
                 % Offset all mean dF/F values so the average value from the baseline period is zero
-                baselineDurSec = str2double(baselineDurBox_stim.String);
-                respDurSec = str2double(respDurBox_stim.String);
-                stimStartVol = ceil(stimStart*volumeRate);
-                baselineStart = stimStartVol-floor(baselineDurSec*volumeRate);
-                respEnd = floor(stimStartVol + (respDurSec * volumeRate));
-                preStimMean = mean(ROIdff(1:stimStartVol - 1, :), 1);                                                % --> [stimType]
-                dffOffset = ROIdff - repmat(preStimMean, [currVolNum, 1]);                                           % --> [volume, stimType]
+                nBaselineVols = size(baselineData, 4);
+                baselineMean = mean(ROIdff(1:nBaselineVols, :), 1);          % --> [stimType]
+                dffOffset = ROIdff - repmat(baselineMean, [currVolNum, 1]); % --> [volume, stimType]
                 
                 % Calculate min and max dF/F values across all stim types for setting yLims.
                 dffTrim = dffOffset(2:end-1, :);    % Exclude the first and last volumes
@@ -786,16 +846,24 @@ end%if
                 dffTime = (1:nVolumes) ./ volumeRate;
                 dffAxes = [];
                 plotHeight = (0.9 - (0.05 * nPlots)) / nPlots;
+                if nPlots == 1
+                    plotHeight = plotHeight / 2; % Because square is a weird aspect ratio for these plots
+                end
                 plotWidth = 1 - 0.45 - 0.15; % To stay out of the way of the refImg and the save button
                 for iPlot = 1:nPlots
                     
                     % Calculate plot location
-                    firstPlotPos = [0.45, 0.06, plotWidth, plotHeight];
+                    firstPlotPos = [0.45, 0.94 - plotHeight, plotWidth, plotHeight];
                     if iPlot == 0
                         plotPos = firstPlotPos;
                     else
-                        plotPos = firstPlotPos + [0, (iPlot - 1) * (0.05 + plotHeight), 0, 0];
+                        plotPos = firstPlotPos - [0, (iPlot - 1) * (0.05 + plotHeight), 0, 0];
                     end
+                    
+                    % Figure out where the plotting volumes are in the trial
+                    onsetVol = ceil(onsetTime * volumeRate);
+                    baselineStartVol = onsetVol - floor(baselineDurSec * volumeRate);
+                    respEndVol = floor(onsetVol + (respDurSec * volumeRate));
                     
                     % Plot data for current stim type
                     if combineStimTrials
@@ -806,7 +874,7 @@ end%if
                     dffAxes{iROI}.(stimTypeNames{iPlot}) = axes(stimROItabs{iROI}, ...
                         'Position', plotPos, 'Tag', ['dffAxes_', stimTypeNames{iPlot}]);
                     hold on
-                    plot(dffTime(baselineStart:respEnd), dffOffset(:, iPlot));
+                    plot(dffTime(baselineStartVol:respEndVol), dffOffset(:, iPlot));
                     title(stimTypeNames{iPlot},'FontSize', 10, 'FontWeight', 'normal')
                     ylabel('dF/F');
                     ylim(yL);
@@ -827,7 +895,7 @@ end%if
                     end
                 end%for
                 
-                myData.dffData(iROI).dffRaw = dffRaw;
+                myData.dffData(iROI).ROIdff = ROIdff;
                 myData.dffData(iROI).dffOffset = dffOffset;
             end%for
             disp('Plotting complete')
@@ -838,8 +906,11 @@ end%if
         
         % Find parameter objects
         behavTypeButtonGroup = findobj('Tag', 'behavTypeButtonGroup');
+        behavAlignmentButtonGroup = findobj('Tag', 'behavAlignmentButtonGroup');
         baselineDurBox_behav = findobj('Tag', 'baselineDurBox_behav');
         respDurBox_behav = findobj('Tag', 'respDurBox_behav');
+        combineBehavTrials = ~strcmp(behavTypeButtonGroup.SelectedObject.Tag, 'behavTypeRadio');
+        offsetAlign = strcmp(behavAlignmentButtonGroup.SelectedObject.Tag, 'behavOffsetRadio');
         
         if isempty(myData.ROIs)
             errordlg('Error: no ROIs defined!', 'Error')
@@ -870,17 +941,16 @@ end%if
             behaviorLabels = myData.behaviorLabels;
             
             disp('Creating dF/F plots for selected ROIs...')
-            for iROI = 1:length(myData.ROIs.plots)
-                
-                % Create new tab for current ROI
-                behavROItabs{iROI} = uitab(behavROISubtabGroup, 'Title', ['ROI #', num2str(iROI)]);
-                behavROItabs{iROI}.Tag = ['ROI #', num2str(iROI)];
+%             for iROI = 1:length(myData.ROIs.plots)
+%                 
+%                 disp(['Plotting ROI #', num2str(iROI), ' of ', num2str(length(myData.ROIs.plots))]);
+%                 
+%                 % Create new tab for current ROI
+%                 behavROItabs{iROI} = uitab(behavROISubtabGroup, 'Title', ['ROI #', num2str(iROI)]);
+%                 behavROItabs{iROI}.Tag = ['ROI #', num2str(iROI)];
                 
                 
                 %----- Calculate mean dF/F for baseline and response periods -----
-                
-                % Separate out data from the current ROI's plane
-                currData = squeeze(myData.wholeSession(:,:,str2double(myData.ROIs.planes{iROI}),:,:)); % --> [x, y, volume, trial]
                                 
                 % Use behavior labels to figure out which behavior is quiescence, and which is locomotion
                 quiescencePos = cellfun(@strcmp, behaviorLabels, repmat({'None'}, 1, length(behaviorLabels)));
@@ -890,17 +960,24 @@ end%if
                 for iTrial = 1:nTrials
                     if myData.goodTrials(iTrial)
                         
-                        % Identify onsets of activity bouts >respDur in length and preceded by >baselineDur sec of quiescence
+                        % Identify onsets of activity bouts with proper padding on both sides
                         baseLenVol = floor(volumeRate * str2double(baselineDurBox_behav.String));
                         respLenVol = floor(volumeRate * str2double(respDurBox_behav.String));
                         for iBehav = find(~quiescencePos)
-                            actionPattern = [zeros(1,baseLenVol), ones(1,respLenVol)];
+                            if offsetAlign
+                                % Baseline period is just before behavior offset
+                                actionPattern = [ones(1,baseLenVol), zeros(1,respLenVol)];
+                            else
+                                % Baseline period is just before behavior onset
+                                actionPattern = [zeros(1,baseLenVol), ones(1,respLenVol)];
+                            end
                             patternLen = length(actionPattern);
                             currTrialOnsets = strfind(squeeze(behaviorVols(iTrial, iBehav, :))', actionPattern);
-                            onsetVols{iTrial, iBehav} = currTrialOnsets;
+                            onsetVols{iTrial, iBehav} = currTrialOnsets; % --> [trial, behavior]
+                            
                         end
                     else
-                        onsetVols{iTrial} = [];
+                        onsetVols{iTrial, :} = [];
                     end%if
                 end%for
                 
@@ -910,25 +987,39 @@ end%if
                 behaviorLabels(~observedBehaviors) = [];
                 locomotionPos(~observedBehaviors) = [];
                 
-                % Pull out volumes for each behavior bout onset
-                onsetData = [];
-                for iTrial = 1:nTrials
-                    for iBehav = 1:size(onsetVols, 2)
-                        if ~isempty(onsetVols{iTrial, iBehav})
-                            currOnsets = onsetVols{iTrial, iBehav};
-                            for iOnset = 1:length(currOnsets)
-                                volIdx = currOnsets(iOnset):currOnsets(iOnset) + patternLen-1;
-                                onsetData(:,:,:,end+1,iBehav) = currData(:,:,volIdx,iTrial); % --> [x, y, onsetVolume, onsetNum, behavior]
+                disp(['Plotting average of ', num2str(max(sum(cellfun(@numel, onsetVols)))), ' behavior bouts'])
+                
+                for iROI = 1:length(myData.ROIs.plots)
+                    
+                    disp(['Plotting ROI #', num2str(iROI), ' of ', num2str(length(myData.ROIs.plots))]);
+                    
+                    % Create new tab for current ROI
+                    behavROItabs{iROI} = uitab(behavROISubtabGroup, 'Title', ['ROI #', num2str(iROI)]);
+                    behavROItabs{iROI}.Tag = ['ROI #', num2str(iROI)];
+                    % Separate out data from the current ROI's plane
+                    currData = squeeze(myData.wholeSession(:,:,str2double(myData.ROIs.planes{iROI}),:,:)); % --> [x, y, volume, trial]
+                    
+                    % Pull out volumes for each behavior bout onset/offset
+                    dataSize = size(currData);
+                    onsetData = zeros([dataSize(1:2), patternLen, max(sum(cellfun(@numel, onsetVols))), size(onsetVols,2)]); % To speed up calculation
+                    onsetCount = 1;
+                    for iTrial = 1:nTrials
+                        for iBehav = 1:size(onsetVols, 2)
+                            if ~isempty(onsetVols{iTrial, iBehav})
+                                currOnsets = onsetVols{iTrial, iBehav};
+                                for iOnset = 1:length(currOnsets)
+                                    volIdx = currOnsets(iOnset):currOnsets(iOnset) + patternLen-1;
+                                    onsetData(:,:,:,onsetCount,iBehav) = currData(:,:,volIdx,iTrial); % --> [x, y, onsetVolume, onsetNum, behavior]
+                                    onsetCount = onsetCount + 1;
+                                end
                             end
                         end
                     end
-                end
-                
-                % Calculate dF/F before and after behavior onset using pre-onset period as baseline                
-                combineBehavTrials = ~strcmp(behavTypeButtonGroup.SelectedObject.Tag, 'trialTypeRadio');
+                    
+                    % Calculate dF/F before and after behavior onset using pre-onset period as baseline
                 if combineBehavTrials
-                    onsetData(:,:,:,:, ~locomotionPos) = [];
-                    behaviorLabels(~locomotionPos) = [];
+                        onsetData(:,:,:,:, ~locomotionPos) = [];
+                        currBehaviorLabels = behaviorLabels(locomotionPos);
                 end
                 onsetBaselines = onsetData(:,:, 1:baseLenVol, :, :);                        % --> [x, y, onsetVolume, onsetNum, behavior]
                 onsetBaselineMean = squeeze(mean(squeeze(mean(onsetBaselines, 3)), 3));     % --> [x, y, behavior]
@@ -940,8 +1031,8 @@ end%if
                 % Zero baseline and trial averaged data outside of ROI
                 nOnsetVols = size(onsetDffVols, 3);
                 repMask = repmat(myData.ROIs.masks(:,:,iROI), [1 1 nOnsetVols, size(onsetDffVols, 4)]); % Expand ROI mask to cover all volumes and behaviors --> [x, y, onsetVolume, behavior]
-                onsetDffVolsROI = onsetDffVols .* repMask;                                             % --> [x, y, onsetVolume, behavior] 
-                dffMean = squeeze(mean(mean(onsetDffVolsROI, 1, 'omitnan'), 2, 'omitnan'));            % --> [volume, behavior]
+                onsetDffVolsROI = onsetDffVols .* repMask;                                              % --> [x, y, onsetVolume, behavior] 
+                dffMean = squeeze(nanmean(nanmean(onsetDffVolsROI, 1), 2));                             % --> [volume, behavior]
                 
                 % Offset all mean dF/F values so the average value from the baseline period is zero
                 preStimMean = mean(dffMean(1:baseLenVol, :), 1);                                       % --> [behavior]
@@ -970,7 +1061,7 @@ end%if
                 dffAxes = [];
                 plotHeight = (0.9 - (0.05 * nPlots)) / nPlots;
                 if nPlots == 1
-                   plotHeight = plotHeight / 2; 
+                   plotHeight = plotHeight / 2; % Because a single plot that tall looks awkward 
                 end
                 plotWidth = 1 - 0.45 - 0.15; % To stay out of the way of the refImg and the save button
                 for iPlot = 1:nPlots
@@ -980,11 +1071,16 @@ end%if
                     plotPos = firstPlotPos - [0, (iPlot - 1) * (0.05 + plotHeight), 0, 0];
 
                     % Plot data for current behavior type
-                    dffAxes{iROI}.(behaviorLabels{iPlot}) = axes(behavROItabs{iROI}, ...
-                        'Position', plotPos, 'Tag', ['dffAxes_', behaviorLabels{iPlot}]);
+                    dffAxes{iROI}.(currBehaviorLabels{iPlot}) = axes(behavROItabs{iROI}, ...
+                        'Position', plotPos, 'Tag', ['dffAxes_', currBehaviorLabels{iPlot}]);
                     hold on
                     plot(onsetTime, dffOffset(:, iPlot));
-                    title(behaviorLabels{iPlot},'FontSize', 10, 'FontWeight', 'normal')
+                    if offsetAlign
+                        alignStr = 'offset';
+                    else
+                        alignStr = 'onset';
+                    end
+                    title([currBehaviorLabels{iPlot}, ' ', alignStr],'FontSize', 10, 'FontWeight', 'normal')
                     ylabel('dF/F');
                     ylim(yL);
                     if iPlot == 1
@@ -1006,6 +1102,15 @@ end%if
         % Find parameter objects
         baselineDurBox_stim = findobj('Tag', 'baselineDurBox_stim');
         respDurBox_stim = findobj('Tag', 'respDurBox_stim');
+        stimAlignmentButtonGroup = findobj('Tag', 'stimAlignmentButtonGroup');
+        offsetAlign = strcmp(stimAlignmentButtonGroup.SelectedObject.Tag, 'stimOffsetRadio');
+        
+        % Set alignment time to onset or offset as appropriate
+        if offsetAlign
+            onsetTime = stimEnd;
+        else
+            onsetTime = stimStart;
+        end
         
         % Error if either of the duration boxes is empty
         if strcmp(baselineDurBox_stim.String, '') || strcmp(respDurBox_stim.String, '')
@@ -1013,31 +1118,38 @@ end%if
         else
             
             % Calculate dF/F relative to baseline period
-            baselineDurSec = str2num(baselineDurBox_stim.String);
-            respDurSec = str2num(respDurBox_stim.String);
+            baselineDurSec = str2double(baselineDurBox_stim.String);
+            respDurSec = str2double(respDurBox_stim.String);
             windTrialData = myData.wholeSession(:,:,:,:, myData.stimSepTrials.windTrials);
-            [~, baselineData, stimData] = extract_target_volumes(windTrialData, myData, baselineDurSec, respDur); % --> [x, y, plane, volume, trial]
-            dffData = calc_dFF(stimData, baselineData);                                                           % --> [x, y, plane, volume]
-
+            [~, baselineData, respData] = extract_target_volumes(windTrialData, onsetTime, volumeRate, baselineDurSec, respDurSec); % --> [x, y, plane, volume, trial]
+            dffData = calc_dFF(cat(4, baselineData, respData), baselineData);                                                       % --> [x, y, plane, volume]
+            
             % Calculate absolute max dF/F value across all planes and action states
             range = calc_range(dffData,[]);
             
-            % Calculate volume times in seconds relative to wind onset
-            baselineVolTimes = -(1:size(baselineVols, 4))/volumeRate;
-            stimVolTimes = ((1:(size(stimVols, 4)-size(baselineVols,4)))/volumeRate);
-            relTimes = [baselineVolTimes(end:-1:1), stimVolTimes];
+            % Calculate volume times in seconds relative to onset
+            nBaselineVols = size(baselineData, 4);
+            nRespVols = size(respData, 4);
+            baselineVolTimes = -(1:nBaselineVols)/volumeRate;
+            respVolTimes = (1:nRespVols)/volumeRate;
+            relTimes = [baselineVolTimes(end:-1:1), respVolTimes];
             
             % Create cell array with titles for each frame
+            if offsetAlign
+                alignStr = 'offset';
+            else
+                alignStr = 'onset';
+            end
             titleStrings = [];
-            for iVol = 1:size(windDffVols, 4)
-                if iVol <= size(baselineVols, 4)
-                    titleStrings{iVol} = ['Time = ', sprintf('%05.2f', relTimes(iVol)), ' sec before wind onset'];
+            for iVol = 1:size(dffData, 4)
+                if iVol <= nBaselineVols
+                    titleStrings{iVol} = ['Time = ', sprintf('%05.2f', relTimes(iVol)), ' sec before wind ', alignStr];
                 else
-                    titleStrings{iVol} = ['Time = ', sprintf('%05.2f', relTimes(iVol)), ' sec after wind onset'];
+                    titleStrings{iVol} = ['Time = ', sprintf('%05.2f', relTimes(iVol)), ' sec after wind ', alignStr];
                 end
             end
             
-            baseFileName = ['Wind_Response_Heatmaps_All_Planes_Base_', baselineDurBox_stim.String, '_Resp_', respDurBox_stim.String];
+            baseFileName = ['Wind_', alignStr, '_Heatmaps_All_Planes_Base_', baselineDurBox_stim.String, '_Resp_', respDurBox_stim.String];
             
             % Let user modify base file name if desired
             fileName = inputdlg('Enter base file name:', 'Save wind response heatmap video as', ...
@@ -1049,18 +1161,20 @@ end%if
             end
             
             % Make video
-            make_heatmap_vid(windDffVols, myData, range, fileName, titleStrings, [], [], [], []);
+            make_heatmap_vid(dffData, myData, range, fileName, titleStrings, [], [], [], []);
             disp('Video created successfully')
             
         end%if
     end%function
 %---------------------------------------------------------------------------------------------------
     function makeBehavHeatmapVidsButton_Callback(~,~)
-         
+        
         % Find parameter objects
         baselineDurBox_behav = findobj('Tag', 'baselineDurBox_behav');
         respDurBox_behav = findobj('Tag', 'respDurBox_behav');
-        
+        behavAlignmentButtonGroup = findobj('Tag', 'behavAlignmentButtonGroup');
+        offsetAlign = strcmp(behavAlignmentButtonGroup.SelectedObject.Tag, 'behavOffsetRadio');
+                
         % Error if either of the duration boxes is empty
         if strcmp(baselineDurBox_behav.String, '') || strcmp(respDurBox_behav.String, '')
             errordlg('You must enter baseline and response durations');
@@ -1086,7 +1200,13 @@ end%if
                     % Identify onsets of activity bouts >respDur in length and preceded by >baselineDur sec of quiescence
                     baseLenVol = floor(volumeRate * str2double(baselineDurBox_behav.String));
                     respLenVol = floor(volumeRate * str2double(respDurBox_behav.String));
-                    actionPattern = [zeros(1,baseLenVol), ones(1,respLenVol)];
+                    if offsetAlign
+                        % Baseline period is just before behavior offset
+                        actionPattern = [ones(1,baseLenVol), zeros(1,respLenVol)];
+                    else
+                        % Baseline period is just before behavior onset
+                        actionPattern = [zeros(1,baseLenVol), ones(1,respLenVol)];
+                    end
                     patternLen = length(actionPattern);
                     currTrialOnsets = strfind(squeeze(locomotionVols(iTrial,:)), actionPattern);
                     onsetVols{iTrial} = currTrialOnsets;
@@ -1094,7 +1214,7 @@ end%if
                     onsetVols{iTrial} = [];
                 end%if
             end%for
-                        
+            
             % Pull out volumes for each behavior bout onset
             onsetData = [];
             for iTrial = 1:nTrials
@@ -1115,30 +1235,34 @@ end%if
             onsetMean = squeeze(mean(onsetData, 5));                                    % --> [x, y, plane, onsetVolume]
             onsetDffVols = (onsetMean - onsetBaselineMeanRep) ./ onsetBaselineMeanRep;  % --> [x, y, plane, onsetVolume]
             
-            
             % Calculate absolute max dF/F value across all planes
             range = calc_range(onsetDffVols,[]);
             
-            % Calculate volume times in seconds relative to behavior bout onset           
+            % Calculate volume times in seconds relative to behavior bout onset
             baseLenVolTime = -baseLenVol:-1;
             respLenVolTime = 0:respLenVol-1;
             onsetVolTime = [baseLenVolTime, respLenVolTime];
             onsetTime = onsetVolTime ./ volumeRate;
             
             % Create cell array with titles for each frame
+            if offsetAlign
+                alignStr = 'offset';
+            else
+                alignStr = 'onset';
+            end
             titleStrings = [];
             for iVol = 1:size(onsetDffVols, 4)
                 if iVol <= baseLenVol
-                    titleStrings{iVol} = ['Time = ', sprintf('%05.2f', onsetTime(iVol)), ' sec before locomotion onset'];
+                    titleStrings{iVol} = ['Time = ', sprintf('%05.2f', onsetTime(iVol)), ' sec before locomotion ', alignStr];
                 else
-                    titleStrings{iVol} = ['Time = ', sprintf('%05.2f', onsetTime(iVol)), ' sec after locomotion onset'];
+                    titleStrings{iVol} = ['Time = ', sprintf('%05.2f', onsetTime(iVol)), ' sec after locomotion ', alignStr];
                 end
             end
             
-             baseFileName = ['Locomotion_Onset_Heatmaps_All_Planes_Base_', baselineDurBox_behav.String, '_Resp_', respDurBox_behav.String];
+            baseFileName = ['Behavior_', alignStr, '_Heatmaps_All_Planes_Base_', baselineDurBox_behav.String, '_Resp_', respDurBox_behav.String];
             
             % Let user modify base file name if desired
-            fileName = inputdlg('Enter base file name:', 'Save locomotion onset heatmap video as', ...
+            fileName = inputdlg('Enter base file name:', 'Save locomotion heatmap video as', ...
                 [1 50], {baseFileName});
             if isempty(fileName)
                 disp('Save cancelled')
@@ -1157,8 +1281,17 @@ end%if
         
         % Find parameter objects
         stimTypeButtonGroup = findobj('Tag', 'stimTypeButtonGroup');
+        stimAlignmentButtonGroup = findobj('Tag', 'stimAlignmentButtonGroup');
         baselineDurBox_stim = findobj('Tag', 'baselineDurBox_stim');
         respDurBox_stim = findobj('Tag', 'respDurBox_stim');
+        offsetAlign = strcmp(stimAlignmentButtonGroup.SelectedObject.Tag, 'stimOffsetRadio');
+        
+        % Set alignment time to onset or offset as appropriate
+        if offsetAlign
+            onsetTime = stimEnd;
+        else
+            onsetTime = stimStart;
+        end
         
         % Get plane number from user
         vidPlane = inputdlg({'Enter a plane number:'});
@@ -1178,17 +1311,17 @@ end%if
             % Pull out volumes for the baseline and response periods
             baselineDurSec = str2num(baselineDurBox_stim.String);
             respDurSec = str2num(respDurBox_stim.String);
-            stimStartVol = ceil(stimStart*volumeRate);
-            baselineStartVol = stimStartVol-floor(baselineDurSec*volumeRate);
-            respEndVol = floor(stimStartVol + (respDurSec * volumeRate));
+            onsetVol = ceil(onsetTime*volumeRate);
+            baselineStartVol = onsetVol-floor(baselineDurSec*volumeRate);
+            respEndVol = floor(onsetVol + (respDurSec * volumeRate));
             
             % Extract volumes from the correct time window and calculate average dF/F
             stimTypeDff = [];
             for iStim = 1:size(stimTypeData)
                 currStimData = stimTypeData{iStim};
-                [~, baselineData, stimData] = extract_target_volumes(currStimData, myData, baselineDurSec, respDurSec); % --> [x, y, plane, volume, trial]
-                currStimDff = calc_dFF(stimData, baselineData);                                                         % --> [x, y, plane, volume]
-                stimTypeDff(:,:,:,:, iStim) = currStimDff;                                                              % --> [x, y, plane, volume, stimType]
+                [~, baselineData, respData] = extract_target_volumes(currStimData, onsetTime, volumeRate, baselineDurSec, respDurSec);  % --> [x, y, plane, volume, trial]
+                currStimDff = calc_dFF(cat(4, baselineData, respData), baselineData);                                                   % --> [x, y, plane, volume]
+                stimTypeDff(:,:,:,:, iStim) = currStimDff;                                                                              % --> [x, y, plane, volume, stimType]
             end
             
             % Pull out data for the chosen plane
@@ -1199,22 +1332,29 @@ end%if
             
             % Calculate absolute max dF/F value across all and action states for each stim type
             ranges = [];
-            for iStim = 1:length(stimTypes)
+            for iStim = 1:size(planeData, 4)
                 ranges(iStim, :) = calc_range(planeData(:,:,:,iStim), []);
             end
             
             % Calculate volume times in seconds relative to wind onset
-            baselineVolTimes = -(1:size(baselineStartVol:stimStartVol))/volumeRate;
-            stimVolTimes = ((1:size(stimStartVol:respEndVol)-size(baselineStartVol:stimStartVol)))/volumeRate;
-            relTimes = [baselineVolTimes(end:-1:1), stimVolTimes];
+            nBaselineVols = size(baselineData, 4);
+            nRespVols = size(respData, 4);
+            baselineVolTimes = -(1:nBaselineVols)/volumeRate;
+            respVolTimes = (1:nRespVols)/volumeRate;
+            relTimes = [baselineVolTimes(end:-1:1), respVolTimes];
             
             % Create cell array with titles for each frame
+            if offsetAlign
+                alignStr = 'offset';
+            else
+                alignStr = 'onset';
+            end
             volTitles = [];
-            for iVol = 1:size(dffVols, 3)
-                if iVol <= size(baselineVols, 3)
-                    volTitles{iVol} = ['Time = ', sprintf('%05.2f', relTimes(iVol)), ' sec before wind onset'];
+            for iVol = 1:size(planeData, 3)
+                if iVol <= nBaselineVols
+                    volTitles{iVol} = ['Time = ', sprintf('%05.2f', relTimes(iVol)), ' sec before wind ', alignStr];
                 else
-                    volTitles{iVol} = ['Time = ', sprintf('%05.2f', relTimes(iVol)), ' sec after wind onset'];
+                    volTitles{iVol} = ['Time = ', sprintf('%05.2f', relTimes(iVol)), ' sec after wind ', alignStr];
                 end
             end
             
@@ -1227,7 +1367,7 @@ end%if
             end
             
             % Let user modify base file name if desired
-            baseFileName = ['Wind_Response_Heatmaps_Plane_', num2str(vidPlane), '_Base_', baselineDurBox_stim.String, '_Resp_', respDurBox_stim.String];
+            baseFileName = ['Wind_', alignStr, '_Heatmaps_Plane_', num2str(vidPlane), '_Base_', baselineDurBox_stim.String, '_Resp_', respDurBox_stim.String];
             fileName = inputdlg('Enter base file name:', 'Save wind response heatmap video as', ...
                 [1 50], {baseFileName});
             if isempty(fileName)
@@ -1237,7 +1377,7 @@ end%if
             end
             
             % Make video
-            single_plane_heatmap_vid(dffVols, vidPlane, myData, ranges, fileName, [], plotTitles, volTitles, [], [], []);
+            single_plane_heatmap_vid(planeData, vidPlane, myData, ranges, fileName, [], plotTitles, volTitles, [], [], []);
             disp('Video created successfully')
             
         end%if
@@ -1247,10 +1387,12 @@ end%if
         
         % Find parameter objects
         behavTypeButtonGroup = findobj('Tag', 'behavTypeButtonGroup');
+        behavAlignmentButtonGroup = findobj('Tag', 'behavAlignmentButtonGroup');
         baselineDurBox_behav = findobj('Tag', 'baselineDurBox_behav');
         respDurBox_behav = findobj('Tag', 'respDurBox_behav');
         baselineDurSec = baselineDurBox_behav.String;
-        respDurSec = baselineDurBox_behav.String;
+        respDurSec = respDurBox_behav.String;       
+        offsetAlign = strcmp(behavAlignmentButtonGroup.SelectedObject.Tag, 'behavOffsetRadio');
         
         % Get plane number from user
         vidPlane = inputdlg({'Enter a plane number:'});
@@ -1279,7 +1421,13 @@ end%if
                     
                     % Identify onsets of activity bouts >respDur in length and preceded by >baselineDur sec of quiescence
                     for iBehav = find(~quiescencePos)
-                        actionPattern = [zeros(1,baseLenVol), ones(1,respLenVol)];
+                        if offsetAlign
+                            % Baseline period is just before behavior offset
+                            actionPattern = [ones(1,baseLenVol), zeros(1,respLenVol)];
+                        else
+                            % Baseline period is just before behavior onset
+                            actionPattern = [zeros(1,baseLenVol), ones(1,respLenVol)];
+                        end
                         patternLen = length(actionPattern);
                         currTrialOnsets = strfind(squeeze(behaviorVols(iTrial, iBehav, :))', actionPattern);
                         onsetVols{iTrial, iBehav} = currTrialOnsets;
@@ -1335,12 +1483,17 @@ end%if
              onsetTime = onsetVolTime ./ volumeRate;
             
             % Create cell array with titles for each frame
+            if offsetAlign
+                alignStr = 'offset';
+            else
+                alignStr = 'onset';
+            end
             volTitles = [];
             for iVol = 1:size(onsetDffVols, 3)
                 if iVol <= baseLenVol
-                    volTitles{iVol} = ['Time = ', sprintf('%05.2f', onsetTime(iVol)), ' sec before behavior onset'];
+                    volTitles{iVol} = ['Time = ', sprintf('%05.2f', onsetTime(iVol)), ' sec before behavior ', alignStr];
                 else
-                    volTitles{iVol} = ['Time = ', sprintf('%05.2f', onsetTime(iVol)), ' sec after behavior onset'];
+                    volTitles{iVol} = ['Time = ', sprintf('%05.2f', onsetTime(iVol)), ' sec after behavior ', alignStr];
                 end
             end
             
@@ -1353,7 +1506,7 @@ end%if
             end
             
             % Let user modify base file name if desired
-            baseFileName = ['Behavior_Response_Heatmaps_Plane_', num2str(vidPlane), '_Base_', baselineDurSec, '_Resp_', respDurSec];
+            baseFileName = ['Behavior_', alignStr, '_Heatmaps_Plane_', num2str(vidPlane), '_Base_', baselineDurSec, '_Resp_', respDurSec];
             fileName = inputdlg('Enter base file name:', 'Save behavior response heatmap video as', ...
                 [1 50], {baseFileName});
             if isempty(fileName)
@@ -1503,7 +1656,7 @@ end%if
         % Identify plots to be saved
         currTabHeatmaps = findobj(currTab.Children, 'Tag', 'heatmapAxes');
         
-        % Get baseline and response period durations from refImg title
+        % Get alignment type and baseline/response period durations from refImg title
         planeRefImg = findobj(currTab.Children, 'Tag', 'heatmapRefImg');
         if ~isempty(planeRefImg)
             titleStr = planeRefImg.Title.String;
@@ -1512,9 +1665,12 @@ end%if
             titleStrShort = titleStr(strfind(titleStr, ','):end);
             respDur = titleStrShort(strfind(titleStrShort, '=') + 2);
             respStr = ['_resp_', respDur];
+            [alignTypeStart, alignTypeEnd] = regexp(titleStr, 'o\w*set');
+            alignStr = titleStr(alignTypeStart:alignTypeEnd);
         else
             baselineStr = '';
             respStr = '';
+            alignStr = '';
         end
         
         % Prompt user to specify a save directory
@@ -1524,7 +1680,7 @@ end%if
         else
             
             % Generate base file name
-            baseFileName = ['dFF_Heatmap_Plane_', planeNum, baselineStr, respStr];
+            baseFileName = ['dFF_', alignStr, '_Heatmap_Plane_', planeNum, baselineStr, respStr];
             
             % Let user modify base file name if desired
             fileName = inputdlg('Enter base file name:', 'Save dF/F heatmap plots as', ...
@@ -1571,8 +1727,8 @@ end%if
     function figure_WindowButtonDownFcn(~, ~)
         
         % Resets all the axes titles in the ROI selection tab whenever the window is clicked
-        currObj = findobj('Tag', 'All planes');
-        allAxes = currObj.Children;
+        currObj = findobj(roiSubtabGroup, 'Tag', 'All planes');
+        allAxes = findobj(currObj, 'Type', 'axes');
         for iAx = 1:length(allAxes)
             allAxes(iAx).Title.String = allAxes(iAx).Tag;
             roiPlaneAxes{iAx}.Title.String = roiPlaneAxes{iAx}.Tag;
@@ -1692,7 +1848,7 @@ else
         myData.stimSepTrials.(myData.stimTypes{iStim}) = logical(cellfun(@(x) ...
             strcmp(x, myData.stimTypes{iStim}), myData.trialType));
     end
-    myData.stimSepTrials.windTrials = logical(myData.stimSepTrials.CenterWind);
+    myData.stimSepTrials.windTrials = logical(myData.stimSepTrials.RightWind);
     
 end%if
 end%function

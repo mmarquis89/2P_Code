@@ -1,9 +1,9 @@
 
-expDate = '2017_09_27_exp2';
-tic
+expDate = '2017_10_17_25A01_testing';
+
 
 %% CREATE ANATOMY STACKS --------------------------------------------------------------------------
-fileStr = '*stack_*';
+fileStr = '*stack*';
 parentDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate];
 tic
 create_anatomy_stack(parentDir, fileStr, 'Stack');
@@ -12,7 +12,7 @@ disp(['Creating the anatomy stacks took ', round(num2str(toc)) ' sec']);
 %%% Archive raw anatomy stacks
 parentDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate];
 archiveName = 'AnatomyStacks';
-filterString = '*stack_*';
+filterString = '*stack*';
 system7zip(parentDir, archiveName, '7z', filterString, 1)
 
 %%% PRE-REGISTRATION PROCESSING --------------------------------------------------------------------

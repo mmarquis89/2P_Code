@@ -1,4 +1,4 @@
-function [trimmedData, preStimData, stimData] = extract_target_volumes(dataArr, infoStruct, baselineDurSec, respDurSec)
+function [trimmedData, preStimData, stimData] = extract_target_volumes(dataArr, onsetTime, volumeRate, baselineDurSec, respDurSec)
 %==============================================================================================================
 % 
 % Extract imaging data from a specified period around the wind stimulus onset, and return that and/or just the
@@ -7,7 +7,9 @@ function [trimmedData, preStimData, stimData] = extract_target_volumes(dataArr, 
 % INPUTS:
 %       dataArr        = 5-D imaging data array in the form [x, y, plane, volume, trial]
 %
-%       infoStruct     = main experiment data structure. Must have fields "stimStart" and "volumeRate"
+%       onsetTime      = trial time in seconds that you want to align the analysis to 
+%
+%       volumeRate     = the rate of imaging data acquisition in volumes/sec
 %                        
 %       baselineDurSec = duration of the baseline period in seconds
 %
@@ -22,19 +24,14 @@ function [trimmedData, preStimData, stimData] = extract_target_volumes(dataArr, 
 % 
 %==============================================================================================================
 
-
-% Extract variables from infoStruct
-stimStart = infoStruct.stimStart;
-volumeRate = infoStruct.volumeRate;
-
 % Calculate stim period volumes
-stimStartVol = ceil(stimStart*volumeRate);
-baselineStartVol = stimStartVol-floor(baselineDurSec*volumeRate);
-respEndVol = floor(stimStartVol + (respDurSec * volumeRate));
+onsetVol = ceil(onsetTime * volumeRate);
+baselineStartVol = onsetVol - floor(baselineDurSec * volumeRate);
+respEndVol = floor(onsetVol + (respDurSec * volumeRate));
 
 % Extract data
 trimmedData = dataArr(:,:,:, baselineStartVol:respEndVol);
-preStimData = dataArr(:,:,:, baselineStartVol:stimStartVol-1);
-stimData = dataArr(:,:,:, stimStartVol:respEndVol);
+preStimData = dataArr(:,:,:, baselineStartVol:onsetVol-1);
+stimData = dataArr(:,:,:, onsetVol:respEndVol);
 
 end

@@ -1,82 +1,30 @@
 %% LOAD REGISTERED DATA FILE AND BEHAVIORAL ANNOTATION DATA
 
-% Prompt user for data file
-[dataFile, pathName, ~] = uigetfile('*.mat', 'Select an imaging data session file', 'D:\Dropbox (HMS)\2P Data\Imaging Data\');
-if dataFile == 0
-    disp('Initialization cancelled')
-    imgData = []; % Skip loading if user clicked "Cancel"
-else
-    disp(['Loading ' dataFile, '...'])
-    imgData = load([pathName, dataFile]);
-    disp([dataFile, ' loaded'])
-    
-    % Prompt user for behavioral annotation data file
-    [annotDataFile, pathName, ~] = uigetfile('*.mat', 'Select a behavioral annotation data file if desired', 'D:\Dropbox (HMS)\2P Data\Imaging Data\');
-    if annotDataFile == 0
-        disp('No behavioral annotation data selected')
-        annotData = [];
-    else
-        disp(['Loading ' annotDataFile, '...'])
-        annotData = load([pathName, annotDataFile]);
-        disp([annotDataFile, ' loaded'])
-    end
-    myData = setstructfields(imgData, annotData); % Combine into one structure
-    
+  
     % Load .mat file containing trial metadata
+    myData = load_imaging_data();
     
+    expDate = myData.expDate;
+    nPlanes = myData.nPlanes;
+    nVolumes = myData.nVolumes;
+    refImg = myData.refImg;
+    nFrames = myData.nFrames;
+    nTrials = myData.nTrials;
+    stimTypes = myData.stimTypes;
+    trialDuration = myData.trialDuration;
+    volumeRate = myData.volumeRate;
     
+    myData.stimDuration = [trialDuration(1), trialDuration(2)]; stimDuration = myData.stimDuration; % [stim start time, stim length] in seconds
+    myData.stimStart = myData.stimDuration(1); stimStart = myData.stimStart;
+    myData.stimEnd = sum(myData.stimDuration); stimEnd = myData.stimEnd;
     
-    % Process raw data structure
-    if ~isfield(myData, 'wholeSession') % myData.wholeSession = [x, y, plane, volume, trial]
-        myData.wholeSession = myData.regProduct;
-    end
-    myData.nTrials = size(myData.wholeSession, 5);
-    singleTrial = squeeze(myData.wholeSession(:,:,:,:,1)); % --> [x, y, plane, volume]
-    myData.nPlanes = size(singleTrial, 3);
-    myData.nVolumes = size(singleTrial, 4);
+    % Create hardcoded parameters
+    myData.MAX_INTENSITY = 2000; MAX_INTENSITY = myData.MAX_INTENSITY; % To control brightness of ref image plots
+    myData.FRAME_RATE = 25; FRAME_RATE = 25; % This is the frame rate of the behavior video, not the GCaMP imaging
     
-    % Create reference image for each plane
-    myData.refImg = [];
-    for iPlane = 1:myData.nPlanes
-        myData.refImg{iPlane} = squeeze(mean(mean(myData.wholeSession(:,:,iPlane,:,:),4),5)); % --> [x, y]
-    end
-    
-    % Extract session number
-    origFileName = myData.origFileNames{1};
-    sidLoc = strfind(origFileName, 'sid_');
-    myData.sessionNum = origFileName(sidLoc+4);
-    
-    % For compatibility with early experiments
-    if ~isfield(myData, 'expDate')
-        cellDate = inputdlg('Please enter experiment date in YYYY_MM_DD format');
-        myData.expDate = cellDate{1};
-    end 
-    
-    % Add hardcoded parameters
-    myData.volumeRate = 6.5; volumeRate = myData.volumeRate;
-    myData.trialDuration = 16; trialDuration = myData.trialDuration;
-    if ~isempty(annotData)
-        myData.nFrames = max(cellfun(@height, myData.trialAnnotations)); nFrames = myData.nFrames;
-    end
-    myData.stimDuration = [4 trialDuration-7]; % [start time, length] in seconds
-    myData.maxIntensity = 2000;
-    stimStart = myData.stimDuration(1);
-    stimEnd = sum(myData.stimDuration);
-    stimTypes = sort(unique(myData.trialType));
-    
-    % Separate out wind trials
-    stimSepTrials = [];
-    for iStim = 1:length(stimTypes)
-        stimSepTrials.(stimTypes{iStim}) = logical(cellfun(@(x) strcmp(x, stimTypes{iStim}), myData.trialType));
-    end
-    stimSepTrials.windTrials = logical(stimSepTrials.LeftWind);
-    
-end%if
-
 %% PLOT AND SAVE VISUALIZATION OF BEHAVIOR DATA ANNOTATIONS
 
 expDate = myData.expDate;
-frameRate = 25;
 
 % Create array of annotation data (row = trial, col = frame)
 annotationArr = [];
@@ -105,7 +53,7 @@ subplot(2,1,1); ax1 = gca();
 
 % Add shading during stimulus presentation
 yL = ylim();
-rectPos = [stimStart*frameRate, yL(1), (stimEnd-stimStart)*frameRate, diff(yL)]; % [x y width height]
+rectPos = [stimStart*FRAME_RATE, yL(1), (stimEnd-stimStart)*FRAME_RATE, diff(yL)]; % [x y width height]
 rectangle('Position', rectPos, 'FaceColor', [rgb('red'), 0.05], 'EdgeColor', 'none');                    
 ylim(yL);
 
@@ -257,7 +205,7 @@ stimSepTrials = [];
 for iStim = 1:length(stimTypes)
     stimSepTrials.(stimTypes{iStim}) = logical(cellfun(@(x) strcmp(x, stimTypes{iStim}), myData.trialType));  
 end 
-windTrials = myData.windTrials;  % --> [x, y, plane, volume, trial]
+windTrials = myData.wholeSession(:,:,:,:,logical(myData.stimSepTrials.windTrials));  % --> [x, y, plane, volume, trial]
 
 % Calculate dF/F before and after wind onset using an equal period before onset as baseline
 stimLength = stimEnd - stimStart;
@@ -298,8 +246,8 @@ for iVol = 1:size(windDffVols, 4)
 end
 
 % Create video
-savePath = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_0\Analysis'];
-fileName = 'Wind_Onset_Responses';
+savePath = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_1\Analysis'];
+fileName = 'Wind_Onset_Responses_ratio';
 make_heatmap_vid(windDffVols, myData, range, fileName, titleStrings, savePath, [], [], []);
      
 
@@ -995,7 +943,7 @@ onsetMeanDff = mean(onsetDffVols, 4);                                      % -->
 
             % Plot reference image for the current plane
             ax1 = subaxis(2,2,1, 'Spacing', 0.01, 'MB', 0.025);
-            imshow(myData.refImg{planeNum}, [0 myData.maxIntensity])
+            imshow(myData.refImg{planeNum}, [0 myData.MAX_INTENSITY])
 
             % Plot wind dF/F
             ax2 = subaxis(2, 2, 3, 'Spacing', 0.01, 'MB', 0.025);
@@ -1052,12 +1000,13 @@ onsetMeanDff = mean(onsetDffVols, 4);                                      % -->
 
 % Need rows = volumes and columns = pixels (linearized)
 
-windTrials = myData.wholeSession(:,:,:,:,logical(stimSepTrials.windTrials));   % --> [x, y, plane, volume, trial]
+windTrials = myData.wholeSession(:,:,:,:,logical(myData.stimSepTrials.windTrials));   % --> [x, y, plane, volume, trial]
+
 %%
 
 
 % Pull out data for one plane
-planeNum = 11;
+planeNum = 6;
 planeData = squeeze(windTrials(:,:,planeNum,:,:)); % --> [x, y, volume, trial]
 [w,x,y,z] = size(planeData);
 planeDataRS = reshape(planeData, [w, x, y*z]); % --> [x, y, volume]
@@ -1077,7 +1026,7 @@ coeffReshaped = reshape(coeff, [n, m, d-1]);
 
 figure(2); clf;
 subplot(2,2,1)
-imshow(mean(pcaData,3),[0 myData.maxIntensity])
+imshow(mean(pcaData,3),[0 myData.MAX_INTENSITY])
 colormap(gca, 'gray')
 % colormap('parula')
 for iPlot = 2:4
@@ -1107,7 +1056,7 @@ icasigReshaped = reshape(icasig', [n, m, nIC]);
 
 figure(4); clf;
 subplot(2,2,1)
-imshow(mean(pcaData,3),[0 myData.maxIntensity])
+imshow(mean(pcaData,3),[0 myData.MAX_INTENSITY])
 colormap(gca, 'gray')
 colormap('parula')
 for iPlot = 2:4

@@ -1,4 +1,4 @@
-function concatVids_2P(sid, vidDir, frameRate)
+function concatVids_2P(sid, vidDir, FRAME_RATE)
 %============================================================================================================================
 % CONCATENATE ALL COMBINED PLOTTING VIDEOS FOR THE EXPERIMENT
 % Concatenates the behavioral videos for each trial of a 2P experiment, and returns a message string indicating whether
@@ -6,12 +6,12 @@ function concatVids_2P(sid, vidDir, frameRate)
 % source videos.
 %
 % Inputs:
-%       sid = the session ID of the videos you want to process
-%       vidDir = the directory containing the videos you want to combine
-%               e.g. 'U:\2P Behavior Video\2017_07_30\_Movies'
+%       sid         = the session ID of the videos you want to process
+%       vidDir      = the directory containing the videos you want to combine
+%                       e.g. 'U:\2P Behavior Video\2017_07_30\_Movies'
+%       FRAME_RATE  = the frame rate that the behavior video was acquired at in frames/sec
 %============================================================================================================================
 
-FRAME_RATE = frameRate;
 vidFiles = dir(fullfile(vidDir, ['sid_', num2str(sid), '*tid*.mp4']));
 vidNames = sort({vidFiles.name});
 nTrials = length(vidNames);

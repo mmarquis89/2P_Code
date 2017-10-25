@@ -14,6 +14,7 @@ close all
 
 % Prompt user for data file and load data
 myData = load_imaging_data();
+
 if ~isempty(myData) % Abort initialization if no data was loaded
     
     expDate = myData.expDate;
@@ -23,25 +24,31 @@ if ~isempty(myData) % Abort initialization if no data was loaded
     nFrames = myData.nFrames;
     nTrials = myData.nTrials;
     stimTypes = myData.stimTypes;
+    trialDuration = myData.trialDuration;
+    volumeRate = myData.volumeRate;
     
-    % Create global/hardcoded variables
-    myData.maxIntensity = 2000; maxIntensity = myData.maxIntensity; % To control brightness of ref images
-    myData.volumeRate = 6.5; volumeRate = myData.volumeRate;
-    myData.trialDuration = 15; trialDuration = myData.trialDuration;
-    myData.stimDuration = [4 trialDuration-7]; stimDuration = myData.stimDuration; % [stim start time, stim length] in seconds
+    % To maintain compatibility with older experiments
+    if isempty(myData.trialDuration) || isempty(myData.volumeRate)
+       myData.trialDuration = 15; trialDuration = myData.trialDuration;
+       myData.volumeRate = 6.5; volumeRate = myData.volumeRate;
+    end
+    
+    myData.stimDuration = [trialDuration(1), trialDuration(2)]; stimDuration = myData.stimDuration; % [stim start time, stim length] in seconds
     myData.stimStart = myData.stimDuration(1); stimStart = myData.stimStart;
-    myData.stimEnd = sum(myData.stimDuration); stimEnd = myData.stimEnd;
-    myData.frameRate = 25; frameRate = 25;
+    myData.stimEnd = sum(myData.stimDuration); stimEnd = myData.stimEnd;    
+    
+    % Create hardcoded parameters
+    myData.MAX_INTENSITY = 2000; MAX_INTENSITY = myData.MAX_INTENSITY; % To control brightness of ref image plots
+    myData.FRAME_RATE = 25; FRAME_RATE = 25; % This is the frame rate of the behavior video, not the GCaMP imaging
     
     myData.ROIs = [];
     myData.dffData = [];
+    
     plotAxes2D = [];
     plotAxes1D_wind = [];
     plotAxes1D_noWind = [];
-    index = 1;
-    roiPlaneAxes = [];
-    dffPlotCounter = 1;
-    
+    indexROI = 1;
+    roiPlaneAxes = [];  
     
     
     %----------CONSTRUCTING COMPONENTS----------
@@ -143,7 +150,7 @@ end%if
                     currAxes = roiRefImgAxes{iPlane};
                     axes(currAxes);
                     axis image; hold on
-                    myImages{iPlane} = imshow(refImg{iPlane}, [0 maxIntensity], ...
+                    myImages{iPlane} = imshow(refImg{iPlane}, [0 MAX_INTENSITY], ...
                         'InitialMagnification', 'fit', 'Parent', currAxes);
                     myImages{iPlane}.ButtonDownFcn = {@image_ButtonDownFcn};
                     currAxes.Title.String = ['Plane #' num2str(iPlane)];
@@ -155,7 +162,7 @@ end%if
                 roiSelectTabs{iTab}.Title = ['Plane #', num2str(iTab-1)];
                 roiPlaneAxes{iTab-1} = axes(roiSelectTabs{iTab}, 'Position', [0.05 0.1 0.8 0.8]);
                 axis image; hold on
-                roiRefImages{iTab-1} = imshow(refImg{iTab-1}, [0 maxIntensity], ...
+                roiRefImages{iTab-1} = imshow(refImg{iTab-1}, [0 MAX_INTENSITY], ...
                     'InitialMagnification', 'fit', 'Parent', roiPlaneAxes{iTab-1});
                 roiRefImages{iTab-1}.ButtonDownFcn = {@image_ButtonDownFcn};
                 roiPlaneAxes{iTab-1}.Title.String = ['Plane #' num2str(iTab-1)];
@@ -212,7 +219,7 @@ end%if
             
             % Add shading during stimulus presentation
             yL = ylim(plotAxes1D_wind);
-            rectPos = [stimStart*frameRate, yL(1), (stimEnd-stimStart)*frameRate, diff(yL)]; % [x y width height]
+            rectPos = [stimStart*FRAME_RATE, yL(1), (stimEnd-stimStart)*FRAME_RATE, diff(yL)]; % [x y width height]
             rectangle(plotAxes1D_wind, 'Position', rectPos, 'FaceColor', [rgb('red'), 0.05], 'EdgeColor', 'none');
             ylim(yL);
             
@@ -426,6 +433,10 @@ end%if
                 stimTypeDff(:,:,:, iStim) = currStimDff;                                                                                % --> [x, y, plane, stimType]
             end
             
+            stimTypeDff(isinf(stimTypeDff)) = 0; % To eliminate inf values from dividing by zero above...baseline shouldn't be zero in valid data anyways
+            stimTypeDff(isnan(stimTypeDff)) = 0;
+            
+            
             % Calculate absolute max dF/F value across all planes and stim types
             range = calc_range(stimTypeDff, []);
             
@@ -517,7 +528,7 @@ end%if
                     % Plot reference image for the current plane in the first axis
                     stimHeatmapAxes{1} = axes(stimHeatmapSubtabs{iTab}, 'Units', 'Normalized', ...
                         'Position', axesPosSort(1,:), 'Tag', 'heatmapRefImg');
-                    imshow(myData.refImg{jTab}, [0 maxIntensity]);
+                    imshow(myData.refImg{jTab}, [0 MAX_INTENSITY]);
                     if offsetAlign
                         alignStr = 'offset';
                     else
@@ -711,7 +722,7 @@ end%if
                     % Plot reference image for the current plane in the first axis
                     behavHeatmapAxes{1} = axes(behavHeatmapSubtabs{iTab}, 'Units', 'Normalized', ...
                         'Position', axesPosSort(1,:), 'Tag', 'heatmapRefImg');
-                    imshow(myData.refImg{jTab}, [0 maxIntensity]);
+                    imshow(myData.refImg{jTab}, [0 MAX_INTENSITY]);
                     behavHeatmapAxes{1}.Tag = 'heatmapRefImg';
                     
                     % Plot dF/F heatmaps for each of the trial types in the other axes
@@ -811,6 +822,8 @@ end%if
                     currStimDff = calc_dFF(cat(4, baselineData, respData), baselineData);                                                  % --> [x, y, plane, volume]
                     stimTypeDff(:,:,:,:, iStim) = currStimDff;                                                                             % --> [x, y, plane, volume, stimType]
                 end
+                stimTypeDff(isinf(stimTypeDff)) = 0; % To eliminate inf values from dividing by zero above...baseline shouldn't be zero in valid data anyways
+                stimTypeDff(isnan(stimTypeDff)) = 0;
                 
                 % Separate out data from the current ROI's plane
                 currPlaneDff = squeeze(stimTypeDff(:,:,str2double(myData.ROIs.planes{iROI}),:,:));                   % --> [x, y, volume, stimType]
@@ -836,7 +849,7 @@ end%if
                 % Plot miniature reference image with current ROI
                 refImgAxes{iROI} = axes(stimROItabs{iROI}, 'Position', [0 0.59 0.4 0.4], 'Tag', 'refImgAxes');
                 axis image; hold on
-                dffRefImages{iROI} = imshow(refImg{str2double(myData.ROIs.planes{iROI})}, [0 maxIntensity], 'InitialMagnification', 'fit', 'Parent', refImgAxes{iROI});
+                dffRefImages{iROI} = imshow(refImg{str2double(myData.ROIs.planes{iROI})}, [0 MAX_INTENSITY], 'InitialMagnification', 'fit', 'Parent', refImgAxes{iROI});
                 dffROIplots{iROI} = plot(myData.ROIs.plotData{iROI}(:,1), myData.ROIs.plotData{iROI}(:,2),'linewidth', 2, 'color', myData.ROIs.color{iROI});
                 currText = myData.ROIs.nums{iROI};
                 dffROItext{iROI} = text(currText.Position(1), currText.Position(2), num2str(iROI), 'Color', myData.ROIs.color{iROI});
@@ -1047,7 +1060,7 @@ end%if
                 % Plot miniature reference image with current ROI
                 refImgAxes{iROI} = axes(behavROItabs{iROI}, 'Position', [0 0.59 0.4 0.4], 'Tag', 'refImgAxes');
                 axis image; hold on
-                dffRefImages{iROI} = imshow(refImg{str2double(myData.ROIs.planes{iROI})}, [0 maxIntensity], 'InitialMagnification', 'fit', 'Parent', refImgAxes{iROI});
+                dffRefImages{iROI} = imshow(refImg{str2double(myData.ROIs.planes{iROI})}, [0 MAX_INTENSITY], 'InitialMagnification', 'fit', 'Parent', refImgAxes{iROI});
                 dffROIplots{iROI} = plot(myData.ROIs.plotData{iROI}(:,1), myData.ROIs.plotData{iROI}(:,2),'linewidth', 2, 'color', myData.ROIs.color{iROI});
                 currText = myData.ROIs.nums{iROI};
                 dffROItext{iROI} = text(currText.Position(1), currText.Position(2), num2str(iROI), 'Color', myData.ROIs.color{iROI});
@@ -1123,6 +1136,10 @@ end%if
             windTrialData = myData.wholeSession(:,:,:,:, myData.stimSepTrials.windTrials);
             [~, baselineData, respData] = extract_target_volumes(windTrialData, onsetTime, volumeRate, baselineDurSec, respDurSec); % --> [x, y, plane, volume, trial]
             dffData = calc_dFF(cat(4, baselineData, respData), baselineData);                                                       % --> [x, y, plane, volume]
+            
+            dffData(isinf(dffData)) = 0; % To eliminate inf values from dividing by zero above...baseline shouldn't be zero in valid data anyways
+            disp(max(dffData(:)))
+            dffData(isnan(dffData)) = 0;
             
             % Calculate absolute max dF/F value across all planes and action states
             range = calc_range(dffData,[]);
@@ -1745,22 +1762,22 @@ end%if
         % ---------- Draw ROI and save relevant information about it ----------
         cm = [ rgb('Blue'); rgb('Green'); rgb('Red'); rgb('Cyan'); rgb('Purple'); rgb('Brown'); ...
             rgb('Indigo'); rgb('DarkRed') ; rgb('Magenta') ; rgb('Gold')];
-        currcolor = cm(mod(index,size(cm,1))+1,:); % index starts at 1 when gui initializes
+        currcolor = cm(mod(indexROI,size(cm,1))+1,:); % indexROI starts at 1 when gui initializes
         
         % Prompt user to create a polygon ROI
-        [myData.ROIs.masks(:,:,index), xi, yi] = roipoly; % --> [x, y, ROInum]
+        [myData.ROIs.masks(:,:,indexROI), xi, yi] = roipoly; % --> [x, y, ROInum]
         currAxes = gca;
         
         % Save other useful information about the ROI
         numLoc = strfind(currAxes.Tag, '#');
-        myData.ROIs.planes{index} = currAxes.Tag(numLoc+1:end);
-        myData.ROIs.plots{index} = plot(xi, yi, 'linewidth', 2, 'color', currcolor);
-        myData.ROIs.plotData{index} = [xi, yi];
-        myData.ROIs.nums{index} = text(mean(xi),mean(yi),num2str(index),'Color',currcolor, ...
+        myData.ROIs.planes{indexROI} = currAxes.Tag(numLoc+1:end);
+        myData.ROIs.plots{indexROI} = plot(xi, yi, 'linewidth', 2, 'color', currcolor);
+        myData.ROIs.plotData{indexROI} = [xi, yi];
+        myData.ROIs.nums{indexROI} = text(mean(xi),mean(yi),num2str(indexROI),'Color',currcolor, ...
             'FontSize',12);
-        myData.ROIs.color{index} = currcolor;
+        myData.ROIs.color{indexROI} = currcolor;
         
-        index = index + 1; % Track total # of ROIs that have been drawn
+        indexROI = indexROI + 1; % Track total # of ROIs that have been drawn
     end
 %---------------------------------------------------------------------------------------------------
     function clearROIButton_Callback(~, ~)
@@ -1770,89 +1787,9 @@ end%if
             delete(myData.ROIs.nums{iROI})
         end
         myData.ROIs = [];
-        index = 1; % Reset global count of total # of ROIs drawn
+        indexROI = 1; % Reset global count of total # of ROIs drawn
         drawnow()
         disp('ROIs cleared')
     end
 %---------------------------------------------------------------------------------------------------
 end%function
-
-
-function myData = load_imaging_data()
-% Prompts user for input data file(s) and loads data
-
-% Prompt user for imaging data file
-[dataFile, pathName, ~] = uigetfile('*.mat', 'Select an imaging data session file', 'D:\Dropbox (HMS)\2P Data\Imaging Data\');
-if dataFile == 0
-    disp('Initialization cancelled')
-    myData = []; % Skip loading if user clicked "Cancel"
-else
-    disp(['Loading ' dataFile, '...'])
-    imgData = load([pathName, dataFile]); % Fields are: 'regProduct','trialType','origFileNames','tE_sec', 'expDate'
-    disp([dataFile, ' loaded'])
-    
-    % Prompt user for behavioral annotation data file
-    [annotDataFile, pathName, ~] = uigetfile('*.mat', 'Select a behavioral annotation data file if desired', 'D:\Dropbox (HMS)\2P Data\Imaging Data\');
-    if annotDataFile == 0
-        disp('No behavioral annotation data selected')
-        annotData.behaviorLabels = [];
-        annotData.goodTrials = [];
-        annotData.trialAnnotations = [];
-    else
-        disp(['Loading ' annotDataFile, '...'])
-        annotData = load([pathName, annotDataFile]);
-        disp([annotDataFile, ' loaded'])
-    end
-    
-    myData = setstructfields(imgData, annotData); % Combine imaging data and annotation data into one structure
-    
-    
-    % Load .mat file containing trial metadata
-    
-    
-    % Process raw data structure
-    if ~isfield(myData, 'wholeSession')
-        myData.wholeSession = myData.regProduct; % --> [x, y, plane, volume, trial]
-    end
-    myData.nTrials = size(myData.wholeSession, 5);
-    singleTrial = squeeze(myData.wholeSession(:,:,:,:,1));  % --> [x, y, plane, volume]
-    myData.nPlanes = size(singleTrial, 3);
-    myData.nVolumes = size(singleTrial, 4);
-    myData.stimTypes = sort(unique(myData.trialType));
-    if ~isempty(annotData.trialAnnotations)
-        myData.nFrames = max(cellfun(@height, myData.trialAnnotations));
-    else
-        myData.nFrames = [];
-    end
-    
-    % For compatibility with early experiments
-    if ~isfield(myData, 'expDate')
-        cellDate = inputdlg('Please enter experiment date in YYYY_MM_DD format');
-        myData.expDate = cellDate{1};
-    end
-    
-    % Extract session number
-    origFileName = myData.origFileNames{1};
-    sidLoc = strfind(origFileName, 'sid_');
-    myData.sid = origFileName(sidLoc+4);
-    
-    % Create mean reference image for each plane
-    myData.refImg = [];
-    for iPlane = 1:myData.nPlanes
-        myData.refImg{iPlane} = squeeze(mean(mean(myData.wholeSession(:,:,iPlane,:,:),4),5)); % --> [x, y]
-    end
-    
-    % Separate out wind trials
-    myData.stimSepTrials = [];
-    for iStim = 1:length(myData.stimTypes)
-        myData.stimSepTrials.(myData.stimTypes{iStim}) = logical(cellfun(@(x) ...
-            strcmp(x, myData.stimTypes{iStim}), myData.trialType));
-    end
-    myData.stimSepTrials.windTrials = logical(myData.stimSepTrials.RightWind);
-    
-end%if
-end%function
-
-
-
-

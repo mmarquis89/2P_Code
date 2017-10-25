@@ -71,25 +71,18 @@ if nChannels == 1
 else % nChannels == 2
     
     % Separate data by channel if necessary
-    avgStackScaled_1 = avgStackScaled(:,:,:,1);
+    avgStack_1 = avgStack(:,:,:,1);
     maxZScaled_1 = maxZScaled(:,:,1);
     if nChannels == 2
-        avgStackScaled_2 = avgStackScaled(:,:,:,2);
+        avgStack_2 = avgStack(:,:,:,2);
         maxZScaled_2 = maxZScaled(:,:,2);
     end
     
-    % Write Z-projection to .tif files
-    imwrite(maxZScaled, fullfile(dirPath, [outputFilePrefix, 'MeanMaxZ_1.tif']));
-    imwrite(maxZScaled, fullfile(dirPath, [outputFilePrefix, 'MeanMaxZ_2.tif']));
-    
-    % Write averaged stack to .tif files
-    imwrite(avgStackScaled_1(:,:,1), fullfile(dirPath, [outputFilePrefix, 'MeanStack_1.tif']));
-    for iPlane = 2:size(avgStackScaled_1, 3)
-        imwrite(avgStackScaled_1(:,:,iPlane), fullfile(dirPath, [outputFilePrefix, 'MeanStack_1.tif']), 'writemode','append');
-    end
-    imwrite(avgStackScaled_2(:,:,1), fullfile(dirPath, [outputFilePrefix, 'MeanStack_2.tif']));
-    for iPlane = 2:size(avgStackScaled_2, 3)
-        imwrite(avgStackScaled_2(:,:,iPlane), fullfile(dirPath, [outputFilePrefix, 'MeanStack_2.tif']), 'writemode','append');
+    % Write averaged stack and Z-projection to .tif files
+    imwrite(maxZScaled, fullfile(dirPath, [outputFilePrefix, 'MeanMaxZ.tif']));
+    imwrite(avgStackScaled(:,:,1), fullfile(dirPath, [outputFilePrefix, 'MeanStack.tif']));
+    for iPlane = 2:size(avgStackScaled, 3)
+        imwrite(avgStackScaled(:,:,iPlane), fullfile(dirPath, [outputFilePrefix, 'MeanStack.tif']), 'writemode','append');
     end
     
 end

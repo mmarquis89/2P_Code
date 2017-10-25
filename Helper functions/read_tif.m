@@ -3,7 +3,7 @@ function [ output ] = read_tif( tifPath )
 % Reads a .tif stack of 2P data into an array
 % 
 % Input: 
-%       tifPath = String with path to .tif file
+%       tifPath = String specifying path to .tif file
 % Output: 
 %       output = image data array: [Lines, Pixels, Planes, Volumes]
 % ==================================================================================================
@@ -26,6 +26,7 @@ end
 frameString = tifObj.getTag('ImageDescription');
 nPlanes = frameStringKeyLookup(frameString, 'hFastZ.numFramesPerVolume');
 nVolumes = frameStringKeyLookup(frameString, 'hFastZ.numVolumes');
+nChannels = length(frameStringKeyLookup(frameString, 'scanimage.SI.hChannels.channelSave'));
 
 % Get TIFF tag information
 numLines = tifObj.getTag('ImageLength');
@@ -39,15 +40,20 @@ switch tifObj.getTag('SampleFormat')
         assert('Unrecognized or unsupported SampleFormat tag found');
 end
 
-% Save image stack to array
-output = zeros(numLines,numPixels,nFrames,imageDataType);
-for iframe = 1:nFrames
-    tifObj.setDirectory(iframe);
-    output(:,:,iframe) = tifObj.read();
+
+% Save image stack to array, accounting for multiple channels if necessary
+chanData = [];
+for iChannel = 1:nChannels
+    tifData = zeros(numLines,numPixels,nFrames,imageDataType);  % --> [x, y, frame]
+    for iFrame = 1:nFrames
+        tifObj.setDirectory(iFrame);
+        tifData(:,:,iFrame) = tifObj.read(); % --> [x, y, frame]
+    end
+    currChanData = tifData(:,:,iChannel:nChannels:end);
+    chanData(:,:,:,:, iChannel) = reshape(currChanData, [numLines, numPixels, nPlanes, nVolumes]);
 end
 
-output = reshape(output, [numLines,numPixels,nPlanes,nVolumes]);
-
+output = chanData;
 tifObj.close();
 
 end

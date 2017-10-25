@@ -23,7 +23,7 @@ if ~isempty(myData) % Abort initialization if no data was loaded
     stimTypes = myData.stimTypes;
     
     % Create global/hardcoded variables
-    myData.maxIntensity = 1800; maxIntensity = myData.maxIntensity; % To control brightness of ref images
+    myData.MAX_INTENSITY = 1800; MAX_INTENSITY = myData.MAX_INTENSITY; % To control brightness of ref images
     myData.volumeRate = 6.5; volumeRate = myData.volumeRate;
     myData.trialDuration = 16; trialDuration = myData.trialDuration;
     myData.stimDuration = [4 trialDuration-7]; stimDuration = myData.stimDuration; % [stim start time, stim length] in seconds

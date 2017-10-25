@@ -13,14 +13,15 @@ function msg = make_vids_2P(sid, parentDir, frameRate)
 %===============================================================================================================================
 
 savePath = fullfile(parentDir, '_Movies');
-sessionDirs = dir(fullfile(parentDir, ['*sid_', num2str(sid), '_t*']));
+dirFiles = dir(fullfile(parentDir, ['*sid_', num2str(sid), '_t*']));
+sessionDirs = dirFiles([dirFiles.isdir]); % Drop any non-folder items in the directory (e.g. ball/metadata files)
 
 disp('Creating videos...')
 try
     frameCounts = [];
     for iTrial = 1:length(sessionDirs)
         
-        % Pad the trial number if necessary to ensure correct filename sorting
+        % Pad the trial number with leading zeros if necessary to ensure correct filename sorting
         if iTrial < 10
             padStr = '00';
         elseif iTrial < 100

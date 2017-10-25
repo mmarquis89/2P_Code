@@ -1,9 +1,10 @@
-function matlabImReg_2P_session_MM(path,refVol,refTrial)
+function matlabImReg_2P_session_MM(path, fileName, refVol, refTrial)
 %===================================================================================================
 % Align all data from imaging session to a single volume (translation)
 %
 % INPUTS:
 %       path = session folder containing unregistered cdata files.
+%       fileName = name (no file extension) of the .mat file containing the imaging data/metadata
 %       refVol = the volume number to use as a reference for registration.
 %       refTrial = trial # to pull the reference volume from.
 %
@@ -11,21 +12,22 @@ function matlabImReg_2P_session_MM(path,refVol,refTrial)
 %       filename_reg1 (regProduct')
 % 
 % Code from AKM, modified by MM
-% Last modified: 14-Aug-2017
+% Last modified: 23-Oct-2017
 %===================================================================================================
 % cd(path);
 
 % Load the unregistered session file
-files=dir(fullfile(path, '*sessionFile.mat'));
-in=load(files(1).name);
+disp('Loading file...')
+in = load(fullfile(path, [fileName, '.mat']));
+disp('Registering...')
 
-movingFile=in.wholeSession; % [x y plane vol trial]
-trialType=in.trialType;  
-origFileNames=in.origFileNames;
+movingFile = in.wholeSession; % [x y plane vol trial]
+trialType = in.trialType;  
+origFileNames = in.origFileNames;
 expDate = in.expDate;
 
-% refVol is a volume from the baseline period 
-% of the first odor trial.
+
+% Pull out the reference volume
 refVolData=squeeze(in.wholeSession(:,:,:,refVol,refTrial));
 
 % Initialize empty array
@@ -49,7 +51,12 @@ for iTrial=1:size(movingFile,5)
 end
 tE_sec=toc;
 
+% Remove edge pixels to crop out any registration artifacts
+yrange = 3:size(regProduct,1)-2;
+xrange = 3:size(regProduct,2)-2;
+regProduct = regProduct(yrange,xrange,:,:);
+
 % Save output
-save(fullfile(path, 'sessionOutfile_Reg1'),'regProduct','trialType','origFileNames','tE_sec','expDate');
+save(fullfile(path, [fileName, '_Reg1']),'regProduct','trialType','origFileNames','tE_sec','expDate');
     
 end

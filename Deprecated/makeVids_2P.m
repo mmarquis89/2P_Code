@@ -1,4 +1,4 @@
-function msg = make_vids_2P(sid, parentDir, frameRate)
+function msg = make_vids_2P(sid, parentDir, FRAME_RATE)
 %============================================================================================================================
 % CREATE MOVIES FROM .TIF FILES FROM 2P EXPERIMENT
 % Creates an .avi movie for each trial of a 2P imaging experiment from the .tif files captured by the fly behavior camera,
@@ -6,9 +6,10 @@ function msg = make_vids_2P(sid, parentDir, frameRate)
 % The videos are saved in a folder within the parent directory named '_Movies'.
 %
 % Inputs:
-%       sid = the session ID of the videos you want to process
-%       parentDir = the directory containing the subfolders with videos from all sessions
-%               e.g. 'U:\2P Behavior Video\2017_07_30' with subfolder e.g. '\bdata_OdorCenterWind_20170730_170018_sid_0_tid_0'
+%       sid         = the session ID of the videos you want to process
+%       parentDir   = the directory containing the subfolders with videos from all sessions
+%                       e.g. 'U:\2P Behavior Video\2017_07_30' with subfolder e.g. '\bdata_OdorCenterWind_20170730_170018_sid_0_tid_0'
+%       FRAME_RATE  = the frame rate that the behavior video was acquired at in frames/sec
 %============================================================================================================================
 
 savePath = fullfile(parentDir, '_Movies');

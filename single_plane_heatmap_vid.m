@@ -13,7 +13,7 @@ function single_plane_heatmap_vid(dataArr, planeNum, infoStruct, cLimRanges, fil
 %       planeNum    =  the number of the imaging plane to use for the video
 %
 %       infoStruct  =  the main imaging data structure containing metadata for the experiment. Specifically, must contain 
-%                     the fields "refImg", "maxIntensity" and "volumeRate".
+%                     the fields "refImg", "MAX_INTENSITY" and "volumeRate".
 %
 %       cLimRanges  =  an n x 2 vector where each row is in the form [min max] to set the colormap bounds for one plot.
 %
@@ -100,7 +100,7 @@ if overwrite
         
         % Plot reference image for the appropriate plane in first subplot
         plotAxes{1} = subaxis(nAxes(1), nAxes(2), 1, 'Spacing', 0.01, 'MB', 0.025);
-        imshow(infoStruct.refImg{planeNum}, [0 infoStruct.maxIntensity]);
+        imshow(infoStruct.refImg{planeNum}, [0 infoStruct.MAX_INTENSITY]);
         
         % Plot each dF/F heatmap
         for iPlot = 1:size(dataArr, 4)

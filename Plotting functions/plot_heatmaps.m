@@ -13,7 +13,7 @@ function [f, plotAxes] = plot_heatmaps(dataArr, infoStruct, cLimRange, plotTitle
 %                     plane and cannot be >5.
 %
 %       infoStruct =  the main imaging data structure containing metadata for the experiment. 
-%                     Specifically, must contain the fields "nPlanes", "refImg", and "maxIntensity".
+%                     Specifically, must contain the fields "nPlanes", "refImg", and "MAX_INTENSITY".
 %
 %       cLimRange  =  a two-element vector [min max] to set the min and max colormap values.
 %
@@ -64,7 +64,7 @@ for iPlane = infoStruct.nPlanes:-1:1 % Figure windows arranged dorsal --> ventra
     
     % Plot reference image for the current plane
     plotAxes{iPlane, 1} = subplot(subplotDims(1), subplotDims(2), 1);
-    imshow(infoStruct.refImg{iPlane}, [0 infoStruct.maxIntensity]);
+    imshow(infoStruct.refImg{iPlane}, [0 infoStruct.MAX_INTENSITY]);
     
     % Plot dF/F heatmaps for each of the other trial types
     for iPlot = 1:nPlots

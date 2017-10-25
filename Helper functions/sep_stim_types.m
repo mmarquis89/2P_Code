@@ -13,7 +13,7 @@ function stimTypeData = sep_stim_types(infoStruct, combineStimTrials)
 %       combineStimTrials = boolean specifying whether to combine different stimulus types
 %
 % OUTPUTS:
-%       stimTypeData = cell array of separated data in the form [x, y, plane, volume, trial]
+%       stimTypeData = cell array of separated data in the form {[x, y, plane, volume, trial]}
 %
 %================================================================================================
 

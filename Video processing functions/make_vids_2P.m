@@ -77,6 +77,12 @@ try
     msg = 'Videos created successfully!';
 catch
     msg = ['Error - video making failed on trial #', num2str(iTrial)];
+    disp(msg)
+    
+    % Create save directory if it doesn't already exist
+    if ~isdir(savePath)
+        mkdir(savePath);
+    end
     
     % Save frame count log
     save(fullfile(savePath, ['sid_', num2str(sid) '_frameCountLog.mat']), 'frameCounts')

@@ -28,7 +28,7 @@ expDate = in.expDate;
 
 
 % Pull out the reference volume
-refVolData=squeeze(in.wholeSession(:,:,:,refVol,refTrial));
+refVolData=squeeze(in.wholeSession(:,:,:,refVol,refTrial)); % --> [x, y, plane]
 
 % Initialize empty array
 regProduct=uint16(zeros(size(movingFile)));
@@ -42,10 +42,10 @@ tic
 for iTrial=1:size(movingFile,5)
     for iVol=1:size(movingFile,4)
         
-        mVol=squeeze(movingFile(:,:,:,iVol,iTrial));
+        mVol=squeeze(movingFile(:,:,:,iVol,iTrial));    % --> [x, y, plane, volume, trial]
         disp(['Volume #', num2str(iVol), ' of ', num2str(size(movingFile,4)), ', Trial #', num2str(iTrial), ' of ' num2str(size(movingFile,5))])
         transProd=imregister(mVol,refVolData,'translation',optimizer,metric,'PyramidLevels',2);
-        regProduct(:,:,:,iVol,iTrial)=transProd;
+        regProduct(:,:,:,iVol,iTrial)=transProd;        % --> [x, y, plane, volume, trial]
         
     end
 end
@@ -54,7 +54,12 @@ tE_sec=toc;
 % Remove edge pixels to crop out any registration artifacts
 yrange = 3:size(regProduct,1)-2;
 xrange = 3:size(regProduct,2)-2;
-regProduct = regProduct(yrange,xrange,:,:);
+regProduct = regProduct(yrange,xrange,:,:,:); % --> [x, y, plane, volume, trial]
+
+% Re-offset so minimum value = 1
+regProduct = (regProduct - min(regProduct(:))) + 1;
+disp(['nan count = ', num2str(sum(isnan(regProduct (:))))]);
+disp(['inf count = ', num2str(sum(isinf(regProduct (:))))]);
 
 % Save output
 save(fullfile(path, [fileName, '_Reg1']),'regProduct','trialType','origFileNames','tE_sec','expDate');

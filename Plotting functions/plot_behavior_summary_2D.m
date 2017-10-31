@@ -59,8 +59,8 @@ plotAxes.XLabel.String = 'Time (sec)';
 plotAxes.YLabel.String = 'Trial number';
 plotAxes.XLabel.FontSize = 16;
 plotAxes.YLabel.FontSize = 14;
-plotAxes.XTick = [0:(1/infoStruct.trialDuration):1] * infoStruct.nFrames;
-plotAxes.XTickLabel = [0:(1/infoStruct.trialDuration):1]*infoStruct.trialDuration;
+plotAxes.XTick = [0:(1/sum(infoStruct.trialDuration)):1] * infoStruct.nFrames;
+plotAxes.XTickLabel = [0:(1/sum(infoStruct.trialDuration)):1] * sum(infoStruct.trialDuration);
 if isempty(titleStr)
     plotAxes.Title.String = [regexprep(infoStruct.expDate, '_(?<num>..)', '\\_$<num>'), '  Behavior Summary']; % regex to add escape characters
 else

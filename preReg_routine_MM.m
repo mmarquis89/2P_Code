@@ -45,10 +45,11 @@ for iSession = mySessions
         % Load a .tif file
         rawFile = read_tif(fullfile(parentDir, currFiles{iFile}));
         rawFile = squeeze(rawFile); % [Lines Pixels Planes Volumes Channels]
-        chanData = zeros(size(rawFile)); chanData = chanData(1:end-4,1:end-4,1:end-4,:,:);
+        chanData = zeros(size(rawFile)); chanData = chanData(:,:,1:end-4,:,:);
         nChannels = size(chanData, 5);
         
         for iChannel = 1:nChannels
+            
             % Offset so minimum value = 1
             workingFile = squeeze(rawFile(:,:,:,:,iChannel));
             workingFile = workingFile-min(workingFile(:));

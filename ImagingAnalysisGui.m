@@ -38,8 +38,14 @@ if ~isempty(myData) % Abort initialization if no data was loaded
     myData.stimEnd = sum(myData.stimDuration); stimEnd = myData.stimEnd;    
     
     % Create hardcoded parameters
-    myData.MAX_INTENSITY = 2000; MAX_INTENSITY = myData.MAX_INTENSITY; % To control brightness of ref image plots
     myData.FRAME_RATE = 25; FRAME_RATE = 25; % This is the frame rate of the behavior video, not the GCaMP imaging
+    maxInts = [];
+    for iPlane = 1:nPlanes
+       maxInts(iPlane) = max(refImg{iPlane}(:));
+    end
+    maxIntDefault = num2str(max(maxInts));
+    myData.MAX_INTENSITY = str2double(inputdlg('Enter max intensity value for reference images', '', 1, {maxIntDefault})); 
+    MAX_INTENSITY = myData.MAX_INTENSITY; % To control brightness of ref image plots
     
     myData.ROIs = [];
     myData.dffData = [];
@@ -55,7 +61,7 @@ if ~isempty(myData) % Abort initialization if no data was loaded
     
     % Figure
     f = figure('position', [50 45, 1800, 950], 'Tag', 'figure', 'WindowButtonDownFcn', ...
-        {@figure_WindowButtonDownFcn}, 'Name', 'Imaging Analysis GUI');
+            {@figure_WindowButtonDownFcn}, 'Name', 'Imaging Analysis GUI', 'NumberTitle', 'off');
     
     %%%% TOP LEVEL TAB GROUP %%%%
     baseTabGroup = uitabgroup(f, 'Units', 'Pixels', 'Position', [5 5 1800 940],...
@@ -214,7 +220,7 @@ end%if
             % Make plots
             plot_behavior_summary_1D(myData, annotArrSum_wind, ...
                 plotAxes1D_wind, 'Wind Trials');
-            plot_behavior_summary_1D(myData, annotArrSum_wind, ...
+            plot_behavior_summary_1D(myData, annotArrSum_noWind, ...
                 plotAxes1D_noWind, 'Control Trials');
             
             % Add shading during stimulus presentation
@@ -434,7 +440,7 @@ end%if
             end
             
             stimTypeDff(isinf(stimTypeDff)) = 0; % To eliminate inf values from dividing by zero above...baseline shouldn't be zero in valid data anyways
-            stimTypeDff(isnan(stimTypeDff)) = 0;
+%             stimTypeDff(isnan(stimTypeDff)) = 0;
             
             
             % Calculate absolute max dF/F value across all planes and stim types
@@ -610,7 +616,7 @@ end%if
             
             % Drop any behaviors that never ocurred
             behaviorLabels = myData.behaviorLabels;
-            observedBehaviors = squeeze(sum(sum(sum(behaviorMean))) ~= 0);
+            observedBehaviors = squeeze(~isnan(sum(sum(sum(behaviorMean)))));
             behaviorMean(:,:,:, ~observedBehaviors) = [];
             behaviorLabels(~observedBehaviors) = [];
             

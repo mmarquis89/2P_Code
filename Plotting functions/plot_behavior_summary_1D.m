@@ -42,8 +42,8 @@ plotAxes.XLabel.FontSize = 16;
 plotAxes.YLabel.String = 'Total movement frames';
 plotAxes.YLabel.FontSize = 14;
 plotAxes.Title.String = titleStr;
-plotAxes.XTick = [0:(1/infoStruct.trialDuration):1]*infoStruct.nFrames;
-plotAxes.XTickLabel = [0:(1/infoStruct.trialDuration):1]*infoStruct.trialDuration;
+plotAxes.XTick = [0:(1/sum(infoStruct.trialDuration)):1]*infoStruct.nFrames;
+plotAxes.XTickLabel = [0:(1/sum(infoStruct.trialDuration)):1] * sum(infoStruct.trialDuration);
 plotAxes.XLim = [0 infoStruct.nFrames];
 
 end

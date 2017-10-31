@@ -46,7 +46,7 @@ nPlots = size(dataArr, 4);
 if nPlots == 1;
     subplotDims = [1 2]; % Side-by-side
 elseif nPlots == 2
-    subplotDims = [1 3]; % Side-by-side
+    subplotDims = [2 2]; % Square
 elseif nPlots == 3
     subplotDims = [2 2]; % Square
 elseif nPlots == 4 || nPlots == 5
@@ -74,7 +74,7 @@ for iPlane = infoStruct.nPlanes:-1:1 % Figure windows arranged dorsal --> ventra
         colormap(plotAxes{iPlane, iPlot+1}, cMapName);
         axis equal; axis off;
         title(plotTitles{iPlot});
-        colorbar
+%         colorbar
     end
 end
 

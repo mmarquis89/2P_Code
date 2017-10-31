@@ -23,12 +23,12 @@ stimTypeData = [];
 if ~combineStimTrials
     % Divide data by stim type
     for iStim = 1:length(stimTypes)
-        stimTypeData{iStim} = infoStruct.wholeSession(:,:,:,:, infoStruct.stimSepTrials.(stimTypes{iStim})); % --> [x, y, plane, volume, trial, stimType]
+        stimTypeData{iStim} = infoStruct.wholeSession(:,:,:,:, infoStruct.stimSepTrials.(stimTypes{iStim})); % --> {x, y, plane, volume, trial}
     end
 else
     % Divide into combined stim trials vs. control trials
-    stimTypeData{1} = infoStruct.wholeSession(:,:,:,:, infoStruct.stimSepTrials.windTrials);                 % --> [x, y, plane, volume, trial, stimType]
-    stimTypeData{2} = infoStruct.wholeSession(:,:,:,:, ~infoStruct.stimSepTrials.windTrials);                % --> [x, y, plane, volume, trial, stimType]
+    stimTypeData{1} = infoStruct.wholeSession(:,:,:,:, infoStruct.stimSepTrials.windTrials);                 % --> {x, y, plane, volume, trial}
+    stimTypeData{2} = infoStruct.wholeSession(:,:,:,:, ~infoStruct.stimSepTrials.windTrials);                % --> {x, y, plane, volume, trial}
 end
 
 end

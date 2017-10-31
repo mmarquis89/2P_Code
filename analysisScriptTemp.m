@@ -29,12 +29,12 @@ expDate = myData.expDate;
 % Create array of annotation data (row = trial, col = frame)
 annotationArr = [];
 annotTrials = 1:myData.nTrials;
-for iTrial = annotTrials(annotData.goodTrials) % Skip any trials with dropped frames 
+for iTrial = annotTrials(myData.goodTrials) % Skip any trials with dropped frames 
    annotationArr(iTrial,:) = myData.trialAnnotations{iTrial}.actionNums; %--> [trial, frame]
 end
 
 %----------Plot 2D data with seconds on X-axis----------
-trialGroups = stimSepTrials.windTrials + 2*(~stimSepTrials.windTrials);
+trialGroups = myData.stimSepTrials.windTrials + 2 * (~myData.stimSepTrials.windTrials);
 titleStr = [regexprep(expDate, '_(?<num>..)', '\\_$<num>'), '  Behavior Summary  (top: wind trials,  bottom: control trials)']; % regex to add escape characters
 [~, ~, f] = plot_behavior_summary_2D(myData, annotationArr, [], titleStr, trialGroups);
 
@@ -42,14 +42,14 @@ titleStr = [regexprep(expDate, '_(?<num>..)', '\\_$<num>'), '  Behavior Summary 
 
 % Average across trials for wind and control trials
 annotArrLog = annotationArr ~= 0;
-annotArrSum_wind = sum(annotArrLog(stimSepTrials.windTrials,:), 1);
-annotArrSum_noWind = sum(annotArrLog(~stimSepTrials.windTrials,:), 1);
+annotArrSum_wind = sum(annotArrLog(myData.stimSepTrials.windTrials,:), 1);
+annotArrSum_noWind = sum(annotArrLog(~myData.stimSepTrials.windTrials,:), 1);
 
 % Plot stimulus trial data
 h = figure(2); clf;
 h.Position = [100 50 1600 950];
 subplot(2,1,1); ax1 = gca();
-[~, ~, h] = plot_behavior_summary_1D(myData, annotArrSum_wind, ax1, 'Wind Trials');
+[~, ~, ~] = plot_behavior_summary_1D(myData, annotArrSum_wind, ax1, 'Wind Trials');
 
 % Add shading during stimulus presentation
 yL = ylim();
@@ -59,7 +59,7 @@ ylim(yL);
 
 % Plot control trial data
 subplot(2,1,2); ax2 = gca();
-[~, ~, h] = plot_behavior_summary_1D(myData, annotArrSum_noWind, ax2, 'Control Trials');
+[~, ~, ~] = plot_behavior_summary_1D(myData, annotArrSum_noWind, ax2, 'Control Trials');
 
 suptitle([regexprep(expDate, '_(?<num>..)', '\\_$<num>'), '  Summed Movement Frames']) % regex to add escape characters
 
@@ -118,7 +118,7 @@ suptitle([regexprep(expDate, '_(?<num>..)', '\\_$<num>'), '  Summed Movement Fra
 % ----------Save data as a .fig file and a .png file for each figure----------
 
 % Create analysis directory if necessary
-saveDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', myData.sessionNum, '\Analysis'];
+saveDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', myData.sid, '\Analysis'];
 if ~isdir(saveDir)
    mkdir(saveDir); 
 end
@@ -145,7 +145,7 @@ if overwrite
 end
 
 %% CALCULATE MEAN dF/F FOR WIND STIM ONSET AND OFFSET
-stimSepTrials = []; wholeTrialAvg = []; baselineAvg = []; baselineF = []; dff = []; dffRaw = []; stimAvg = [];
+stimSepTrials = []; wholeTrialAvg = []; baselineAvg = []; baselineF = []; dff = []; dffRaw = []; stimAvg = []; postStimAvg = [];
 for iStim = 1:length(stimTypes)
     
     % Separate trials by stimulus type
@@ -228,7 +228,7 @@ windDffVols = (stimVolsMean - baselineMeanRep) ./ baselineMeanRep;              
     %% CREATE VIDEO OF MEAN dF/F THROUGHOUT WIND RESPONSES
 
 % Calculate absolute max dF/F value across all planes and action states
-range = calc_range(windDffVols,[]);
+range = calc_range(windDffVols,[0.75]);
 
 % Calculate volume times in seconds relative to wind onset
 baselineVolTimes = -(1:size(baselineVols, 4))/myData.volumeRate;
@@ -246,7 +246,7 @@ for iVol = 1:size(windDffVols, 4)
 end
 
 % Create video
-savePath = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_1\Analysis'];
+savePath = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_0\Analysis'];
 fileName = 'Wind_Onset_Responses_ratio';
 make_heatmap_vid(windDffVols, myData, range, fileName, titleStrings, savePath, [], [], []);
      
@@ -343,7 +343,7 @@ for iTrial = 1:myData.nTrials
         
         % Find onsets of running bouts >respLen volumes in duration and preceded by >baseLen volumes of quiescence
         baseLen = 12;
-        respLen = 30;
+        respLen = 24;
         actionPattern = [zeros(1,baseLen), ones(1,respLen)*2];
         patternLen = length(actionPattern);
         currTrialOnsets = strfind(volActions(iTrial, :), actionPattern);
@@ -583,11 +583,11 @@ for iBout = 1:size(allBouts,1)
     boutDff = movmean(boutDff, 3, 3);
     
     % Calculate dF/F value range
-    range = calc_range(boutDff,[]);
+    range = calc_range(boutDff,[0.8]);
 
     % Load behavior vid for the current trial
     vidDir = fullfile('D:\Dropbox (HMS)\2P Data\Behavior Vids', myData.expDate, '_Movies');
-    trialStr = ['sid_', num2str(myData.sessionNum), '_tid_', sprintf('%03.f',(allBouts(iBout, 1)))];
+    trialStr = ['sid_', num2str(myData.sid), '_tid_', sprintf('%03.f',(allBouts(iBout, 1)))];
     myMovie = [];
     flyVid = VideoReader(fullfile(vidDir, [trialStr, '.mp4']));
     while hasFrame(flyVid)
@@ -600,10 +600,25 @@ for iBout = 1:size(allBouts,1)
     volTimes = (1:myData.nVolumes)' ./ myData.volumeRate;
     frameTimes = myData.trialAnnotations{find(myData.goodTrials, 1)}.frameTime;
     for iFrame = 1:size(myMovie, 3)
-       [~, volFrames(iFrame)] = min(abs(volTimes - frameTimes(iFrame))); 
+        [~, volFrames(iFrame)] = min(abs(volTimes - frameTimes(iFrame)));
     end
     
+    % Calculate frame times in seconds relative to behavior bout onset
     boutFrames = find(volFrames == allBouts(iBout,2),1):find(volFrames == allBouts(iBout,3),1);
+    baselineLengthFrames = floor(find(volFrames == baselineLength, 1, 'last'));
+    baselineFrameTimes = frameTimes(baselineLengthFrames:-1:1);
+    boutFrameTimes = frameTimes(1:(numel(boutFrames) - baselineLengthFrames));
+    relFrameTimes = [baselineFrameTimes; boutFrameTimes];
+    for iFrame = 1:numel(boutFrames)
+        if iFrame <= baselineLengthFrames
+            relTimeStr = 'before';
+        else
+            relTimeStr = 'after';
+        end
+        titleStrings{iFrame} = ['Time = ', sprintf('%05.2f', relFrameTimes(iFrame)), ' sec ', relTimeStr, ' locomotion onset'];
+    end
+    
+    
     for iFrame = 1:numel(boutFrames)
         
         % Create fig
@@ -632,22 +647,15 @@ for iBout = 1:size(allBouts,1)
                 title('Dorsal')
             end
         end
-        
-        % Add title above all subplots
-        if iFrame <= floor(find(volFrames == baselineLength, 1, 'last'))
-            titleStr = 'before movement onset';
-        else
-            titleStr = 'after movement onset';
-        end
+
         suptitle(['Trial #', num2str(allBouts(iBout,1)), ', Movement bout #', num2str(iBout), ' of ', ...
-            num2str(size(allBouts,1)), '  -  Time = ', sprintf('%05.2f', frameTimes(boutFrames(iFrame))), ...
-            ' sec ', titleStr]);
+            num2str(size(allBouts,1)), '  -  ', titleStrings{iFrame}]);
         
         % Write frame to video
         writeFrame = getframe(f);
         writeVideo(myVid, writeFrame);
     end
-end%if
+end%for
 close(myVid)
 
 
@@ -655,7 +663,7 @@ close(myVid)
 
 %++++++++++ Calculate whole-trial dF/F using overall mean as baseline ++++++++++
 
-allWindTrials = myData.wholeSession(:,:,:,:,logical(stimSepTrials.windTrials));   % --> [x, y, plane, volume, trial]   
+allWindTrials = myData.wholeSession(:,:,:,:,myData.stimSepTrials.windTrials);   % --> [x, y, plane, volume, trial]   
 
 % Calculate dF/F using whole trial average as baseline
 baseline = mean(mean(allWindTrials, 5), 4);                           % --> [x, y, plane]
@@ -684,7 +692,7 @@ end
 
 % Create video
 savePath = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', myData.expDate, '\sid_0\Analysis'];
-fileName = 'Full_Trial_dFF';
+fileName = 'Full_Trial_dFF_ratio';
 make_heatmap_vid(wholeTrialDff, myData, range, fileName, titleStrings, savePath, [], [], []);
 
 %----------Create video of mean raw fluorescence signal throughout trial----------
@@ -708,7 +716,7 @@ end
 
 % Update file name and create video
 savePath = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', myData.expDate, '\sid_0\Analysis'];
-fileName = 'Full_Trial_RawF';
+fileName = 'Full_Trial_RawF_ratio';
 make_heatmap_vid(trialAvg, myData, range, fileName, titleStrings, savePath, [], [], []);
 
 
@@ -756,7 +764,7 @@ for iTrial = 1:myData.nTrials
 end
 
 % Separate trials 
-trialConditions = [preStimMove, stimMove.*3, stimSepTrials.windTrials'.*5];
+trialConditions = [preStimMove, stimMove.*3, myData.stimSepTrials.windTrials'.*5];
 windNoMove = (sum(trialConditions,2) == 5);
 windStartMove = (sum(trialConditions,2) == 8);
 windContMove = (sum(trialConditions,2) == 9);
@@ -795,7 +803,7 @@ dffAvg(isinf(dffAvg)) = 0;
  %% PLOT WIND STIM ONSET RESPONSE HEATMAPS FOR SOME TRIAL CONDITIONS
     
 % Calculate absolute max dF/F value across all planes and stim types
-currConds = [1 2 5];
+currConds = [1 2 3];
 rangeScalar = 1;
 dffConds = reshape(dffAvg(:,:,:,currConds), [1 numel(dffAvg(:,:,:,currConds))]);
 range = calc_range(dffConds, rangeScalar);
@@ -1006,7 +1014,7 @@ windTrials = myData.wholeSession(:,:,:,:,logical(myData.stimSepTrials.windTrials
 
 
 % Pull out data for one plane
-planeNum = 6;
+planeNum = 11;
 planeData = squeeze(windTrials(:,:,planeNum,:,:)); % --> [x, y, volume, trial]
 [w,x,y,z] = size(planeData);
 planeDataRS = reshape(planeData, [w, x, y*z]); % --> [x, y, volume]

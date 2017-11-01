@@ -29,12 +29,12 @@ refVolData = squeeze(in.wholeSession(:,:,:,refVol,refTrial)); % --> [x, y, plane
 % Set up registration parameters
 [optimizer, ~] = imregconfig('monomodal');
 metric = registration.metric.MattesMutualInformation;
-metric.UseAllPixels = 0;
-metric.NumberOfSpatialSamples = 50000;
+metric.UseAllPixels = 1;
+% metric.NumberOfSpatialSamples = 50000;
 optimizer.GradientMagnitudeTolerance = 1e-4; %1e-3
 optimizer.MinimumStepLength = 1e-5;
 optimizer.MaximumStepLength = 5e-2;% 0.0625
-optimizer.MaximumIterations = 200;
+optimizer.MaximumIterations = 100;
 optimizer.RelaxationFactor = 0.5;
 
 % Run registration
@@ -46,7 +46,7 @@ for iTrial=1:size(movingFile,5)
         % Isolate current volume and register to reference volume
         currVol = squeeze(movingFile(:,:,:,iVol,iTrial));    % --> [x, y, plane, volume, trial]
         disp(['Volume #', num2str(iVol), ' of ', num2str(size(movingFile,4)), ', Trial #', num2str(iTrial), ' of ' num2str(size(movingFile,5))])
-        tForms{iTrial, iVol} = imregtform(currVol, refVolData, 'rigid', optimizer, metric, 'PyramidLevels', 2);
+        tForms{iTrial, iVol} = imregtform(currVol, refVolData, 'translation', optimizer, metric, 'PyramidLevels', 2);
         
     end
 end

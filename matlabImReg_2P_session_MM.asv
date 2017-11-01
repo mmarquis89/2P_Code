@@ -9,7 +9,7 @@ function tForms = matlabImReg_2P_session_MM(path, fileName, refVol, refTrial)
 %       refTrial    = trial # to pull the reference volume from.
 %
 % OUTPUTS:
-%       tForms      = nTrials x nVols cell array containing the 3dAffine objects specifying the 
+%       tForms      = nVols x nTrials cell array containing the 3dAffine objects specifying the 
 %                     registration transformation for each volume.
 % 
 % Code from AKM, modified by MM
@@ -46,7 +46,7 @@ for iTrial=1:size(movingFile,5)
         % Isolate current volume and register to reference volume
         currVol = squeeze(movingFile(:,:,:,iVol,iTrial));    % --> [x, y, plane, volume, trial]
         disp(['Volume #', num2str(iVol), ' of ', num2str(size(movingFile,4)), ', Trial #', num2str(iTrial), ' of ' num2str(size(movingFile,5))])
-        tForms{iTrial, iVol} = imregtform(currVol, refVolData, 'rigid', optimizer, metric, 'PyramidLevels', 2);
+        tForms{iVol, iTrial} = imregtform(currVol, refVolData, 'rigid', optimizer, metric, 'PyramidLevels', 2);
         
     end
 end
@@ -56,11 +56,6 @@ tE_sec=toc;
 save(fullfile(path, [fileName, '_registration_transforms']),'tForms', 'tE_sec');
 
 end
-
-
-
-
-
 
 
 

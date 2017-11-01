@@ -1,5 +1,5 @@
 
-expDate = '2017_10_26_TH_Gal4';
+expDate = '2017_10_22';
 
 %%
 % %% CREATE ANATOMY STACKS --------------------------------------------------------------------------
@@ -18,13 +18,36 @@ expDate = '2017_10_26_TH_Gal4';
 
 % %%% REGISTRATION -----------------------------------------------------------------------------------
 refVol = 8;
-refTrial = 10;
-sid = 0;
+refTrial = 15;
+sid = 1;
 % 
 tic
-fileName  = ['sid_', num2str(sid), '_sessionFile'];
+fileName = 'sid_1_Chan_2_sessionFile';
+% fileName  = ['sid_', num2str(sid), '_sessionFile'];
 matlabImReg_2P_session_MM(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)],fileName,refVol,refTrial);
 disp(['Registration took ', round(num2str(toc)) ' sec']);
+
+registration_transform(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)], fileName, [fileName, '_registration_transforms']); 
+newfileName = 'sid_1_Chan_1_sessionFile';
+registration_transform(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)], newfileName, [fileName, '_registration_transforms']); 
+newfileName = 'sid_1_ChanRatio_sessionFile';
+registration_transform(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)], newfileName, [fileName, '_registration_transforms']); 
+
+tic
+clear all
+expDate = '2017_10_23';
+sid = 0;
+fileName = 'sid_0_Chan_2_sessionFile';
+matlabImReg_2P_session_MM(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)],fileName,refVol,refTrial);
+disp(['Registration took ', round(num2str(toc)) ' sec']);
+
+registration_transform(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)], fileName, [fileName, '_registration_transform']); 
+fileName = 'sid_0_Chan_1_sessionFile';
+registration_transform(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)], fileName, [fileName, '_registration_transform']); 
+fileName = 'sid_0_ChanRatio_sessionFile';
+registration_transform(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)], fileName, [fileName, '_registration_transform']); 
+
+
 % 
 % tic
 % fileName  = 'sid_0_Chan_2_sessionFile';
@@ -37,7 +60,7 @@ disp(['Registration took ', round(num2str(toc)) ' sec']);
 % disp(['Registration took ', round(num2str(toc)) ' sec']);
 
 
-%%% MAKE VIDEOS ------------------------------------------------------------------------------------
+%% % MAKE VIDEOS ------------------------------------------------------------------------------------
 FRAME_RATE = 25;
 sid = 0;
 
@@ -58,7 +81,7 @@ sid = 0;
 
 %%% ARCHIVE FILES ----------------------------------------------------------------------------------
 parentDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate];
-sid = 0;
+sid = 1;
 
 %%% Archive raw anatomy stacks
 archiveName = 'AnatomyStacks';
@@ -79,7 +102,7 @@ system7zip(parentDir, archiveName, '7z', ['*sid_', num2str(sid), '_t*'], 1);
 
 
 
-% =============================================================================================================================
+%% =============================================================================================================================
 
 
 
@@ -167,13 +190,15 @@ system7zip(parentDir, archiveName, '7z', ['*sid_', num2str(sid), '_t*'], 1);
 
 %% PROCESS ANVIL ANNOTATION DATA ------------------------------------------------------------------
 FRAME_RATE = 25;
-trialDuration = 16;
+trialDuration = 20;
+expDate = '2017_10_26';
 
+sid = 1;
 parentDir = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate, '\_Movies'];
-saveDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_0'];
-sid = 0;
-annotationFileName = [expDate, '_sid_0_Annotation.txt'];
+saveDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)];
+annotationFileName = [expDate, '_sid_', num2str(sid), '_Annotation.txt'];
 
 tic
 test = process_anvil_annotations(sid, parentDir, saveDir, annotationFileName, FRAME_RATE, trialDuration);
 disp(['Processing Anvil annotations took ', round(num2str(toc)) ' sec']);
+

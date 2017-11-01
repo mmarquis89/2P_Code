@@ -198,10 +198,9 @@ range = calc_range(dffAvgPost,[]);
 
 
 %% CALCULATE MEAN dF/F AROUND WIND RESPONSES
-
 stimSepTrials = [];
 
-% Separate out center wind trials
+% Separate out  wind trials
 for iStim = 1:length(stimTypes)
     stimSepTrials.(stimTypes{iStim}) = logical(cellfun(@(x) strcmp(x, stimTypes{iStim}), myData.trialType));  
 end 
@@ -210,6 +209,8 @@ windTrials = myData.wholeSession(:,:,:,:,logical(myData.stimSepTrials.windTrials
 % Calculate dF/F before and after wind onset using an equal period before onset as baseline
 stimLength = stimEnd - stimStart;
 stimLengthVols = floor(stimLength * volumeRate);
+
+% Pre-stim
 if floor(stimStart*volumeRate) - stimLengthVols > 0
     baselineVols = windTrials(:,:,:,floor(stimStart*volumeRate) - stimLengthVols:floor(stimStart*volumeRate),:);  % --> [x, y, plane, volume, trial]
 else
@@ -217,8 +218,9 @@ else
     baselineVols = windTrials(:,:,:,floor(volumeRate):floor(stimStart*volumeRate),:);                             % --> [x, y, plane, volume, trial]
 end
 
+% Stim period + 3 seconds after the stim offset
+stimVols = windTrials(:,:,:,ceil((stimStart*volumeRate)-size(baselineVols, 4)):floor((stimStart*volumeRate) + (3*volumeRate) + stimLengthVols),:);       % --> [x, y, plane, volume, trial]  
 
-stimVols = windTrials(:,:,:,ceil((stimStart*volumeRate)-size(baselineVols, 4)):ceil((stimStart*volumeRate)+2*volumeRate +stimLengthVols),:);       % --> [x, y, plane, volume, trial]  
 stimVolsMean = mean(stimVols, 5);                                                                                                                  % --> [x, y, plane, volume]
 baselineMean = mean(mean(baselineVols, 5), 4);                                                                                                     % --> [x, y, plane]
 baselineMeanRep = repmat(baselineMean, 1, 1, 1, size(stimVols, 4));                                                                                % --> [x, y, plane, volume]
@@ -227,8 +229,12 @@ windDffVols = (stimVolsMean - baselineMeanRep) ./ baselineMeanRep;              
 
     %% CREATE VIDEO OF MEAN dF/F THROUGHOUT WIND RESPONSES
 
+fileName = ['Wind_Onset_Responses_Rigid_Reg'];
+sid = 1;
+    
+    
 % Calculate absolute max dF/F value across all planes and action states
-range = calc_range(windDffVols,[0.75]);
+range = calc_range(windDffVols,[0.5]);
 
 % Calculate volume times in seconds relative to wind onset
 baselineVolTimes = -(1:size(baselineVols, 4))/myData.volumeRate;
@@ -246,8 +252,7 @@ for iVol = 1:size(windDffVols, 4)
 end
 
 % Create video
-savePath = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_0\Analysis'];
-fileName = 'Wind_Onset_Responses_ratio';
+savePath = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), '\Analysis'];
 make_heatmap_vid(windDffVols, myData, range, fileName, titleStrings, savePath, [], [], []);
      
 
@@ -336,7 +341,7 @@ for iTrial = 1:myData.nTrials
         volActions(iTrial,:) = currActions(volFrames);
         
         % Identify volume actions
-        locomotionLabel = 2; noActionLabel = 0; legMoveLabel = 4;
+        locomotionLabel = 2; noActionLabel = 0; isoMovementLabel = 4;
         runVols(iTrial, :) = (volActions(iTrial,:) == locomotionLabel);       % [trial, vol]
         stoppedVols(iTrial, :) = (volActions(iTrial,:) == noActionLabel);     % [trial, vol]
         legMoveVols(iTrial, :) = (volActions(iTrial,:) == isoMovementLabel);  % [trial, vol]
@@ -772,6 +777,7 @@ noWindNoMove = (sum(trialConditions,2) == 0);
 noWindStartMove = (sum(trialConditions,2) == 3);
 noWindContMove = (sum(trialConditions,2) == 4);
 trialConds = [windNoMove,windStartMove,windContMove,noWindNoMove,noWindStartMove,noWindContMove];
+sum(trialConds)
 trialCondNames = {'windNoMove','windStartMove','windContMove','noWindNoMove','noWindStartMove','noWindContMove'};
 
 %% CALCULATE MEAN dF/F FOR EACH TRIAL CONDITION
@@ -803,7 +809,7 @@ dffAvg(isinf(dffAvg)) = 0;
  %% PLOT WIND STIM ONSET RESPONSE HEATMAPS FOR SOME TRIAL CONDITIONS
     
 % Calculate absolute max dF/F value across all planes and stim types
-currConds = [1 2 3];
+currConds = [1 2 4];
 rangeScalar = 1;
 dffConds = reshape(dffAvg(:,:,:,currConds), [1 numel(dffAvg(:,:,:,currConds))]);
 range = calc_range(dffConds, rangeScalar);
@@ -863,10 +869,10 @@ for iTrial = 1:myData.nTrials
         volActions(iTrial,:) = currActions(volFrames);
         
         % Identify volume actions
-        locomotionLabel = 2; noActionLabel = 0; legMoveLabel = 4;
+        locomotionLabel = 2; noActionLabel = 0; isoMovementLabel = 4;
         runVols(iTrial, :) = (volActions(iTrial,:) == locomotionLabel);   % [trial, vol]
         stoppedVols(iTrial, :) = (volActions(iTrial,:) == noActionLabel); % [trial, vol]
-        legMoveVols(iTrial, :) = (volActions(iTrial,:) == legMoveLabel);  % [trial, vol]
+        legMoveVols(iTrial, :) = (volActions(iTrial,:) == isoMovementLabel);  % [trial, vol]
         
         % Find onsets of running bouts
         baseLen = size(baselineVols, 4);
@@ -1014,7 +1020,7 @@ windTrials = myData.wholeSession(:,:,:,:,logical(myData.stimSepTrials.windTrials
 
 
 % Pull out data for one plane
-planeNum = 11;
+planeNum = 10;
 planeData = squeeze(windTrials(:,:,planeNum,:,:)); % --> [x, y, volume, trial]
 [w,x,y,z] = size(planeData);
 planeDataRS = reshape(planeData, [w, x, y*z]); % --> [x, y, volume]

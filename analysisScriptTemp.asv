@@ -19,7 +19,7 @@
     myData.stimEnd = sum(myData.stimDuration); stimEnd = myData.stimEnd;
     
     % Create hardcoded parameters
-    myData.MAX_INTENSITY = 5; MAX_INTENSITY = myData.MAX_INTENSITY; % To control brightness of ref image plots
+    myData.MAX_INTENSITY = 2000; MAX_INTENSITY = myData.MAX_INTENSITY; % To control brightness of ref image plots
     myData.FRAME_RATE = 25; FRAME_RATE = 25; % This is the frame rate of the behavior video, not the GCaMP imaging
     
 %% PLOT AND SAVE VISUALIZATION OF BEHAVIOR DATA ANNOTATIONS
@@ -145,7 +145,7 @@ if overwrite
 end
 
 %% CALCULATE MEAN dF/F FOR WIND STIM ONSET AND OFFSET
-stimSepTrials = []; wholeTrialAvg = []; baselineAvg = []; baselineF = []; dff = []; dffRaw = []; stimAvg = [];
+stimSepTrials = []; wholeTrialAvg = []; baselineAvg = []; baselineF = []; dff = []; dffRaw = []; stimAvg = []; postStimAvg = [];
 for iStim = 1:length(stimTypes)
     
     % Separate trials by stimulus type
@@ -199,7 +199,13 @@ range = calc_range(dffAvgPost,[]);
 
 %% CALCULATE MEAN dF/F AROUND WIND RESPONSES
 
+
+
+
+
 stimSepTrials = [];
+
+
 
 % Separate out center wind trials
 for iStim = 1:length(stimTypes)
@@ -210,6 +216,7 @@ windTrials = myData.wholeSession(:,:,:,:,logical(myData.stimSepTrials.windTrials
 % Calculate dF/F before and after wind onset using an equal period before onset as baseline
 stimLength = stimEnd - stimStart;
 stimLengthVols = floor(stimLength * volumeRate);
+
 if floor(stimStart*volumeRate) - stimLengthVols > 0
     baselineVols = windTrials(:,:,:,floor(stimStart*volumeRate) - stimLengthVols:floor(stimStart*volumeRate),:);  % --> [x, y, plane, volume, trial]
 else
@@ -227,6 +234,10 @@ windDffVols = (stimVolsMean - baselineMeanRep) ./ baselineMeanRep;              
 
     %% CREATE VIDEO OF MEAN dF/F THROUGHOUT WIND RESPONSES
 
+fileName = ['Wind_Onset_Responses'];
+sid = 1;
+    
+    
 % Calculate absolute max dF/F value across all planes and action states
 range = calc_range(windDffVols,[0.75]);
 
@@ -246,8 +257,7 @@ for iVol = 1:size(windDffVols, 4)
 end
 
 % Create video
-savePath = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_0\Analysis'];
-fileName = 'Wind_Onset_Responses_ratio';
+savePath = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), '\Analysis'];
 make_heatmap_vid(windDffVols, myData, range, fileName, titleStrings, savePath, [], [], []);
      
 
@@ -583,7 +593,7 @@ for iBout = 1:size(allBouts,1)
     boutDff = movmean(boutDff, 3, 3);
     
     % Calculate dF/F value range
-    range = calc_range(boutDff,[]);
+    range = calc_range(boutDff,[0.8]);
 
     % Load behavior vid for the current trial
     vidDir = fullfile('D:\Dropbox (HMS)\2P Data\Behavior Vids', myData.expDate, '_Movies');

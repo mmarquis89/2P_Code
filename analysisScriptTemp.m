@@ -19,7 +19,7 @@
     myData.stimEnd = sum(myData.stimDuration); stimEnd = myData.stimEnd;
     
     % Create hardcoded parameters
-    myData.MAX_INTENSITY = 2000; MAX_INTENSITY = myData.MAX_INTENSITY; % To control brightness of ref image plots
+    myData.MAX_INTENSITY = 5; MAX_INTENSITY = myData.MAX_INTENSITY; % To control brightness of ref image plots
     myData.FRAME_RATE = 25; FRAME_RATE = 25; % This is the frame rate of the behavior video, not the GCaMP imaging
     
 %% PLOT AND SAVE VISUALIZATION OF BEHAVIOR DATA ANNOTATIONS
@@ -184,8 +184,13 @@ dffAvgPost = (postStimAvg - stimAvg) ./ stimAvg; % --> [x, y, plane, StimType]
 % Calculate absolute max dF/F value across all planes and stim types
 range = calc_range(dffAvg, []);
 
+smoothingSigma = [0.5];
+makeVid = 1;
+saveDir = [];
+fileName = 'Wind_Onset_Plane_Heatmaps';
+
 % Plot figures
-[~, ~] = plot_heatmaps(dffAvg, myData, range, stimTypes, [], []);
+[~, ~] = plot_heatmaps(dffAvg, myData, range, stimTypes, [], [], smoothingSigma, makeVid, saveDir, fileName);
 
 
     %% PLOT WIND STIM OFFSET RESPONSE HEATMAPS FOR EACH PLANE
@@ -193,8 +198,10 @@ range = calc_range(dffAvg, []);
 % Calculate absolute max dF/F value across all planes and stim types
 range = calc_range(dffAvgPost,[]);
     
+smoothingSigma = [0.5];
+
 % Plot figures
-[~, ~] = plot_heatmaps(dffAvgPost, myData, range, stimTypes, [], []);
+[~, ~] = plot_heatmaps(dffAvgPost, myData, range, stimTypes, [], [], smoothingSigma);
 
 
 %% CALCULATE MEAN dF/F AROUND WIND RESPONSES
@@ -229,12 +236,13 @@ windDffVols = (stimVolsMean - baselineMeanRep) ./ baselineMeanRep;              
 
     %% CREATE VIDEO OF MEAN dF/F THROUGHOUT WIND RESPONSES
 
-fileName = ['Wind_Onset_Responses_Rigid_Reg'];
-sid = 1;
-    
+fileName = ['Wind_Stim_Responses'];
+sid = 0;
+smoothingSigma = 0.5;
+scalingFactor = 0.5;
     
 % Calculate absolute max dF/F value across all planes and action states
-range = calc_range(windDffVols,[0.5]);
+range = calc_range(windDffVols,scalingFactor);
 
 % Calculate volume times in seconds relative to wind onset
 baselineVolTimes = -(1:size(baselineVols, 4))/myData.volumeRate;
@@ -253,7 +261,7 @@ end
 
 % Create video
 savePath = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), '\Analysis'];
-make_heatmap_vid(windDffVols, myData, range, fileName, titleStrings, savePath, [], [], []);
+make_heatmap_vid(windDffVols, myData, range, fileName, titleStrings, savePath, [], [], [], smoothingSigma);
      
 
 %% CALCULATE MEAN dF/F ACROSS BEHAVIORAL STATES
@@ -289,10 +297,18 @@ end
 % Calculate average values for each plane across behavioral states
 meanActionVols = [];
 meanStoppedVols = [];
-imgData = myData.wholeSession;
+imgData = myData.wholeSession; %--> [x, y, plane, volume, trial]
 for iTrial = 1:myData.nTrials
    currActionVols = logical(actionVols(iTrial,:));
    currStoppedvols = logical(stoppedVols(iTrial,:));
+   
+   % Exclude volumes that occurred during or just after the wind stim
+   if myData.stimSepTrials.windTrials(iTrial)
+       stimStartVol = ceil(stimStart * volumeRate);
+       stimEndVol = floor(stimEnd * volumeRate);
+       excludeVols = stimStartVol:(stimEndVol + ceil(volumeRate));
+       imgData(:,:,:,excludeVols ,:) = [];
+   end
    
    % Pull out running volumes, if any exist, from the current trial
    if sum(currActionVols) > 0
@@ -302,21 +318,28 @@ for iTrial = 1:myData.nTrials
    % Pull out stopping volumes, if any exist, from the current trial
    if sum(currStoppedvols) > 0
        meanStoppedVols(:,:,:,end+1) = mean(imgData(:,:,:,currStoppedvols,iTrial),4);  %--> [x, y, plane, trial]
-   end  
+   end
+      
 end
-actionMean = mean(meanActionVols, 4);   %--> [x, y, plane] 
+actionMean = mean(meanActionVols, 4);   %--> [x, y, plane]
 stoppedMean = mean(meanStoppedVols, 4); %--> [x, y, plane] 
 
 % Get dF/F values for action relative to quiescence
 actionDff = (actionMean - stoppedMean) ./ stoppedMean; % --> [x, y, plane]
 
     %% PLOT BEHAVIORAL STATE HEATMAPS FOR EACH PLANE
-    
+ 
+smoothingSigma = [0.5];    
+scalingFactor = [];
+makeVid = 1;
+saveDir = [];
+fileName = 'Behavior_Onset_Plane_Heatmaps';
+
 % Calculate absolute max dF/F value across all planes and action states
-range = calc_range(actionDff,[]);
+range = calc_range(actionDff, scalingFactor);
 
 % Plot figures
-[~, ~] = plot_heatmaps(actionDff, myData, range, {'dF/F - Locomotion vs. Quiescent'}, [], []);
+[~, ~] = plot_heatmaps(actionDff, myData, range, {'dF/F - Locomotion vs. Quiescent'}, [], [], smoothingSigma, makeVid, saveDir, fileName);
 
 
 %% CALCULATE MEAN dF/F AROUND LOCOMOTION ONSET
@@ -349,9 +372,17 @@ for iTrial = 1:myData.nTrials
         % Find onsets of running bouts >respLen volumes in duration and preceded by >baseLen volumes of quiescence
         baseLen = 12;
         respLen = 24;
-        actionPattern = [zeros(1,baseLen), ones(1,respLen)*2];
+        actionPattern = [zeros(1,baseLen), (ones(1,respLen) * locomotionLabel)];
         patternLen = length(actionPattern);
         currTrialOnsets = strfind(volActions(iTrial, :), actionPattern);
+        
+        % Discard any bouts that occurred during or just after the wind stim
+        if myData.stimSepTrials.windTrials(iTrial)
+            stimStartVol = ceil(stimStart * volumeRate);
+            stimEndVol = floor(stimEnd * volumeRate);
+            currTrialOnsets(currTrialOnsets > (stimStartVol - patternLen) & currTrialOnsets < (stimEndVol + ceil(volumeRate))) = [];
+        end
+        
         onsetVols{iTrial} = currTrialOnsets;
 
     else
@@ -387,19 +418,24 @@ onsetMeanDff = mean(onsetDffVols, 4);                                      % -->
 
     %% PLOT MOVEMENT ONSET HEATMAPS FOR EACH PLANE
 
-% Calculate dF/F range
+smoothingSigma = [0.5];
 rangeScalar = 1;
+
+% Calculate dF/F range
 range = calc_range(onsetMeanDff, rangeScalar);
 
 % Plot figures
-[~, ~] = plot_heatmaps(onsetMeanDff, myData, range, {'dF/F - Locomotion onset'}, [], []);
+[~, ~] = plot_heatmaps(onsetMeanDff, myData, range, {'dF/F - Locomotion onset'}, [], [], smoothingSigma);
 
 
     %% CREATE VIDEO OF MEAN dF/F FOR EACH PLANE THROUGHOUT MOVEMENT ONSET
 
+smoothingSigma = [0.5];    
+rangeScalar = 0.25;
+
 % Calculate absolute max dF/F value across all planes and action states
-rangeScalar = 1;
 range = calc_range(onsetDffVols, rangeScalar);
+
 
 % Calculate volume times in seconds relative to movement onset
 baselineVolTimes = -(1:size(onsetBaselines, 4))/myData.volumeRate;
@@ -418,8 +454,8 @@ end
 
 % Create video
 savePath = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_0\Analysis'];
-fileName = 'Move_Onset_Responses_2_5';
-make_heatmap_vid(onsetDffVols, myData, range, fileName, titleStrings, savePath, [], [], []);
+fileName = 'Move_Onset_Responses_ChanRatio_2_4';
+make_heatmap_vid(onsetDffVols, myData, range, fileName, titleStrings, savePath, [], [], [], smoothingSigma);
 
 
     %% CREATE VIDEO OF dF/F FOR ALL INDIVIDUAL MOVEMENT BOUT ONSETS
@@ -680,6 +716,8 @@ wholeTrialDff = (trialAvg - baselineMeanRep) ./ baselineMeanRep;      % --> [x, 
 rangeScalar = .3;
 range = calc_range(wholeTrialDff, rangeScalar);
 
+smoothingSigma = [0.5];
+
 %----------Create video of dF/F for each plane throughout trial----------
 
 % Add title above all subplots
@@ -697,8 +735,8 @@ end
 
 % Create video
 savePath = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', myData.expDate, '\sid_0\Analysis'];
-fileName = 'Full_Trial_dFF_ratio';
-make_heatmap_vid(wholeTrialDff, myData, range, fileName, titleStrings, savePath, [], [], []);
+fileName = 'Full_Trial_dFF';
+make_heatmap_vid(wholeTrialDff, myData, range, fileName, titleStrings, savePath, [], [], [], smoothingSigma);
 
 %----------Create video of mean raw fluorescence signal throughout trial----------
 
@@ -721,15 +759,15 @@ end
 
 % Update file name and create video
 savePath = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', myData.expDate, '\sid_0\Analysis'];
-fileName = 'Full_Trial_RawF_ratio';
-make_heatmap_vid(trialAvg, myData, range, fileName, titleStrings, savePath, [], [], []);
+fileName = 'Full_Trial_RawF';
+make_heatmap_vid(trialAvg, myData, range, fileName, titleStrings, savePath, [], [], [], smoothingSigma);
 
 
 %% SEPARATE TRIALS BASED ON WHETHER FLY WAS MOVING DURING WIND STIM
 
 %---------- Identify behavioral state during each volume ----------
 volActions = zeros(myData.nTrials, myData.nVolumes);
-preStimMove = zeros(myData.nTrials, 1); stimMove = preStimMove;
+preStimMove = zeros(myData.nTrials, 1); stimMove = preStimMove; postStimMove = preStimMove;
 volFrames = zeros(1,myData.nVolumes);
 for iTrial = 1:myData.nTrials
     
@@ -749,8 +787,10 @@ for iTrial = 1:myData.nTrials
         
         preStimTime = 2;
         stimTime = 3;
+        postStimTime = 3;
         preStimVols = floor((stimStart-preStimTime)*volumeRate):floor(stimStart*volumeRate);
         stimVols = floor(stimStart*volumeRate):floor((stimStart+stimTime)*volumeRate);
+        postStimVols = ceil(stimEnd*volumeRate):floor((stimEnd+postStimTime)*volumeRate);
         
         % Determine if fly was active just before the wind onset
         if sum(volActions(iTrial, preStimVols)) > 0
@@ -762,6 +802,11 @@ for iTrial = 1:myData.nTrials
             stimMove(iTrial) = 1;
         end
         
+        % Determine if fly was moving in the first few seconds after wind offset
+        if sum(volActions(iTrial, postStimVols)) > 0
+            postStimMove(iTrial) = 1;
+        end
+        
     else
         % So data from invalid trials won't ever be matched to an action state
         volActions(iTrial, :) = -1000;
@@ -769,54 +814,69 @@ for iTrial = 1:myData.nTrials
 end
 
 % Separate trials 
-trialConditions = [preStimMove, stimMove.*3, myData.stimSepTrials.windTrials'.*5];
-windNoMove = (sum(trialConditions,2) == 5);
-windStartMove = (sum(trialConditions,2) == 8);
-windContMove = (sum(trialConditions,2) == 9);
-noWindNoMove = (sum(trialConditions,2) == 0);
-noWindStartMove = (sum(trialConditions,2) == 3);
-noWindContMove = (sum(trialConditions,2) == 4);
-trialConds = [windNoMove,windStartMove,windContMove,noWindNoMove,noWindStartMove,noWindContMove];
-sum(trialConds)
-trialCondNames = {'windNoMove','windStartMove','windContMove','noWindNoMove','noWindStartMove','noWindContMove'};
+tc = [preStimMove, stimMove, postStimMove, myData.stimSepTrials.windTrials'];
+windOnsetNoMove         = tc(:,1) == 0 & tc(:,2) == 0                & tc(:,4) == 1;
+windOffsetNoMove        = tc(:,1) == 0 & tc(:,2) == 0 & tc(:,3) == 0 & tc(:,4) == 1; % dF/F calculation should be centered on wind offset for this condition
+windOnsetStartMove      = tc(:,1) == 0 & tc(:,2) == 1                & tc(:,4) == 1;
+windOffsetStartMove     = tc(:,1) == 0 & tc(:,2) == 0 & tc(:,3) == 1 & tc(:,4) == 1; % dF/F calculation should be centered on wind offset for this condition
+windContMove            = tc(:,1) == 1 & tc(:,2) == 1                & tc(:,4) == 1;
 
-%% CALCULATE MEAN dF/F FOR EACH TRIAL CONDITION
+noWindNoMove            = tc(:,1) == 0 & tc(:,2) == 0                & tc(:,4) == 0;
+noWindStartMove         = tc(:,1) == 0 & tc(:,2) == 1                & tc(:,4) == 0;
+noWindContMove          = tc(:,1) == 1 & tc(:,2) == 1                & tc(:,4) == 0;
+
+trialConds = [windOnsetNoMove,windOffsetNoMove,windOnsetStartMove,windOffsetStartMove,windContMove,noWindNoMove,noWindStartMove,noWindContMove];
+sum(trialConds)
+trialCondNames = {'windOnsetNoMove','windOffsetNoMove','windOnsetStartMove', 'windOffsetStartMove','windContMove','noWindNoMove','noWindStartMove','noWindContMove'}
+
+%%% CALCULATE MEAN dF/F FOR EACH TRIAL CONDITION
 
 wholeTrialAvg = []; baselineAvg = []; dffAvg = []; stimAvg = [];
 for iCond = 1:length(trialCondNames)
     
-    %---------- Get trial averaged baseline and stimulus data ----------                                                                      % myData.wholeSession = [x, y, plane, volume, trial]                                                                                                          
+    %---------- Get trial averaged baseline and stimulus data ----------                                                % myData.wholeSession = [x, y, plane, volume, trial]                                                                                                          
     wholeTrialAvg(:,:,:,:,iCond) = mean(myData.wholeSession(:,:,:,:,trialConds(:,iCond)), 5);                                                 % --> [x, y, plane, volume, trialCondition]
-    
+        
     % Pre-stim
     if floor((stimStart-preStimTime)*volumeRate) > 0 
-        baselineAvg(:,:,:,iCond) = mean(wholeTrialAvg(:,:,:,floor((stimStart-preStimTime)*volumeRate):floor(stimStart*volumeRate),iCond), 4); % --> [x, y, plane, StimType]
+        baselineAvg(:,:,:,iCond) = mean(wholeTrialAvg(:,:,:, preStimVols, iCond), 4);                                   % --> [x, y, plane, StimType]
     else
         % if stimDuration > preStimDuration, start baseline one second after beginning of trial
-        baselineAvg(:,:,:,iCond) = mean(wholeTrialAvg(:,:,:,floor(volumeRate):floor(stimStart*volumeRate),iCond), 4);                         % --> [x, y, plane, trialCondition]
+        baselineAvg(:,:,:,iCond) = mean(wholeTrialAvg(:,:,:,floor(volumeRate):floor(stimStart*volumeRate),iCond), 4);  	% --> [x, y, plane, trialCondition]
     end
     
-    % Stim period
-    stimAvg(:,:,:,iCond) = mean(wholeTrialAvg(:,:,:,ceil(stimStart*volumeRate):floor((stimStart+stimTime)*volumeRate),iCond), 4);             % --> [x, y, plane, trialCondition]
+    % During stim
+    stimAvg(:,:,:,iCond) = mean(wholeTrialAvg(:,:,:, stimVols, iCond), 4);                                              % --> [x, y, plane, trialCondition]
+    
+    % Post-stim 
+    postStimAvg(:,:,:,iCond) = mean(wholeTrialAvg(:,:,:, postStimVols, iCond), 4);                                      % --> [x, y, plane, trialCondition]
+    
 end%for
 
 % Calculate dF/F values
-dffAvg = (stimAvg - baselineAvg) ./ baselineAvg; % --> [x, y, plane, StimType]
+dffAvgOnset = (stimAvg - baselineAvg) ./ baselineAvg;                                                                   % --> [x, y, plane, trialCondition]
+dffAvgOffset = (postStimAvg - stimAvg) ./ stimAvg;                                                                      % --> [x, y, plane, trialCondition]
 
-% Eliminate inf values from dividiing by zero above...baseline shouldn't be zero in valid data anyways
+% Want the baseline/response aligned to stim offset for two trial conditions, stim onset for the rest
+dffAvg = dffAvgOnset;
+dffAvg(:,:,:,[2 4]) = dffAvgOffset(:,:,:,[2 4]);                                                                        % --> [x, y, plane, trialCondition]
+
+% Eliminate inf values from dividing by zero above...baseline shouldn't be zero in valid data anyways
 dffAvg(isinf(dffAvg)) = 0;
 
  %% PLOT WIND STIM ONSET RESPONSE HEATMAPS FOR SOME TRIAL CONDITIONS
     
 % Calculate absolute max dF/F value across all planes and stim types
 currConds = [1 2 4];
-rangeScalar = 1;
+rangeScalar = 0.75;
+smoothingSigma = [0.5]; 
+
 dffConds = reshape(dffAvg(:,:,:,currConds), [1 numel(dffAvg(:,:,:,currConds))]);
 range = calc_range(dffConds, rangeScalar);
 
 % Plot figures
 dffCurrConds = dffAvg(:,:,:,currConds);
-[f, plotAxes] = plot_heatmaps(dffCurrConds, myData, range, trialCondNames(currConds), [], []);
+[f, plotAxes] = plot_heatmaps(dffCurrConds, myData, range, trialCondNames(currConds), [], [], smoothingSigma);
 
 
 
@@ -877,9 +937,17 @@ for iTrial = 1:myData.nTrials
         % Find onsets of running bouts
         baseLen = size(baselineVols, 4);
         respLen = size(stimVols,4) - size(baselineVols, 4);
-        actionPattern = [zeros(1,baseLen), ones(1,respLen)*2];   % [0 0 0 0 0 0 0 2 2 2 2 2 2 2];
+        actionPattern = [zeros(1,baseLen), ones(1,respLen) * locomotionLabel];   % [0 0 0 0 0 0 0 2 2 2 2 2 2 2];
         patternLen = length(actionPattern);
         currTrialOnsets = strfind(volActions(iTrial, :), actionPattern);
+        
+        % Discard any bouts that occurred during or just after the wind stim
+        if myData.stimSepTrials.windTrials(iTrial)
+            stimStartVol = ceil(stimStart * volumeRate);
+            stimEndVol = floor(stimEnd * volumeRate);
+            currTrialOnsets(currTrialOnsets > (stimStartVol - patternLen) & currTrialOnsets < (stimEndVol + ceil(volumeRate))) = [];
+        end
+        
         onsetVols{iTrial} = currTrialOnsets;
 
     else

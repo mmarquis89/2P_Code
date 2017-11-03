@@ -507,7 +507,6 @@ end%if
                     
                     % Determine necessary subplot arrangement
                     nSubplots = size(stimTypeDff, 4) + 1;
-                    sizeRatio = stimHeatmapSubtabs{iTab}.Position(3) / stimHeatmapSubtabs{iTab}.Position(4);
                     if nSubplots == 3
                         subplotPos = [2 2]; % numSubplots() would return [1 3] for this
                     else

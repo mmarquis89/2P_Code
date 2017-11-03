@@ -1,4 +1,4 @@
-function single_plane_heatmap_vid(dataArr, planeNum, infoStruct, cLimRanges, fileName, saveDir, plotTitles, volTitles, figPos, cMapName, frameRate)
+function single_plane_heatmap_vid(dataArr, planeNum, infoStruct, cLimRanges, fileName, saveDir, plotTitles, volTitles, figPos, cMapName, frameRate, sigma)
 %========================================================================================================================
 % CREATE VIDEO OF MULTIPLE dF/F HEATMAP RESPONSES IN A SINGLE PLANE
 % 
@@ -35,6 +35,9 @@ function single_plane_heatmap_vid(dataArr, planeNum, infoStruct, cLimRanges, fil
 %       
 %       frameRate   =  <OPTIONAL> the desired frame rate for the output video. Pass [] to use volumeRate as the frame 
 %                      rate (resulting in the video playing in real time).
+%
+%       sigma       =  <OPTIONAL> the degree of gaussian smoothing to be applied to the heatmaps, specified as a 
+%                      standard deviation. Pass [] to skip filtering.
 %=======================================================================================================================
 
 
@@ -106,7 +109,11 @@ if overwrite
         for iPlot = 1:size(dataArr, 4)
             
             plotAxes{iPlot + 1} = subaxis(nAxes(1), nAxes(2), iPlot+1, 'Spacing', 0.01, 'MB', 0.025);
-            imagesc(dataArr(:, :, iVol, iPlot))
+            if ~isempty(sigma)
+                imagesc(imgaussfilt(dataArr(:, :, iVol, iPlot), sigma));
+            else
+                imagesc(dataArr(:, :, iVol, iPlot));
+            end
             caxis(cLimRanges(iPlot, :));
             colormap(plotAxes{iPlot + 1}, cMapName);
             axis equal; axis off;

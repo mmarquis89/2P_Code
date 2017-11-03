@@ -1,5 +1,5 @@
 
-expDate = '2017_10_22';
+expDate = '2017_10_23';
 
 %%
 % %% CREATE ANATOMY STACKS --------------------------------------------------------------------------
@@ -17,35 +17,35 @@ expDate = '2017_10_22';
 % disp(['Pre-registration processing took ', round(num2str(toc)) ' sec']);
 
 % %%% REGISTRATION -----------------------------------------------------------------------------------
-refVol = 8;
-refTrial = 15;
-sid = 1;
+refVol = 83;
+refTrial = 21;
+sid = 0;
 % 
 tic
-fileName = 'sid_1_Chan_2_sessionFile';
+fileName = ['sid_', num2str(sid), '_Chan_2_sessionFile'];
 % fileName  = ['sid_', num2str(sid), '_sessionFile'];
 matlabImReg_2P_session_MM(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)],fileName,refVol,refTrial);
 disp(['Registration took ', round(num2str(toc)) ' sec']);
 
 registration_transform(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)], fileName, [fileName, '_registration_transforms']); 
-newfileName = 'sid_1_Chan_1_sessionFile';
+newfileName = ['sid_', num2str(sid), '_Chan_1_sessionFile'];
 registration_transform(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)], newfileName, [fileName, '_registration_transforms']); 
-newfileName = 'sid_1_ChanRatio_sessionFile';
+newfileName = ['sid_', num2str(sid), '_ChanRatio_sessionFile'];
 registration_transform(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)], newfileName, [fileName, '_registration_transforms']); 
 
-tic
-clear all
-expDate = '2017_10_23';
-sid = 0;
-fileName = 'sid_0_Chan_2_sessionFile';
-matlabImReg_2P_session_MM(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)],fileName,refVol,refTrial);
-disp(['Registration took ', round(num2str(toc)) ' sec']);
-
-registration_transform(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)], fileName, [fileName, '_registration_transform']); 
-fileName = 'sid_0_Chan_1_sessionFile';
-registration_transform(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)], fileName, [fileName, '_registration_transform']); 
-fileName = 'sid_0_ChanRatio_sessionFile';
-registration_transform(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)], fileName, [fileName, '_registration_transform']); 
+% tic
+% clear all
+% expDate = '2017_10_23';
+% sid = 0;
+% fileName = 'sid_0_Chan_2_sessionFile';
+% matlabImReg_2P_session_MM(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)],fileName,refVol,refTrial);
+% disp(['Registration took ', round(num2str(toc)) ' sec']);
+% 
+% registration_transform(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)], fileName, [fileName, '_registration_transform']); 
+% fileName = 'sid_0_Chan_1_sessionFile';
+% registration_transform(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)], fileName, [fileName, '_registration_transform']); 
+% fileName = 'sid_0_ChanRatio_sessionFile';
+% registration_transform(['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)], fileName, [fileName, '_registration_transform']); 
 
 
 % 

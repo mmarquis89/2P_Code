@@ -1,5 +1,5 @@
-function make_heatmap_vid(plotData, infoStruct, cLimRange, fileName, titleStrings, saveDir, figPos, cMapName, frameRate)
-%========================================================================================================================
+function make_heatmap_vid(plotData, infoStruct, cLimRange, fileName, titleStrings, saveDir, figPos, cMapName, frameRate, sigma)
+%==============================================================================================================================
 % CREATE VIDEO OF HEATMAPPED dF/F RESPONSES IN ALL PLANES
 % 
 % Creates a .avi video from a figure broken into a grid of subplots, one for each imaging plane. Each subplot will 
@@ -8,10 +8,10 @@ function make_heatmap_vid(plotData, infoStruct, cLimRange, fileName, titleString
 % 
 % INPUTS:
 %       plotData    =  a 4-D numeric array with dims [x, y, plane, volume] containing the dF/F data. The "volume" 
-%                     dimension will determine how many frames long the video is.
+%                      dimension will determine how many frames long the video is.
 %
 %       infoStruct  =  the main imaging data structure containing metadata for the experiment. Specifically, must contain 
-%                     the fields "nPlanes" and "volumeRate".
+%                      the fields "nPlanes" and "volumeRate".
 %
 %       cLimRange   =  a two-element vector [min max] to set the colormap bounds.
 %
@@ -24,13 +24,16 @@ function make_heatmap_vid(plotData, infoStruct, cLimRange, fileName, titleString
 %                      box instead.
 %
 %       figPos      =  <OPTIONAL> position values [x y width height] for the figure window. Pass [] 
-%                     to use the default figPos of [50 45 1800 950]
+%                      to use the default figPos of [50 45 1800 950]
 %
 %       cMapName    =  <OPTIONAL> name of a colormap function to use in the heatmaps. Pass [] to use 
-%                     the default colormap 'bluewhitered'.
+%                      the default colormap 'bluewhitered'.
 %       
 %       frameRate   =  <OPTIONAL> the desired frame rate for the output video. Pass [] to use volumeRate as the frame 
 %                      rate (resulting in the video playing in real time).
+%
+%       sigma       =  <OPTIONAL> the degree of gaussian smoothing to be applied to the heatmaps, specified as a 
+%                      standard deviation. Pass [] to skip filtering.
 %=======================================================================================================================
 
 nPlanes = infoStruct.nPlanes; 
@@ -43,6 +46,7 @@ if isempty(saveDir)
     if saveDir == 0
         % Throw error if user canceled without choosing a directory
         error('ERROR: you must select a save directory or provide one as an argument');
+        return
     end
 else
     % Create save dir if it doesn't already exist
@@ -95,7 +99,11 @@ if overwrite
             
             % Plot dF/F for each plane
             ax = subaxis(nPlots(1), nPlots(2), iPlane, 'Spacing', 0, 'MB', 0.025);
-            imagesc(plotData(:, :, iPlane, iVol));
+            if ~isempty(sigma)
+                imagesc(imgaussfilt(plotData(:, :, iPlane, iVol), sigma));
+            else
+                imagesc(plotData(:,:, iPlane, iVol));
+            end
             caxis(cLimRange);
             colormap(ax, cMapName);
             axis equal; axis off;

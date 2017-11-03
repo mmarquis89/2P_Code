@@ -439,7 +439,7 @@ end%if
                 stimTypeDff(:,:,:, iStim) = currStimDff;                                                                                % --> [x, y, plane, stimType]
             end
             
-%             stimTypeDff(isinf(stimTypeDff)) = 0; % To eliminate inf values from dividing by zero above...baseline shouldn't be zero in valid data anyways
+            stimTypeDff(isinf(stimTypeDff)) = 0; % To eliminate inf values from dividing by zero above...baseline shouldn't be zero in valid data anyways
 %             stimTypeDff(isnan(stimTypeDff)) = 0;
             
             
@@ -506,9 +506,7 @@ end%if
                     stimHeatmapSubtabs{iTab}.Tag = ['Plane #', num2str(jTab)];
                     
                     % Determine necessary subplot arrangement
-                    nSubplots = size(stimTypeDff, 4) + 1;
-                    sizeRatio = stimHeatmapSubtabs{iTab}.Position(3) / stimHeatmapSubtabs{iTab}.Position(4);
-                    if nSubplots == 3
+                    nSubplots = size(stimTypeDff, 4) + 1;                    if nSubplots == 3
                         subplotPos = [2 2]; % numSubplots() would return [1 3] for this
                     else
                         subplotPos = numSubplots(nSubplots);
@@ -616,7 +614,7 @@ end%if
             
             % Drop any behaviors that never ocurred
             behaviorLabels = myData.behaviorLabels;
-            observedBehaviors = squeeze(sum(sum(sum(behaviorMean))) ~= 0);
+            observedBehaviors = squeeze(~isnan(sum(sum(sum(behaviorMean)))));
             behaviorMean(:,:,:, ~observedBehaviors) = [];
             behaviorLabels(~observedBehaviors) = [];
             

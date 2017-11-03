@@ -1,5 +1,5 @@
 
-expDate = '2017_10_22';
+expDate = '2017_10_23';
 
 %%
 % %% CREATE ANATOMY STACKS --------------------------------------------------------------------------
@@ -190,10 +190,10 @@ system7zip(parentDir, archiveName, '7z', ['*sid_', num2str(sid), '_t*'], 1);
 
 %% PROCESS ANVIL ANNOTATION DATA ------------------------------------------------------------------
 FRAME_RATE = 25;
-trialDuration = 20;
-expDate = '2017_10_26';
+trialDuration = 10;
+expDate = '2017_10_26_TH_Gal4';
 
-sid = 1;
+sid = 0;
 parentDir = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate, '\_Movies'];
 saveDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)];
 annotationFileName = [expDate, '_sid_', num2str(sid), '_Annotation.txt'];

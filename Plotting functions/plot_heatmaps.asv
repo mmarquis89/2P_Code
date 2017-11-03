@@ -105,14 +105,19 @@ else
     error('ERROR: invalid number of plots');
 end
 
+
+
 % Figure
 if ~isempty(findobj('Tag', 'mainHeatmapFig'));
-    delete(findobj('Tag', 'mainHeatmapFig'));
+    ~isempty(findobj('Tag', 'mainHeatmapFig'))
 end
 f = figure('position', figPos, 'Name', 'Plane heatmaps', 'Tag', 'mainHeatmapFig', 'NumberTitle', 'off'); clf;
 
 % Create tab group
 tabGroup = uitabgroup(f, 'Units', 'Normalized', 'Position', [0 0 1 0.99], 'Tag', 'tabGroup');
+
+
+
 
 plotAxes = []; frameStruct = []; tabs = [];
 for iPlane = 1:infoStruct.nPlanes%:-1:1 % Figure windows arranged dorsal --> ventral
@@ -167,19 +172,14 @@ for iPlane = 1:infoStruct.nPlanes%:-1:1 % Figure windows arranged dorsal --> ven
     
     % Grab video frame if makeVid == true
     if makeVid
-        tabGroup.SelectedTab = tabs{iPlane}; % So the tab that was just created is shown
-        drawnow();        
         frameStruct{iPlane} = getframe(f);
-        frameStruct{iPlane}.cdata = frameStruct{iPlane}.cdata(40:end,:,:); % Crop out tabs at top of window
     end
     
 end%for
 
-tabGroup.SelectedTab = tabs{1};
-
 % Create video and close videowriter if necessary
 if makeVid
-    for iFrame = 1:length(frameStruct)
+    for iFrame = length(frameStruct):-1:1 %1:length(frameStruct)
         writeVideo(myVid, frameStruct{iFrame});
     end
     close(myVid);

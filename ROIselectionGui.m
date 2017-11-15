@@ -196,7 +196,6 @@ roiSubtabGroup.Units = 'normalized';
         disp('ROIs cleared')
     end
 %---------------------------------------------------------------------------------------------------
-
     function ROISaveButton_Callback(~,~)
         
         ROIdata = myData.ROIs;

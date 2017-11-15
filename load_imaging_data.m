@@ -46,23 +46,33 @@ else
     else
         metadata = load([pathName, metadataFile]);
         imgData.trialDuration = metadata.metaData.trialDuration;
-        imgData.volumeRate = metadata.metaData.run_obj_frameRate ./ metadata.metaData.run_obj_nVols;
+        if ~isfield(imgData, 'wholeSession')
+            nAcqPlanes = size(imgData.regProduct, 3) + 4; % Add 4 for the flyback frames
+        else
+            nAcqPlanes = size(imgData.wholeSession, 3) + 4;
+        end
+        imgData.volumeRate = metadata.metaData.run_obj_frameRate ./ nAcqPlanes;  
     end
     
-    % Prompt user for behavioral annotation data file
+    % Prompt user for annotation data file
     [annotDataFile, pathName, ~] = uigetfile('*.mat', 'Select a behavioral annotation data file if desired', 'D:\Dropbox (HMS)\2P Data\Imaging Data\');
     if annotDataFile == 0
         disp('No behavioral annotation data selected')
         annotData.behaviorLabels = [];
+        annotData.ballStopLabels = [];
         annotData.goodTrials = [];
         annotData.trialAnnotations = [];
     else
         disp(['Loading ' annotDataFile, '...'])
         annotData = load([pathName, annotDataFile]);
+        if ~isfield(annotData, 'ballStopLabels')
+            annotData.ballStopLabels = [];
+        end
         disp([annotDataFile, ' loaded'])
     end
     
-    outputData = setstructfields(imgData, annotData); % Combine imaging data and annotation data into one structure   
+    % Combine imaging data and annotation data into one structure   
+    outputData = setstructfields(imgData, annotData); 
     
     % Process raw data structure
     if ~isfield(outputData, 'wholeSession')
@@ -89,13 +99,7 @@ else
     % Extract session number
     origFileName = outputData.origFileNames{1};
     sidLoc = strfind(origFileName, 'sid_');
-    outputData.sid = origFileName(sidLoc+4);
-    
-    % Create mean reference image for each plane
-    outputData.refImg = [];
-    for iPlane = 1:outputData.nPlanes
-        outputData.refImg{iPlane} = squeeze(mean(mean(outputData.wholeSession(:,:,iPlane,:,:),4),5)); % --> [x, y]
-    end
+    outputData.sid = origFileName(sidLoc+4);    
     
     % Separate trials by stim type
     outputData.stimSepTrials = [];
@@ -116,7 +120,35 @@ else
         windTrials = windTrials + logical(outputData.stimSepTrials.CenterWind);
     end
     outputData.stimSepTrials.windTrials = logical(windTrials);
-   
+    
+    % Match frame times to volumes if annotation data was provided
+    if ~isempty(outputData.trialAnnotations)
+        volTimes = (1:outputData.nVolumes)' ./ outputData.volumeRate;
+        frameTimes = outputData.trialAnnotations{find(outputData.goodTrials, 1)}.frameTime;
+        for iVol = 1:outputData.nVolumes
+            [~, volFrames(iVol)] = min(abs(frameTimes - volTimes(iVol)));
+            volFrames = volFrames';
+        end
+        outputData.volFrames = volFrames;
+    else
+        outputData.volFrames = [];
+    end
+    
+    % Prompt user for a reference images file
+    [refImageFile, pathName, ~] = uigetfile('*.mat', 'Select a reference images file if desired', 'D:\Dropbox (HMS)\2P Data\Imaging Data\');
+    if refImageFile == 0
+        disp('No reference images file selected - creating reference images from main data file')
+        
+        % Create mean reference image for each plane
+        outputData.refImg = [];
+        for iPlane = 1:outputData.nPlanes
+            outputData.refImg{iPlane} = squeeze(mean(mean(outputData.wholeSession(:,:,iPlane,:,:),4),5)); % --> [x, y]
+        end
+    else
+        refImages = load([pathName, refImageFile]);
+        outputData.refImg = refImages.refImages;
+    end
+    
     % Order fields alphabetically
     outputData = orderfields(outputData);
     

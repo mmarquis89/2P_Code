@@ -46,8 +46,9 @@ if isempty(trialGroups)
 else
     % Separate by trial groups
     plotArr = [];
+    spacerArr = ones(1, size(annotationArr, 2)) * (max(annotationArr(:)) - 1);
     for iGroup = 1:length(unique(trialGroups))
-        plotArr = [plotArr; annotationArr(trialGroups == iGroup,:)];
+        plotArr = [plotArr; spacerArr; annotationArr(trialGroups == iGroup,:)];
     end
     plotHandle = imagesc(plotArr);
 end

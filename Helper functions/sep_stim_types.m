@@ -1,5 +1,5 @@
 function stimTypeData = sep_stim_types(infoStruct, combineStimTrials)
-%================================================================================================
+%======================================================================================================
 % 
 % Separates data structure according to trial stimulus type. Can separate data into individual 
 % trial types or combine all wind trials vs. control trials.
@@ -13,9 +13,11 @@ function stimTypeData = sep_stim_types(infoStruct, combineStimTrials)
 %       combineStimTrials = boolean specifying whether to combine different stimulus types
 %
 % OUTPUTS:
-%       stimTypeData = cell array of separated data in the form {[x, y, plane, volume, trial]}
+%       stimTypeData = cell array of separated data in the form [stimType]{x, y, plane, volume, trial}.
+%                      If combineStimTrials = TRUE, stimTypeData{1} will be the wind trials and 
+%                      stimTypeData{2} will be the control trials.
 %
-%================================================================================================
+%======================================================================================================
 
 stimTypes = infoStruct.stimTypes;
 

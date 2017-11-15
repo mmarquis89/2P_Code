@@ -83,15 +83,15 @@ else % nChannels == 2
     maxZScaled_1 = maxZ_1 ./ max(maxZ_1(:));             % --> [x, y]
     maxZScaled_2 = maxZ_2 ./ max(maxZ_2(:));             % --> [x, y]
     
-    % Write Z-projection to .tif files
-    imwrite(maxZScaled_1, fullfile(dirPath, [outputFilePrefix, 'MeanMaxZ_1.tif']));
-    imwrite(maxZScaled_2, fullfile(dirPath, [outputFilePrefix, 'MeanMaxZ_2.tif']));
-    
     % Make sure files with these names don't already exist in the chosen directory
     assert(exist(fullfile(dirPath, [outputFilePrefix, 'MeanMaxZ_1.tif']), 'file')==0, 'Error: a file with this name already exists in this directory');
     assert(exist(fullfile(dirPath, [outputFilePrefix, 'MeanMaxZ_2.tif']), 'file')==0, 'Error: a file with this name already exists in this directory');
     assert(exist(fullfile(dirPath, [outputFilePrefix, 'MeanStack_1.tif']), 'file')==0, 'Error: a file with this name already exists in this directory');
     assert(exist(fullfile(dirPath, [outputFilePrefix, 'MeanStack_2.tif']), 'file')==0, 'Error: a file with this name already exists in this directory');
+    
+    % Write Z-projection to .tif files
+    imwrite(maxZScaled_1, fullfile(dirPath, [outputFilePrefix, 'MeanMaxZ_1.tif']));
+    imwrite(maxZScaled_2, fullfile(dirPath, [outputFilePrefix, 'MeanMaxZ_2.tif']));
     
     % Write averaged stack to .tif files
     imwrite(avgStackScaled_1(:,:,1), fullfile(dirPath, [outputFilePrefix, 'MeanStack_1.tif']));
@@ -104,8 +104,4 @@ else % nChannels == 2
     end
     
 end
-
-% Get max Z-projection of averaged stack and scale intensity range to 0-1
-maxZ = squeeze(max(avgStack, [], 3));                                                        % --> [x, y, channel]
-maxZScaled = maxZ ./ max(maxZ(:));                                                           % --> [x, y, channel]
 

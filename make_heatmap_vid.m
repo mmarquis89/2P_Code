@@ -46,7 +46,6 @@ if isempty(saveDir)
     if saveDir == 0
         % Throw error if user canceled without choosing a directory
         error('ERROR: you must select a save directory or provide one as an argument');
-        return
     end
 else
     % Create save dir if it doesn't already exist

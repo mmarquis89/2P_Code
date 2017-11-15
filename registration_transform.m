@@ -3,15 +3,11 @@ function registration_transform(parentDir, inputDataFileName, transformDataFileN
 % Register imaging data using previously calculated registration transforms
 %
 % INPUTS:
-%       parentDir        = session folder containing unregistered session data file.
+%       parentDir   = session folder containing unregistered session data file.
 %       fileName    = name (no file extension) of the .mat file containing the imaging data/metadata
 %       refVol      = the volume number to use as a reference for registration.
 %       refTrial    = trial # to pull the reference volume from.
 %
-% OUTPUTS:
-%       tForms      = nTrials x nVols cell array containing the 3dAffine objects specifying the 
-%                     registration transformation for each volume.
-% 
 % Code from AKM, modified by MM
 % Last modified: 31-Oct-2017
 %===================================================================================================

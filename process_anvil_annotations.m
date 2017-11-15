@@ -17,16 +17,18 @@ function trialAnnotations = process_anvil_annotations(sid, parentDir, saveDir, a
 %       frameRate = frame rate that the behavioral video was acquired at.
 %       trial Duration = duration of each trial in seconds (must be the same for all trials).
 %
-% OUTPUS:
+% OUTPUTS:
 %       trialAnnotations = a 1xn cell array (where n is the number of trials in the session), with each cell containing an 
 %                          mx3 table (where m is the number of video frames for that trial) with the following column 
 %                          names: [frameNum, actionNums, frameTime]. [actions] contains a behavioral code for each frame, 
 %                          corresponding to an entry in the "behaviorLabels" array. [frameTime] is the trial time in 
-%                          seconds corresponding to each frame.
+%                          seconds corresponding to each frame. If there are two tracks in the annotation data, this table
+%                          will also have a column with ball stopping annotations: 
+%                          [frameNum, actionNums, ballStopNums, frameTime]
 %
 %       behaviorLabels   = an array of strings containing the various strings that correspond to numbers in the [actionNums]
 %                          field of the trialAnnotations tables (0 = first entry in behaviorLabels, etc.) Note hardcoded
-%                          values for this variable below.
+%                          values for this variable below. Also saves ballStopLabels if there are two annotation tracks.
 %
 %       goodTrials =       a 1 x n logical array (where n is the number of trials in the session) indicating which trials 
 %                          are missing one or more video frames.
@@ -35,14 +37,30 @@ function trialAnnotations = process_anvil_annotations(sid, parentDir, saveDir, a
 
 % Remember to update this if annotation coding changes
 behaviorLabels = {'None', 'AbdominalContraction', 'Locomotion', 'Grooming', 'IsolatedLegMovement'};
+ballStopLabels = {'None', 'WasherMoving', 'BallStopped'};
 
 % Read and parse annotation table data
 annotationData = readtable(fullfile(parentDir, annotationFileName));
 frameNum = annotationData.Frame;
 frameNum = frameNum + 1; % Use 1-indexing for frame numbers
+
+% Remove any extra columns
+annotationData(:,isnan(annotationData{1,:})) = [];
+
+% Determine how many tracks there are
+nTracks = (size(annotationData, 2) - 2) / 2;
+
+% Process annotation data for each track
 actionNums = annotationData.ActionTypes_ActionTypes;
 actionNums(actionNums == -1000) = 0;
 annotationTable = table(frameNum, actionNums);
+ballStopTable = [];
+if nTracks == 2
+   ballStopNums = annotationData.BallStopping_BallStopping;
+   ballStopNums(ballStopNums == -1000) = 0;
+   ballStopTable = table(ballStopNums);
+   annotationTable = [annotationTable, ballStopTable];
+end
 
 % Import video frame count data 
 individualVidFrameCounts = load(fullfile(parentDir, ['sid_', num2str(sid), '_frameCountLog.mat']));
@@ -65,27 +83,27 @@ assert(allTrialsFrameCount == length(frameNum), 'Error: frame number mismatch be
 trialAnnotations = cell(1,nTrials);
 currFrame = 1;
 for iTrial = 1:nTrials
+    
     lastFrame = currFrame+frameCounts(iTrial)-1;
-    
-    trialAnnotations{iTrial} = annotationTable(currFrame:lastFrame,:);
-    
-    % Add column of times to table
+
+    % Create column of times to add to table(s)
     if goodTrials(iTrial)
         frameTime = frameTimes';
-        trialAnnotations{iTrial} = [trialAnnotations{iTrial}, table(frameTime)];
-    else 
-        % Replace times with zeros for trials without enough frames
-        frameTime = zeros(1, frameCounts(iTrial))';
-        trialAnnotations{iTrial} = [trialAnnotations{iTrial}, table(frameTime)];
+    else
+        frameTime = zeros(1, frameCounts(iTrial))'; % Replace times with zeros for trials without enough frames
     end
-    currFrame = currFrame + frameCounts(iTrial);    
+    trialAnnotations{iTrial} = annotationTable(currFrame:lastFrame,:);
+    trialAnnotations{iTrial} = [trialAnnotations{iTrial}, table(frameTime)];
+    currFrame = currFrame + frameCounts(iTrial);
 end
 
-% Make sure output data file doesn't already exist for this session
-saveFilePath = fullfile(saveDir, ['sid_', num2str(sid), '_BehavioralAnnotations.mat']);
+% Make sure output data file doesn't already exist for this session, then save processed annotation
+% data along with behavior labels
+saveFilePath = fullfile(saveDir, ['sid_', num2str(sid), '_Annotations.mat']);
 assert(exist(saveFilePath, 'file') == 0, 'Error: a file with this name already exists in the save directory')
-
-% Save processed annotation data along with behavior labels
-save(saveFilePath, 'trialAnnotations', 'behaviorLabels', 'goodTrials');
-
+if nTracks == 2
+    save(saveFilePath, 'trialAnnotations', 'behaviorLabels', 'ballStopLabels', 'goodTrials');
+else
+    save(saveFilePath, 'trialAnnotations', 'behaviorLabels', 'goodTrials');
+end
 end%function

@@ -51,10 +51,10 @@ function [f, plotAxes] = plot_heatmaps(dataArr, infoStruct, cLimRange, plotTitle
 if makeVid
     
     if isempty(saveDir)
-        saveDir = uigetdir('D:\Dropbox (HMS)\2P Data\Imaging Data\', 'Select a save directory');
+        saveDir = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', infoStruct.expDate], 'Select a save directory');
         if saveDir == 0
             % Throw error if user canceled without choosing a directory
-            error('ERROR: you must select a save directory or provide one as an argument');
+            disp('ERROR: you must select a save directory or provide one as an argument');
             return
         end
     else
@@ -161,6 +161,7 @@ for iPlane = 1:infoStruct.nPlanes%:-1:1 % Figure windows arranged dorsal --> ven
         end
         caxis(cLimRange);
         colormap(plotAxes{iPlane, iPlot+1}, cMapName);
+        colorbar;
         axis equal; axis off;
         title(plotTitles{iPlot});
     end

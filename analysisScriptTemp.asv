@@ -38,10 +38,10 @@ myData.ROIdata = ROIdata;
 
 %% PLOT AND SAVE VISUALIZATION OF BEHAVIOR DATA ANNOTATIONS
 
-saveFigs = 0;
+saveFigs = 1;
 trialGroups = []; %myData.stimSepTrials.windTrials + 2 * (~myData.stimSepTrials.windTrials);
 
-for iFold = 1
+for iFold = 0
     
 % Create array of annotation data (row = trial, col = frame)
 annotationArr = [];
@@ -361,11 +361,11 @@ end%iFoldIn
                     %% PLOT BEHAVIORAL STATE HEATMAPS FOR EACH PLANE
 
     smoothingSigma = [0.5];    
-    scalingFactor = [0.5];
-    makeVid = 1;
+    scalingFactor = [1];
+    makeVid = 0;
     saveDir = [];
     fileName = 'Locomotion_Plane_Heatmaps';
-    titleStr = {'dF/F - Locomotion vs. Quiescence'}
+    titleStr = {'dF/F - Locomotion vs. Quiescence'};
 
     % Calculate absolute max dF/F value across all planes and action states
     range = calc_range(actionDff, scalingFactor);
@@ -444,8 +444,8 @@ end%iFoldIn
                     %% PLOT MOVEMENT ONSET HEATMAPS FOR EACH PLANE
 
     smoothingSigma = [0.5];    
-    scalingFactor = [0.5];
-    makeVid = 1;
+    scalingFactor = [0.75];
+    makeVid = 0;
     saveDir = [];
     fileName = 'Behavior_Onset_Plane_Heatmaps';
 
@@ -459,8 +459,9 @@ end%iFoldIn
                     %% CREATE VIDEO OF MEAN dF/F FOR EACH PLANE THROUGHOUT MOVEMENT ONSET
 
     smoothingSigma = [0.5];    
-    rangeScalar = 0.4;
-
+    rangeScalar = 0.1;
+    fileName = 'Move_Onset_Responses';
+    
     % Calculate absolute max dF/F value across all planes and action states
     range = calc_range(onsetDffVols, rangeScalar);
 
@@ -481,8 +482,7 @@ end%iFoldIn
     end
 
     % Create video
-    savePath = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_0\Analysis'];
-    fileName = 'Move_Onset_Responses';
+    savePath = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', myData.sid, '\Analysis'];
     make_heatmap_vid(onsetDffVols, myData, range, fileName, titleStrings, savePath, [], [], [], smoothingSigma);
 
 
@@ -624,103 +624,107 @@ end%iFold
 for iFold = 1
     %% CALCULATE MEAN dF/F AROUND BALL STOPPING
 
+    % Exclude vols
+    excludeTrials = [5 22];
+    
+for iFoldIn = 1
+        
     % Extract ball-stopping event timing for each trial
     ballStopVols = [];
     for iTrial = 1:nTrials
-        currAnnot = num2str(myData.trialAnnotations{iTrial}.ballStopNums');
-        currAnnot = currAnnot(~isspace(currAnnot));
-        moveStart = regexp(currAnnot, '[02]1') + 1;
-        ballStop = regexp(currAnnot, '[10]2') + 1;
-        ballRelease = regexp(currAnnot, '2[10]') + 1;
-        moveEnd = regexp(currAnnot, '10000') + 1;
-        ballStopFrames = [moveStart(1), ballStop, ballRelease, moveEnd];                   % --> [startMoveUp, ballStop, ballRelease, endMoveDown]
-        for iTime = 1:length(ballStopFrames) 
-           [~, ballStopVols(iTrial, iTime)] = min(abs(volFrames - ballStopFrames(iTime))); % --> [startMoveUp, ballStop, ballRelease, endMoveDown]
+        if isempty(strfind(excludeTrials, iTrial))
+            currAnnot = num2str(myData.trialAnnotations{iTrial}.ballStopNums');
+            currAnnot = currAnnot(~isspace(currAnnot));
+            ballStop = regexp(currAnnot, '[10]2') + 1;
+            ballRelease = regexp(currAnnot, '2[10]') + 1;
+            ballStopFrames = [ballStop', ballRelease'];  % --> [ballStop, ballRelease]
+            currBallStopVols = zeros(size(ballStopFrames));
+             for iTime = 1:numel(ballStopFrames)
+                [~, currBallStopVols(iTime)] = min(abs(volFrames - ballStopFrames(iTime))); % --> [ballStop, ballRelease]
+             end
+            currBallStopVols(:,3) = iTrial;                  % --> [ballStop, ballRelease, trial]
+            ballStopVols = [ballStopVols; currBallStopVols];
         end
     end
-
+    
     % Find minimum duration of each annotation period
-    moveUpDur = min(ballStopVols(:,2) - ballStopVols(:,1));
-    ballStopDur = min(ballStopVols(:,3) - ballStopVols(:,2));
-    moveDownDur = min(ballStopVols(:,4) - ballStopVols(:,3));
-
+    ballStopDur = min(ballStopVols(:,2) - ballStopVols(:,1));
+    
+    % Drop any ball-stopping events that are too close to the trial onset or offset
+    ballStopVols(ballStopVols(:,1) < ballStopDur, :) = [];
+    ballStopVols(ballStopVols(:,2) > (nVolumes - ballStopDur)) = [];
+    
     % Extract imaging data for each phase
     wsSize = size(myData.wholeSession);
-    moveUpBaselineData = zeros([wsSize(1:3), moveUpDur, nTrials]);
-    ballStopBaselineData = zeros([wsSize(1:3), ballStopDur, nTrials]);
-    moveDownBaselineData = zeros([wsSize(1:3), moveDownDur, nTrials]);
-    moveUpData = moveUpBaselineData;
-    ballStopData = ballStopBaselineData;
-    moveDownData = moveDownBaselineData;
-
-    for iTrial = 1:nTrials
-        moveUpBaselineData(:,:,:,:,iTrial) = myData.wholeSession(:,:,:, (ballStopVols(iTrial, 1) - moveUpDur):(ballStopVols(iTrial, 1) - 1), iTrial);
-        moveUpData(:,:,:,:,iTrial) = myData.wholeSession(:,:,:, ballStopVols(iTrial, 1):(ballStopVols(iTrial, 1) + moveUpDur - 1), iTrial);
-        ballStopBaselineData(:,:,:,:,iTrial) = myData.wholeSession(:,:,:, (ballStopVols(iTrial, 2) - ballStopDur):(ballStopVols(iTrial, 2) - 1), iTrial);
-        ballStopData(:,:,:,:,iTrial) = myData.wholeSession(:,:,:, ballStopVols(iTrial, 2):(ballStopVols(iTrial, 2) + ballStopDur - 1), iTrial);
-        moveDownBaselineData(:,:,:,:,iTrial) = myData.wholeSession(:,:,:, (ballStopVols(iTrial, 3) - moveDownDur):(ballStopVols(iTrial, 3) - 1), iTrial);
-        moveDownData(:,:,:,:,iTrial) = myData.wholeSession(:,:,:, ballStopVols(iTrial, 3):(ballStopVols(iTrial, 3) + moveDownDur - 1), iTrial);
+    ballStopBaselineData = zeros([wsSize(1:3), ballStopDur, size(ballStopVols, 1)]);    % --> [x, y, plane, stopVol, stopNum]
+    ballReleaseBaselineData = ballStopBaselineData; ballStopData = ballStopBaselineData; ballReleaseData = ballStopBaselineData;
+    for iStop = 1:size(ballStopVols, 1)
+        ballStopBaselineVolRange = (ballStopVols(iStop, 1) - ballStopDur):(ballStopVols(iStop, 1) - 1);
+        ballStopVolRange = ballStopVols(iStop, 1):(ballStopVols(iStop, 1) + ballStopDur - 1);
+        ballReleaseBaselineVolRange = (ballStopVols(iStop, 2) - ballStopDur):(ballStopVols(iStop, 2) - 1);
+        ballReleaseVolRange = ballStopVols(iStop, 2):(ballStopVols(iStop, 2) + ballStopDur - 1);
+        ballStopBaselineData(:,:,:,:,iStop) = myData.wholeSession(:,:,:, ballStopBaselineVolRange, ballStopVols(iStop, 3));         % --> [x, y, plane, stopVol, stopNum]
+        ballStopData(:,:,:,:,iStop) = myData.wholeSession(:,:,:, ballStopVolRange, ballStopVols(iStop, 3));                         % --> [x, y, plane, stopVol, stopNum]
+        ballReleaseBaselineData(:,:,:,:,iStop) = myData.wholeSession(:,:,:, ballReleaseBaselineVolRange, ballStopVols(iStop,3));    % --> [x, y, plane, stopVol, stopNum]
+        ballReleaseData(:,:,:,:,iStop) = myData.wholeSession(:,:,:, ballReleaseVolRange, ballStopVols(iStop,3));                    % --> [x, y, plane, stopVol, stopNum]
     end
-
+    
     % 8:13  15:20 22:26  29:33  35:39
     % [1 4 14 21 27 34 50] 
 
-    earlyTrials =   1:(nTrials/2);
-    lateTrials =   ((nTrials/2)+1):nTrials;
+%     earlyTrials =   1:((nTrials - length(excludeTrials))/2);
+%     lateTrials =   (((nTrials - length(excludeTrials))/2)+1):(nTrials - length(excludeTrials));
 
-    % Calc dF/F for trial-averaged data
-    moveUpDff = calc_dFF(moveUpData, moveUpBaselineData, 5);                    % --> [x, y, plane, volume]
+    % Calc dF/F for stop-averaged data
     ballStopDff = calc_dFF(ballStopData, ballStopBaselineData, 5);              % --> [x, y, plane, volume]
-    moveDownDff = calc_dFF(moveDownData, moveDownBaselineData, 5);              % --> [x, y, plane, volume]
-    moveDownRelDff = calc_dFF(moveDownData, ballStopBaselineData, 5);           % --> [x, y, plane, volume]
-    ballStopEarlyTrialsDff = calc_dFF(ballStopData(:,:,:,:, earlyTrials), ballStopBaselineData(:,:,:,:, earlyTrials), 5);   % --> [x, y, plane, volume]
-    moveDownEarlyTrialsDff = calc_dFF(moveDownData(:,:,:,:, earlyTrials), moveDownBaselineData(:,:,:,:, earlyTrials), 5);   % --> [x, y, plane, volume]
-    ballStopLateTrialsDff = calc_dFF(ballStopData(:,:,:,:, lateTrials), ballStopBaselineData(:,:,:,:, lateTrials), 5);      % --> [x, y, plane, volume]
-    moveDownLateTrialsDff = calc_dFF(moveDownData(:,:,:,:, lateTrials), moveDownBaselineData(:,:,:,:, lateTrials), 5);      % --> [x, y, plane, volume] 
+    ballReleaseDff = calc_dFF(ballReleaseData, ballReleaseBaselineData, 5);     % --> [x, y, plane, volume]
+    ballReleaseRelDff = calc_dFF(ballReleaseData, ballStopBaselineData, 5);     % --> [x, y, plane, volume]
+%     ballStopEarlyTrialsDff = calc_dFF(ballStopData(:,:,:,:, earlyTrials), ballStopBaselineData(:,:,:,:, earlyTrials), 5);   % --> [x, y, plane, volume]
+%     ballReleaseEarlyTrialsDff = calc_dFF(ballReleaseData(:,:,:,:, earlyTrials), ballReleaseBaselineData(:,:,:,:, earlyTrials), 5);   % --> [x, y, plane, volume]
+%     ballStopLateTrialsDff = calc_dFF(ballStopData(:,:,:,:, lateTrials), ballStopBaselineData(:,:,:,:, lateTrials), 5);      % --> [x, y, plane, volume]
+%     ballReleaseLateTrialsDff = calc_dFF(ballReleaseData(:,:,:,:, lateTrials), ballReleaseBaselineData(:,:,:,:, lateTrials), 5);      % --> [x, y, plane, volume] 
 
     % Average the dF/F data over volumes as well
-    moveUpDffAvg = calc_dFF(moveUpData, moveUpBaselineData, [4 5]);             % --> [x, y, plane]
-    ballStopDffAvg = calc_dFF(ballStopData, ballStopBaselineData, [4 5]);       % --> [x, y, plane]
-    moveDownDffAvg = calc_dFF(moveDownData, moveDownBaselineData, [4 5]);       % --> [x, y, plane]
-    moveDownRelDffAvg = calc_dFF(moveDownData, ballStopBaselineData, [4 5]);    % --> [x, y, plane]
-    ballStopEarlyTrialsDffAvg = calc_dFF(ballStopData(:,:,:,:, earlyTrials), ballStopBaselineData(:,:,:,:, earlyTrials), [4 5]);    % --> [x, y, plane]
-    moveDownEarlyTrialsDffAvg = calc_dFF(moveDownData(:,:,:,:, earlyTrials), moveDownBaselineData(:,:,:,:, earlyTrials), [4 5]);    % --> [x, y, plane]
-    ballStopLateTrialsDffAvg = calc_dFF(ballStopData(:,:,:,:, lateTrials), ballStopBaselineData(:,:,:,:, lateTrials), [4 5]);       % --> [x, y, plane]
-    moveDownLateTrialsDffAvg = calc_dFF(moveDownData(:,:,:,:, lateTrials), moveDownBaselineData(:,:,:,:, lateTrials), [4 5]);       % --> [x, y, plane]
-
+    ballStopDffAvg = calc_dFF(ballStopData, ballStopBaselineData, [4 5]);           % --> [x, y, plane]
+    ballReleaseDffAvg = calc_dFF(ballReleaseData, ballReleaseBaselineData, [4 5]);  % --> [x, y, plane]
+    ballReleaseRelDffAvg = calc_dFF(ballReleaseData, ballStopBaselineData, [4 5]);  % --> [x, y, plane]
+%     ballStopEarlyTrialsDffAvg = calc_dFF(ballStopData(:,:,:,:, earlyTrials), ballStopBaselineData(:,:,:,:, earlyTrials), [4 5]);    % --> [x, y, plane]
+%     ballReleaseEarlyTrialsDffAvg = calc_dFF(ballReleaseData(:,:,:,:, earlyTrials), ballReleaseBaselineData(:,:,:,:, earlyTrials), [4 5]);    % --> [x, y, plane]
+%     ballStopLateTrialsDffAvg = calc_dFF(ballStopData(:,:,:,:, lateTrials), ballStopBaselineData(:,:,:,:, lateTrials), [4 5]);       % --> [x, y, plane]
+%     ballReleaseLateTrialsDffAvg = calc_dFF(ballReleaseData(:,:,:,:, lateTrials), ballReleaseBaselineData(:,:,:,:, lateTrials), [4 5]);       % --> [x, y, plane]
+end%iFoldIn
     
                     %% PLOT HEATMAPS ALIGNED TO BALL STOPPING
 
-    currPhases = [6 8 7 9];
+    currPhases = [1 2 3];
     smoothingSigma = [0.5];    
-    scalingFactor = [0.05];
+    scalingFactor = [];
     makeVid = 1;
     saveDir = [];
-    fileName = 'ballStoppingHeatmaps_EarlyLate';
+    fileName = 'ballStoppingHeatmaps';
 
 for iFoldIn = 1
-    phasesDff = zeros([size(moveUpDffAvg), 3]);
-    phasesDff(:,:,:,1) = moveUpDffAvg;                      % --> [x, y, plane, trialPhase]
-    phasesDff(:,:,:,2) = ballStopDffAvg;                    % --> [x, y, plane, trialPhase]
-    phasesDff(:,:,:,3) = moveDownDffAvg;                    % --> [x, y, plane, trialPhase]
-    phasesDff(:,:,:,4) = moveDownRelDffAvg;                 % --> [x, y, plane, trialPhase]
-    phasesDff(:,:,:,5) = moveDownRelDffAvg - ballStopDffAvg;
-    phasesDff(:,:,:,6) = ballStopEarlyTrialsDffAvg;
-    phasesDff(:,:,:,7) = moveDownEarlyTrialsDffAvg;
-    phasesDff(:,:,:,8) = ballStopLateTrialsDffAvg;
-    phasesDff(:,:,:,9) = moveDownLateTrialsDffAvg;
+    
+    phasesDff = [];
+    phasesDff(:,:,:,1) = ballStopDffAvg;                        % --> [x, y, plane, trialPhase]
+    phasesDff(:,:,:,2) = ballReleaseDffAvg;                     % --> [x, y, plane, trialPhase]
+    phasesDff(:,:,:,3) = ballReleaseRelDffAvg;                  % --> [x, y, plane, trialPhase]
+    phasesDff(:,:,:,4) = ballReleaseRelDffAvg - ballStopDffAvg; % --> [x, y, plane, trialPhase]
+%     phasesDff(:,:,:,5) = ballStopEarlyTrialsDffAvg;
+%     phasesDff(:,:,:,6) = ballReleaseEarlyTrialsDffAvg;
+%     phasesDff(:,:,:,7) = ballStopLateTrialsDffAvg;
+%     phasesDff(:,:,:,8) = ballReleaseLateTrialsDffAvg;
 
 
     titleStrings = [];
-    titleStrings{1} = {'Actuator move up onset'};
-    titleStrings{2} = {'Ball stopping'};
-    titleStrings{3} = {'Ball release'};
-    titleStrings{4} = {'Ball release (pre-stop baseline)'};
-    titleStrings{5} = {'Release (pre-stop baseline) - stopping'};
-    titleStrings{6} = {'Ball stopping - early trials'};
-    titleStrings{7} = {'Ball release - early trials'};
-    titleStrings{8} = {'Ball stopping - late trials'};
-    titleStrings{9} = {'Ball release - late trials'};
+    titleStrings{1} = {'Ball stopping'};
+    titleStrings{2} = {'Ball release'};
+    titleStrings{3} = {'Ball release (pre-stop baseline)'};
+    titleStrings{4} = {'Release (pre-stop baseline) - stopping'};
+%     titleStrings{5} = {'Ball stopping - early trials'};
+%     titleStrings{6} = {'Ball release - early trials'};
+%     titleStrings{7} = {'Ball stopping - late trials'};
+%     titleStrings{8} = {'Ball release - late trials'};
 
     % Calculate dF/F range
     range = calc_range(phasesDff(:,:,:, currPhases), scalingFactor);
@@ -826,10 +830,10 @@ end%iFoldIn
                     %% PLOT BALL STOP/RELEASE HEATMAPS FOR SOME TRIAL CONDITIONS
 
     % Calculate absolute max dF/F value across all planes and stim types
-    currConds = [1 2 5 6];
+    currConds = [2 4 5 8];
     smoothingSigma = [0.5];    
-    scalingFactor = [0.25];
-    makeVid = 1;
+    scalingFactor = [0.5];
+    makeVid = 0;
     saveDir = [];
     fileName = 'Ball_Stop_Behavior_Interaction_Heatmaps';
 
@@ -841,7 +845,6 @@ end%iFoldIn
     [f, plotAxes] = plot_heatmaps(dffCurrConds, myData, range, trialCondNames(currConds), [], [], smoothingSigma, makeVid, saveDir, fileName); %trialCondNames(currConds)
 
 end%iFold
-
 
 %% =================================================================================================
 %           OTHER ANALYSES                                   
@@ -1221,7 +1224,7 @@ windTrials = myData.wholeSession(:,:,:,:,~logical(myData.stimSepTrials.windTrial
 
 
 % Pull out data for one plane
-planeNum = 5;
+planeNum = 12;
 planeData = squeeze(windTrials(:,:,planeNum,:,:)); % --> [x, y, volume, trial]
 [w,x,y,z] = size(planeData);
 planeDataRS = reshape(planeData, [w, x, y*z]); % --> [x, y, volume]

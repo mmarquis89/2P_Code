@@ -159,7 +159,7 @@ for iSession = mySessions
         for iPlane = 1:size(wholeSession_1, 3)
             refImages{iPlane} = squeeze(mean(mean(wholeSession_1(:,:,iPlane,:,:),4),5)); % --> [x, y]
         end
-        save(fullfile(sessionDir, sprintf('sid_%.0f_refImages.mat', iSession)), 'refImages', channelNum);
+        save(fullfile(sessionDir, sprintf('sid_%.0f_refImages.mat', iSession)), 'refImages', 'channelNum');
         
         disp('Saving session data...')
         wholeSession = wholeSession_1; % --> [x, y , plane, volume, trial])

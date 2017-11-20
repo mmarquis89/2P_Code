@@ -10,9 +10,9 @@ function behaviorVols = match_behavioral_states(infoStruct)
 %
 %       .nVolumes = total number of imaging volumes per trial
 %
-%       .volumeRate = rate of imaging volume acquisition in seconds
+%       .volumeRate = rate of imaging volume acquisition in volumes/sec
 %
-%       .goodTrials = logical vector indicating all trials that are not missing any frames
+%       .goodTrials = logical vector indicating trials that aren't missing any behavior video frames
 %
 %       .trialAnnotations = cell array of length nTrials with a table in each cell containing 
 %                           frame-by-frame annotation data for that trial. Table must have fields:
@@ -22,7 +22,7 @@ function behaviorVols = match_behavioral_states(infoStruct)
 %       .behaviorLabels = cell array of labels for each unique actionNum value in trialAnnotations
 %
 % OUTPUTS:
-%       behaviorVols = 3D array of the form [trial, actionNum, volume]
+%       behaviorVols = 3D array with dimensions [trial, actionNum, volume]
 %
 %===================================================================================================
 

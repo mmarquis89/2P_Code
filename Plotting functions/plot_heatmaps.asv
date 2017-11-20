@@ -7,10 +7,6 @@ function [f, plotAxes] = plot_heatmaps(dataArr, infoStruct, cLimRange, plotTitle
 % plane's mean reference image in the first subplot and a dF/F heatmap of each trial type or 
 % condition distributed throughout the rest of the subplots. Returns handles to all the figures and 
 % axes that were created. Can optionally also save each figure as a frame in a video file.
-%
-% There are also buttons that allow the user to draw an ROI on any figure (after first clicking on
-% the figure to select it), which will then be plotted on all the images...this is intended to 
-% facilitate comparisons of a specific anatomical region across different plots.%
 % 
 % INPUTS:
 %       dataArr    =  a 4-D numeric array with dims [x, y, plane, plotNum] containing the plotting 
@@ -101,27 +97,13 @@ if ~isempty(findobj('Tag', 'mainHeatmapFig'));
     delete(findobj('Tag', 'mainHeatmapFig'));
 end
 f = figure('position', figPos, 'Name', 'Plane heatmaps', 'Tag', 'mainHeatmapFig', 'NumberTitle', ... 
-            'off', 'WindowButtonDownFcn', {@figure_WindowButtonDownFcn}); clf;        
-
-% Create tab group
+            'off', 'WindowButtonDownFcn', {@figure_WindowButtonDownFcn}); clf;
 ROIplots = [];
 selected = 0;
+        
+
+% Create tab group
 tabGroup = uitabgroup(f, 'Units', 'Normalized', 'Position', [0 0 1 0.99], 'Tag', 'tabGroup');
-
-% Create DrawROI button
-drawROIButton = uicontrol(f, 'Style', 'pushbutton', 'String', 'Draw ROI', 'Units', 'Normalized', ...
-    'Position', [0.4, 0.965, 0.05, 0.035], 'FontSize', 12, 'Callback', {@drawROIButton_Callback}, ...
-    'Tag', 'drawROIButton');
-
-% Create clearROI button
-clearROIButton = uicontrol(f, 'Style', 'pushbutton', 'String', 'Clear ROIs', 'Units', 'Normalized', ...
-    'Position', [0.455, 0.965, 0.05, 0.035], 'FontSize', 12, 'Callback', {@clearROIButton_Callback}, ...
-    'Tag', 'clearROIButton');
-% --------------------------------------------------------------------------------------------------
-% Note that I'm putting these buttons in this weird location because it will make them easier to 
-% crop out when I save these heatmap figures as movie frames.
-% --------------------------------------------------------------------------------------------------
-
 
 plotAxes = []; frameStruct = []; tabs = [];
 for iPlane = 1:infoStruct.nPlanes%:-1:1 % Figure windows arranged dorsal --> ventral
@@ -172,12 +154,12 @@ for iPlane = 1:infoStruct.nPlanes%:-1:1 % Figure windows arranged dorsal --> ven
         if ~isempty(sigma)
             dffPlots{iPlot} = imagesc(imgaussfilt(dataArr(:,:, iPlane, iPlot), sigma));
         else
-            dffPlots{iPlot} = imagesc(dataArr(:,:, iPlane, iPlot));
+            dffPlots{iPlot} = imagesc(dataArr(:,:, iPlane,iPlot));
         end
         dffPlots{iPlot}.ButtonDownFcn = {@image_ButtonDownFcn};
         caxis(cLimRange);
-        colormap(plotAxes{iPlane, iPlot + 1}, cMapName);
-        colorbar(plotAxes{iPlane, iPlot + 1});
+        colormap(plotAxes{iPlane, iPlot+1}, cMapName);
+        colorbar;
         axis equal; axis off;
         title(plotTitles{iPlot});
     end
@@ -203,7 +185,20 @@ if makeVid
 end
 
 %++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++%
-%   CALLBACK FUNCTIONS
+
+% Create DrawROI button
+drawROIButton = uicontrol(f, 'Style', 'pushbutton', 'String', 'Draw ROI', 'Units', 'Normalized', ...
+    'Position', [0.4, 0.965, 0.05, 0.035], 'FontSize', 12, 'Callback', {@drawROIButton_Callback}, ...
+    'Tag', 'drawROIButton');
+
+% Create clearROI button
+clearROIButton = uicontrol(f, 'Style', 'pushbutton', 'String', 'Clear ROIs', 'Units', 'Normalized', ...
+    'Position', [0.455, 0.965, 0.05, 0.035], 'FontSize', 12, 'Callback', {@clearROIButton_Callback}, ...
+    'Tag', 'clearROIButton');
+
+% Note that I'm putting these buttons in this weird location because it will make them easier to 
+% crop out when I save these heatmap figures as movie frames.
+
 %++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++%
 
 function image_ButtonDownFcn(src, ~)
@@ -230,6 +225,7 @@ end
 
 %---------------------------------------------------------------------------------------------------
 function drawROIButton_Callback(~, ~)
+
     
     % Clear any previous ROIs on this tab
     currTab = tabGroup.SelectedTab;
@@ -247,7 +243,7 @@ function drawROIButton_Callback(~, ~)
         ROIplots = [];
         currTabAxes  = findobj(currTab, 'Type', 'Axes');
         for iROI = 1:length(currTabAxes)
-            ROIplots{iROI} = plot(currTabAxes(iROI), xi, yi, 'linewidth', 2, 'color', rgb('LimeGreen'), 'tag', 'ROIplot');
+            ROIplots{iROI} = plot(currTabAxes(iROI), xi, yi, 'linewidth', 2, 'color', 'Green', 'tag', 'ROIplot');
         end
         
     else
@@ -259,9 +255,9 @@ end
 function clearROIButton_Callback(~, ~)
     
     % Clear all existing ROIs and plots
-    allROIs = findobj(tabGroup, 'tag', 'ROIplot');
-    for iROI = 1:length(allROIs)
-        delete(allROIs(iROI));
+%     allROIs = 
+    for iROI = 1:length(ROIplots)
+        delete(ROIplots{iROI})
     end
     drawnow()
 end

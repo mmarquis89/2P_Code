@@ -9,73 +9,61 @@ close all
 
 %++++++++++++++++++++++++ INITIALIZATION TASKS +++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-% Prompt user for data file and load data
-myData = load_imaging_data();
-
 % Prompt user for ref images data file
 [dataFile, pathName, ~] = uigetfile('*.mat', 'Select reference image data file', 'D:\Dropbox (HMS)\2P Data\Imaging Data\');
 
 if dataFile == 0
     
-    % Prompt user for imaging data file
+    % Prompt user for imaging data file to get ref images
     myData = load_imaging_data();
-    refImages = myData.refImg;    
+    refImages = myData.refImg;
+    nPlanes = myData.nPlanes;
 else
+    % Load ref images data file
     disp(['Loading ' dataFile, '...'])
-    load([pathName, dataFile]); % 1 x nPlanes cell array
+    imgData = load([pathName, dataFile]); % 1 x nPlanes cell array
+    refImages = imgData.refImages;
     nPlanes = length(refImages);
     disp([dataFile, ' loaded'])
 end
 
+% Create hardcoded parameters
+maxInts = [];
+for iPlane = 1:nPlanes
+    maxInts(iPlane) = max(refImages{iPlane}(:));
+end
+maxIntDefault = num2str(max(maxInts));
+myData.MAX_INTENSITY = str2double(inputdlg('Enter max intensity value for reference images', '', 1, {maxIntDefault}));
+MAX_INTENSITY = myData.MAX_INTENSITY; % To control brightness of ref image plots
 
-    disp(['Loading ' dataFile, '...'])
-    load([pathName, dataFile]); % 1 x nPlanes cell array
-    
-    
-    nPlanes = length(refImages);
-    disp([dataFile, ' loaded'])
+myData.ROIs = [];
+indexROI = 1;
+roiPlaneAxes = [];
+selected = 0;
 
-    nPlanes = myData.nPlanes;
-    refImg = myData.refImg;
 
-    trialDuration = myData.trialDuration;  
-    
-    % Create hardcoded parameters
-    maxInts = [];
-    for iPlane = 1:nPlanes
-       maxInts(iPlane) = max(refImg{iPlane}(:));
-    end
-    maxIntDefault = num2str(max(maxInts));
-    myData.MAX_INTENSITY = str2double(inputdlg('Enter max intensity value for reference images', '', 1, {maxIntDefault})); 
-    MAX_INTENSITY = myData.MAX_INTENSITY; % To control brightness of ref image plots
-    
-    myData.ROIs = [];
-    indexROI = 1;
-    roiPlaneAxes = [];  
-    
-    
-    %----------CONSTRUCTING COMPONENTS----------
-    
-    % Figure
-    f = figure('position', [50 45, 1800, 950], 'Tag', 'figure', 'WindowButtonDownFcn', ...
-            {@figure_WindowButtonDownFcn}, 'Name', 'Imaging Analysis GUI', 'NumberTitle', 'off');
-    
-    %%%% TOP LEVEL TAB GROUP %%%%
-    baseTabGroup = uitabgroup(f, 'Units', 'Pixels', 'Position', [5 5 1800 940],...
-        'Tag', 'baseTabGroup');
-    
-    % ROI selection tab
-    roiTab = uitab(baseTabGroup, 'Title', 'ROI selection', 'Tag', 'roiTab');
-    
-    % ROI subtab group
-    roiSubtabGroup = uitabgroup(roiTab, 'Units', 'Normalized', 'Position', [0 0 1 0.99],...
-        'CreateFcn', {@roiSubtabGroup_CreateFcn}, 'Tag', 'roiSubtabGroup');
-    
-    % Change "Units" to normalized so components resize automatically with window
-    f.Units = 'normalized';
-    baseTabGroup.Units = 'normalized';
-    roiSubtabGroup.Units = 'normalized';
-    
+%----------CONSTRUCTING COMPONENTS----------
+
+% Figure
+f = figure('position', [50 45, 1800, 950], 'Tag', 'figure', 'WindowButtonDownFcn', ...
+    {@figure_WindowButtonDownFcn}, 'Name', 'Imaging Analysis GUI', 'NumberTitle', 'off');
+
+%%%% TOP LEVEL TAB GROUP %%%%
+baseTabGroup = uitabgroup(f, 'Units', 'Pixels', 'Position', [5 5 1800 940],...
+    'Tag', 'baseTabGroup');
+
+% ROI selection tab
+roiTab = uitab(baseTabGroup, 'Title', 'ROI selection', 'Tag', 'roiTab');
+
+% ROI subtab group
+roiSubtabGroup = uitabgroup(roiTab, 'Units', 'Normalized', 'Position', [0 0 1 0.99],...
+    'CreateFcn', {@roiSubtabGroup_CreateFcn}, 'Tag', 'roiSubtabGroup');
+
+% Change "Units" to normalized so components resize automatically with window
+f.Units = 'normalized';
+baseTabGroup.Units = 'normalized';
+roiSubtabGroup.Units = 'normalized';
+
 %---------------------------------------------------------------------------------------------------
     function roiSubtabGroup_CreateFcn(src, ~)
         
@@ -120,7 +108,7 @@ end
                     currAxes = roiRefImgAxes{iPlane};
                     axes(currAxes);
                     axis image; hold on
-                    myImages{iPlane} = imshow(refImg{iPlane}, [0 MAX_INTENSITY], ...
+                    myImages{iPlane} = imshow(refImages{iPlane}, [0 MAX_INTENSITY], ...
                         'InitialMagnification', 'fit', 'Parent', currAxes);
                     myImages{iPlane}.ButtonDownFcn = {@image_ButtonDownFcn};
                     currAxes.Title.String = ['Plane #' num2str(iPlane)];
@@ -132,7 +120,7 @@ end
                 roiSelectTabs{iTab}.Title = ['Plane #', num2str(iTab-1)];
                 roiPlaneAxes{iTab-1} = axes(roiSelectTabs{iTab}, 'Position', [0.05 0.1 0.8 0.8]);
                 axis image; hold on
-                roiRefImages{iTab-1} = imshow(refImg{iTab-1}, [0 MAX_INTENSITY], ...
+                roiRefImages{iTab-1} = imshow(refImages{iTab-1}, [0 MAX_INTENSITY], ...
                     'InitialMagnification', 'fit', 'Parent', roiPlaneAxes{iTab-1});
                 roiRefImages{iTab-1}.ButtonDownFcn = {@image_ButtonDownFcn};
                 roiPlaneAxes{iTab-1}.Title.String = ['Plane #' num2str(iTab-1)];
@@ -154,7 +142,7 @@ end
         ROISaveButton = uicontrol(roiTab, 'Style', 'pushbutton', 'String', 'Save current plots', ...
             'Units', 'Normalized', 'Position', [0.89, 0.4, 0.1, 0.05], 'FontSize', 12, ...
             'Callback', {@ROISaveButton_Callback}, 'Tag', 'ROISaveButton');
-
+        
     end
 
 %---------------------------------------------------------------------------------------------------
@@ -167,16 +155,21 @@ end
             allAxes(iAx).Title.String = allAxes(iAx).Tag;
             roiPlaneAxes{iAx}.Title.String = roiPlaneAxes{iAx}.Tag;
         end
+        selected = 0;
     end
 %---------------------------------------------------------------------------------------------------
     function image_ButtonDownFcn(src, ~)
         % Append [SELECTED] to the title of a clicked image on the "All planes" tab
         src.Parent.Title.String = [src.Parent.Title.String(end-2:end), ' [SELECTED]'];
+        selected = 1;
     end
 %---------------------------------------------------------------------------------------------------
     function drawROIButton_Callback(~, ~)
         
         % ---------- Draw ROI and save relevant information about it ----------
+        
+        
+        if selected
         cm = [ rgb('Blue'); rgb('Green'); rgb('Red'); rgb('Cyan'); rgb('Purple'); rgb('Brown'); ...
             rgb('Indigo'); rgb('DarkRed') ; rgb('Magenta') ; rgb('Gold')];
         currcolor = cm(mod(indexROI,size(cm,1))+1,:); % indexROI starts at 1 when gui initializes
@@ -209,7 +202,6 @@ end
         disp('ROIs cleared')
     end
 %---------------------------------------------------------------------------------------------------
-
     function ROISaveButton_Callback(~,~)
         
         ROIdata = myData.ROIs;
@@ -240,7 +232,7 @@ end
             save(fullfile(saveDir, [fileName, '.mat']), 'ROIdata');
             disp('ROI data saved!')
         end
-
+        
     end%function
 
 

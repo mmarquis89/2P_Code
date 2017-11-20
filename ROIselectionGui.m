@@ -39,6 +39,7 @@ MAX_INTENSITY = myData.MAX_INTENSITY; % To control brightness of ref image plots
 myData.ROIs = [];
 indexROI = 1;
 roiPlaneAxes = [];
+selected = 0;
 
 
 %----------CONSTRUCTING COMPONENTS----------
@@ -154,34 +155,40 @@ roiSubtabGroup.Units = 'normalized';
             allAxes(iAx).Title.String = allAxes(iAx).Tag;
             roiPlaneAxes{iAx}.Title.String = roiPlaneAxes{iAx}.Tag;
         end
+        selected = 0;
     end
 %---------------------------------------------------------------------------------------------------
     function image_ButtonDownFcn(src, ~)
         % Append [SELECTED] to the title of a clicked image on the "All planes" tab
         src.Parent.Title.String = [src.Parent.Title.String(end-2:end), ' [SELECTED]'];
+        selected = 1;
     end
 %---------------------------------------------------------------------------------------------------
     function drawROIButton_Callback(~, ~)
         
-        % ---------- Draw ROI and save relevant information about it ----------
-        cm = [ rgb('Blue'); rgb('Green'); rgb('Red'); rgb('Cyan'); rgb('Purple'); rgb('Brown'); ...
-            rgb('Indigo'); rgb('DarkRed') ; rgb('Magenta') ; rgb('Gold')];
-        currcolor = cm(mod(indexROI,size(cm,1))+1,:); % indexROI starts at 1 when gui initializes
-        
-        % Prompt user to create a polygon ROI
-        [myData.ROIs.masks(:,:,indexROI), xi, yi] = roipoly; % --> [x, y, ROInum]
-        currAxes = gca;
-        
-        % Save other useful information about the ROI
-        numLoc = strfind(currAxes.Tag, '#');
-        myData.ROIs.planes{indexROI} = currAxes.Tag(numLoc+1:end);
-        myData.ROIs.plots{indexROI} = plot(xi, yi, 'linewidth', 2, 'color', currcolor);
-        myData.ROIs.plotData{indexROI} = [xi, yi];
-        myData.ROIs.nums{indexROI} = text(mean(xi),mean(yi),num2str(indexROI),'Color',currcolor, ...
-            'FontSize',12);
-        myData.ROIs.color{indexROI} = currcolor;
-        
-        indexROI = indexROI + 1; % Track total # of ROIs that have been drawn
+        % ---------- Draw ROI and save relevant information about it ----------        
+        if selected
+            cm = [ rgb('Blue'); rgb('Green'); rgb('Red'); rgb('Cyan'); rgb('Purple'); rgb('Brown'); ...
+                rgb('Indigo'); rgb('DarkRed') ; rgb('Magenta') ; rgb('Gold')];
+            currcolor = cm(mod(indexROI,size(cm,1))+1,:); % indexROI starts at 1 when gui initializes
+            
+            % Prompt user to create a polygon ROI
+            [myData.ROIs.masks(:,:,indexROI), xi, yi] = roipoly; % --> [x, y, ROInum]
+            currAxes = gca;
+            
+            % Save other useful information about the ROI
+            numLoc = strfind(currAxes.Tag, '#');
+            myData.ROIs.planes{indexROI} = currAxes.Tag(numLoc+1:end);
+            myData.ROIs.plots{indexROI} = plot(xi, yi, 'linewidth', 2, 'color', currcolor);
+            myData.ROIs.plotData{indexROI} = [xi, yi];
+            myData.ROIs.nums{indexROI} = text(mean(xi),mean(yi),num2str(indexROI),'Color',currcolor, ...
+                'FontSize',12);
+            myData.ROIs.color{indexROI} = currcolor;
+            
+            indexROI = indexROI + 1; % Track total # of ROIs that have been drawn
+        else
+            disp('Must click to select a plot before drawing an ROI')
+        end
     end
 %---------------------------------------------------------------------------------------------------
     function clearROIButton_Callback(~, ~)

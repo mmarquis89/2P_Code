@@ -6,7 +6,7 @@ function ImagingAnalysisGui()
 %
 %
 %
-% myData.wholeSession = [x, y, plane, volume, trial]
+% myData.wholeSession = [y, x, plane, volume, trial]
 
 close all
 
@@ -164,7 +164,7 @@ end%if
         currcolor = cm(mod(index,size(cm,1))+1,:); % index starts at 1 when gui initializes
         
         % Prompt user to create a polygon ROI
-        [myData.ROIs.masks(:,:,index), xi, yi] = roipoly; % --> [x, y, ROInum]
+        [myData.ROIs.masks(:,:,index), xi, yi] = roipoly; % --> [y, x, ROInum]
         currAxes = gca;
         
         % Save other useful information about the ROI
@@ -254,7 +254,7 @@ end%if
                 
                 %----------Plot mean dF/F across all trials for the current ROI----------
                 myData.dffData(iROI).stimTypes = stimTypes;
-                currData = squeeze(myData.wholeSession(:,:,str2double(myData.ROIs.planes{iROI}),:,:)); % --> [x, y, volume, trial]
+                currData = squeeze(myData.wholeSession(:,:,str2double(myData.ROIs.planes{iROI}),:,:)); % --> [y, x, volume, trial]
                 
                 % For each stimulus type...
                 stimSepTrials = []; trialAvg = []; baselineAvg = []; ROIdata = []; baselineF = []; dffOffset = []; dffRaw = [];
@@ -264,7 +264,7 @@ end%if
                     stimSepTrials.(stimTypes{iStim}) = logical(cellfun(@(x) strcmp(x, stimTypes{iStim}), myData.trialType));
                     
                     % Get trial averaged and baseline data
-                    trialAvg(:,:,:,iStim) = mean(currData(:,:,:,stimSepTrials.(stimTypes{iStim})),4);   % --> [x, y, volume, stimType]
+                    trialAvg(:,:,:,iStim) = mean(currData(:,:,:,stimSepTrials.(stimTypes{iStim})),4);   % --> [y, x, volume, stimType]
                     stimLength = stimEnd - stimStart;
                     if stimStart - stimLength > 0
                         baselineStart = stimStart - stimLength;
@@ -272,18 +272,18 @@ end%if
                         % if stimDuration > preStimDuration, start baseline one second after beginning of trial
                         baselineStart = 1;
                     end
-                    baselineAvg(:,:,iStim) =  mean(trialAvg(:,:,floor(baselineStart*volumeRate):floor(stimStart*volumeRate),iStim),3);  % --> [x, y, stimType]     %(:,:,1:(2*volumeRate)) mean(trialAvg{iStim},3);
+                    baselineAvg(:,:,iStim) =  mean(trialAvg(:,:,floor(baselineStart*volumeRate):floor(stimStart*volumeRate),iStim),3);  % --> [y, x, stimType]     %(:,:,1:(2*volumeRate)) mean(trialAvg{iStim},3);
                                     
                     % Zero baseline and trial averaged data outside of ROI
-                    repMask = repmat(myData.ROIs.masks(:,:,iROI), [1 1 nVolumes]);                      % Expand ROI mask to cover all volumes --> [x, y, volume]
-                    baselineAvgROI(:,:,iStim) = baselineAvg(:,:,iStim) .* myData.ROIs.masks(:,:,iROI);  % --> [x, y, stimType]
-                    baselineRepROI = permute(repmat(baselineAvgROI, [1 1 1, nVolumes]), [1 2 4 3]);     % --> [x, y, volume, stimType]                    
-                    ROIdata(:,:,:,iStim) = trialAvg(:,:,:,iStim) .* repMask;                            % --> [x, y, volume, stimType]
+                    repMask = repmat(myData.ROIs.masks(:,:,iROI), [1 1 nVolumes]);                      % Expand ROI mask to cover all volumes --> [y, x, volume]
+                    baselineAvgROI(:,:,iStim) = baselineAvg(:,:,iStim) .* myData.ROIs.masks(:,:,iROI);  % --> [y, x, stimType]
+                    baselineRepROI = permute(repmat(baselineAvgROI, [1 1 1, nVolumes]), [1 2 4 3]);     % --> [y, x, volume, stimType]                    
+                    ROIdata(:,:,:,iStim) = trialAvg(:,:,:,iStim) .* repMask;                            % --> [y, x, volume, stimType]
 
                 end%for
                 
                 % Calculate mean dF/F within ROIs
-                dffRaw = (ROIdata - baselineRepROI) ./ baselineRepROI;                                  % --> [x, y, volume, stimType]
+                dffRaw = (ROIdata - baselineRepROI) ./ baselineRepROI;                                  % --> [y, x, volume, stimType]
                 dffMean = squeeze(mean(mean(dffRaw, 1), 2));                                            % --> [volume, stimType]
                 
                 % Offset all mean dF/F values so the average value from the baseline period is zero
@@ -388,10 +388,10 @@ function myData = load_imaging_data()
         
         % Process raw data structure
         if ~isfield(myData, 'wholeSession')
-            myData.wholeSession = myData.regProduct; % myData.wholeSession = [x, y, plane, volume, trial]
+            myData.wholeSession = myData.regProduct; % myData.wholeSession = [y, x, plane, volume, trial]
         end
         myData.nTrials = size(myData.wholeSession, 5);
-        singleTrial = squeeze(myData.wholeSession(:,:,:,:,1));  % --> [x, y, plane, volume]
+        singleTrial = squeeze(myData.wholeSession(:,:,:,:,1));  % --> [y, x, plane, volume]
         myData.nPlanes = size(singleTrial, 3);
         myData.nVolumes = size(singleTrial, 4);
         myData.stimTypes = sort(unique(myData.trialType));
@@ -415,7 +415,7 @@ function myData = load_imaging_data()
         % Create mean reference image for each plane
         myData.refImg = [];
         for iPlane = 1:myData.nPlanes
-            myData.refImg{iPlane} = squeeze(mean(mean(myData.wholeSession(:,:,iPlane,:,:),4),5)); % --> [x, y]
+            myData.refImg{iPlane} = squeeze(mean(mean(myData.wholeSession(:,:,iPlane,:,:),4),5)); % --> [y, x]
         end
         
         % Separate out wind trials

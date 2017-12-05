@@ -31,16 +31,16 @@ summedStacks = [];
 for iVol = 1:nStacks
     disp(['Reading ' stacks(iVol).name, '...']);
     if iVol == 1
-        firstStack = uint16(read_tif(fullfile(dirPath,stacks(iVol).name)));                  % --> [x, y, plane, volume, channel]
-        summedStacks = uint16(firstStack);                                                   % --> [x, y, plane, volume, channel]
+        firstStack = uint16(read_tif(fullfile(dirPath,stacks(iVol).name)));                  % --> [y, x, plane, volume, channel]
+        summedStacks = uint16(firstStack);                                                   % --> [y, x, plane, volume, channel]
     else
-        summedStacks = summedStacks + uint16(read_tif(fullfile(dirPath,stacks(iVol).name))); % --> [x, y, plane, volume, channel]
+        summedStacks = summedStacks + uint16(read_tif(fullfile(dirPath,stacks(iVol).name))); % --> [y, x, plane, volume, channel]
     end
 end
 % disp(['Max summed value = ', num2str(max(summedStacks(:)))]);
 
 % Convert to double
-summedStacks = squeeze(double(summedStacks));                                                % --> [x, y, plane, channel]                                            
+summedStacks = squeeze(double(summedStacks));                                                % --> [y, x, plane, channel]                                            
 
 % Check whether data has multiple channels
 nChannels = size(summedStacks, 4);
@@ -48,12 +48,12 @@ nChannels = size(summedStacks, 4);
 if nChannels == 1
     
     % Calculate mean by dividing by total number of stacks and scale from 0-1
-    avgStack = summedStacks ./ nStacks;             % --> [x, y, plane, channel]
-    avgStackScaled = avgStack ./ max(avgStack(:));  % --> [x, y, plane, channel]
+    avgStack = summedStacks ./ nStacks;             % --> [y, x, plane, channel]
+    avgStackScaled = avgStack ./ max(avgStack(:));  % --> [y, x, plane, channel]
     
     % Get max Z-projection of averaged stack and scale intensity range to 0-1
-    maxZ = squeeze(max(avgStack, [], 3));           % --> [x, y, channel]
-    maxZScaled = maxZ ./ max(maxZ(:));              % --> [x, y, channel]
+    maxZ = squeeze(max(avgStack, [], 3));           % --> [y, x, channel]
+    maxZScaled = maxZ ./ max(maxZ(:));              % --> [y, x, channel]
     
     % Make sure files with these names don't already exist in the chosen directory
     assert(exist(fullfile(dirPath, [outputFilePrefix, 'MeanMaxZ.tif']), 'file')==0, 'Error: a file with this name already exists in this directory');
@@ -69,19 +69,19 @@ if nChannels == 1
 else % nChannels == 2
     
     % Calculate mean by dividing by total number of stacks
-    avgStack = summedStacks ./ nStacks;                  % --> [x, y, plane, channel]
+    avgStack = summedStacks ./ nStacks;                  % --> [y, x, plane, channel]
     
     % Separate data by channel and scale intensity range to 0-1
-    avgStack_1 = avgStack(:,:,:,1);                      % --> [x, y, plane]
-    avgStack_2 = avgStack(:,:,:,2);                      % --> [x, y, plane]
-    avgStackScaled_1 = avgStack_1 ./ max(avgStack_1(:)); % --> [x, y, plane]
-    avgStackScaled_2 = avgStack_2 ./ max(avgStack_2(:)); % --> [x, y, plane]
+    avgStack_1 = avgStack(:,:,:,1);                      % --> [y, x, plane]
+    avgStack_2 = avgStack(:,:,:,2);                      % --> [y, x, plane]
+    avgStackScaled_1 = avgStack_1 ./ max(avgStack_1(:)); % --> [y, x, plane]
+    avgStackScaled_2 = avgStack_2 ./ max(avgStack_2(:)); % --> [y, x, plane]
     
     % Get max Z-projection of averaged stack and scale intensity range to 0-1
-    maxZ_1 = squeeze(max(avgStack_1, [], 3));            % --> [x, y]
-    maxZ_2 = squeeze(max(avgStack_2, [], 3));            % --> [x, y]
-    maxZScaled_1 = maxZ_1 ./ max(maxZ_1(:));             % --> [x, y]
-    maxZScaled_2 = maxZ_2 ./ max(maxZ_2(:));             % --> [x, y]
+    maxZ_1 = squeeze(max(avgStack_1, [], 3));            % --> [y, x]
+    maxZ_2 = squeeze(max(avgStack_2, [], 3));            % --> [y, x]
+    maxZScaled_1 = maxZ_1 ./ max(maxZ_1(:));             % --> [y, x]
+    maxZScaled_2 = maxZ_2 ./ max(maxZ_2(:));             % --> [y, x]
     
     % Make sure files with these names don't already exist in the chosen directory
     assert(exist(fullfile(dirPath, [outputFilePrefix, 'MeanMaxZ_1.tif']), 'file')==0, 'Error: a file with this name already exists in this directory');

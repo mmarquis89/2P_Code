@@ -14,16 +14,16 @@ function outputData = load_imaging_data()
 %               nTrials          = the total number of trials in the session
 %               nVolumes         = the number of imaging volumes per trial in the session
 %               origFileNames    = cell array containing the file names of all the raw .tif files that generated the input data structure
-%               refImg           = 1 x nPlanes cell array, with each cell containing the average of one plane across all volumes and trials [x, y]
+%               refImg           = 1 x nPlanes cell array, with each cell containing the average of one plane across all volumes and trials [y, x]
 %               sid              = the session ID of the data that was loaded
 %               stimSepTrials    = a structure with 1 x nTrials logical vectors for each stimType, as well as one for wind trials (windTrials)
 %               stimTypes        = cell array containing the names of each unique trialType in the session
 %               tE_sec           = time in seconds it took to register the data
 %               trialAnnotations = cell array with behavior annotation data (see process_anvil_annotations() for more info)
-%               trialDuration    = [pre-stim, stimLength, postStim] trial time in seconds
+%               trialDuration    = [pre-stim, stimPeriod, postStim] trial time in seconds
 %               trialType        = cell array with the stimulus type for each trial that went in the data structure
 %               volumeRate       = volume acquisition rate for the imaging data
-%               wholeSession     = the imaging data in an array with dimensions [x, y, plane, volume, trial]
+%               wholeSession     = the imaging data in an array with dimensions [y, x, plane, volume, trial]
 %
 %========================================================================================================================================================
 
@@ -34,7 +34,7 @@ if dataFile == 0
     outputData = []; % Skip loading if user clicked "Cancel"
 else
     disp(['Loading ' dataFile, '...'])
-    imgData = load([pathName, dataFile]); % Fields are: 'regProduct','trialType','origFileNames','tE_sec', 'expDate'
+    imgData = load([pathName, dataFile]); % Fields are: 'regProduct','trialType','origFileNames','tE_sec', 'scanimageInfo', 'expDate' (scanimageInfo not present in older exps)
     disp([dataFile, ' loaded'])
     
     % Prompt user for a metadata file
@@ -42,16 +42,9 @@ else
     if metadataFile == 0
         disp('No metadata file selected')
         imgData.trialDuration = [];
-        imgData.volumeRate = [];
     else
         metadata = load([pathName, metadataFile]);
         imgData.trialDuration = metadata.metaData.trialDuration;
-        if ~isfield(imgData, 'wholeSession')
-            nAcqPlanes = size(imgData.regProduct, 3) + 4; % Add 4 for the flyback frames
-        else
-            nAcqPlanes = size(imgData.wholeSession, 3) + 4;
-        end
-        imgData.volumeRate = metadata.metaData.run_obj_frameRate ./ nAcqPlanes;  
     end
     
     % Prompt user for annotation data file
@@ -76,18 +69,30 @@ else
     
     % Process raw data structure
     if ~isfield(outputData, 'wholeSession')
-        outputData.wholeSession = outputData.regProduct; % --> [x, y, plane, volume, trial]
+        outputData.wholeSession = outputData.regProduct; % --> [y, x, plane, volume, trial]
         outputData = rmfield(outputData, 'regProduct');
     end
     outputData.nTrials = size(outputData.wholeSession, 5);
-    singleTrial = squeeze(outputData.wholeSession(:,:,:,:,1));  % --> [x, y, plane, volume]
+    singleTrial = squeeze(outputData.wholeSession(:,:,:,:,1));  % --> [y, x, plane, volume]
     outputData.nPlanes = size(singleTrial, 3);
     outputData.nVolumes = size(singleTrial, 4);
     outputData.stimTypes = sort(unique(outputData.trialType));
     if ~isempty(annotData.trialAnnotations)
-        outputData.nFrames = max(cellfun(@height, outputData.trialAnnotations));
+        outputData.nFrames = max(cellfun(@height, outputData.trialAnnotations(annotData.goodTrials)));
     else
         outputData.nFrames = [];
+    end
+    
+    % Extract metadata from scanimage info
+    if isfield(outputData, 'scanimageInfo')
+        outputData.volumeRate = frameStringKeyLookup(strjoin(outputData.scanimageInfo, '\n'), 'scanimage.SI.hRoiManager.scanVolumeRate');
+        outputData.laserPower = frameStringKeyLookup(strjoin(outputData.scanimageInfo, '\n'), 'scanimage.SI.hBeams.powers');
+        outputData.scanFrameRate = frameStringKeyLookup(strjoin(outputData.scanimageInfo, '\n'), 'scanimage.SI.hRoiManager.scanFrameRate');
+    else
+        % For backwards compatibility
+        outputData.volumeRate = 6.44; % This is true for all older experiments
+        outputData.laserPower = [];
+        outputData.scanFrameRate = [];
     end
     
     % For compatibility with early experiments
@@ -121,6 +126,16 @@ else
     end
     outputData.stimSepTrials.windTrials = logical(windTrials);
     
+    % Separate out all odor stim trials
+    odorTrials = zeros(1, outputData.nTrials);
+    if isfield(outputData.stimSepTrials, 'OdorA')
+        odorTrials = odorTrials + logical(outputData.stimSepTrials.OdorA);
+    end
+    if isfield(outputData.stimSepTrials, 'OdorB')
+        odorTrials = odorTrials + logical(outputData.stimSepTrials.OdorB);
+    end
+    outputData.stimSepTrials.odorTrials = logical(odorTrials);
+    
     % Match frame times to volumes if annotation data was provided
     if ~isempty(outputData.trialAnnotations)
         volTimes = (1:outputData.nVolumes)' ./ outputData.volumeRate;
@@ -142,7 +157,7 @@ else
         % Create mean reference image for each plane
         outputData.refImg = [];
         for iPlane = 1:outputData.nPlanes
-            outputData.refImg{iPlane} = squeeze(mean(mean(outputData.wholeSession(:,:,iPlane,:,:),4),5)); % --> [x, y]
+            outputData.refImg{iPlane} = squeeze(mean(mean(outputData.wholeSession(:,:,iPlane,:,:),4),5)); % --> [y, x]
         end
     else
         refImages = load([pathName, refImageFile]);

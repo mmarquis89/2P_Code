@@ -8,7 +8,7 @@ function planeMovie=generatePlaneMovie_2P_akm(planeNum,path2file)
 cd(path2file)
 in=load('sessionOutfile_Reg1.mat');
 wholeSession=in.regProduct;
-wholeSession = testSession; % [x, y ,z, volume, trialNum]
+wholeSession = testSession; % [y, x ,z, volume, trialNum]
 
 totalFrames=size(wholeSession,4)*size(wholeSession,5); % number of volumes per trial * number of trials
 planeMovie=uint16(zeros( [size(wholeSession,1),size(wholeSession,1),totalFrames] )); % Initialize a new 3d array, [x y frame]

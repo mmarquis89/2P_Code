@@ -19,6 +19,7 @@ sessionData = inputData.wholeSession;
 trialType = inputData.trialType;  
 origFileNames = inputData.origFileNames;
 expDate = inputData.expDate;
+scanImageInfo = inputData.scanImageInfo;
 
 % Load the transforms file
 transformData = load(fullfile(parentDir, [transformDataFileName, '.mat']));
@@ -39,7 +40,7 @@ end
 % Remove edge pixels to crop out any registration artifacts
 yrange = 3:size(regProduct,1)-2;
 xrange = 3:size(regProduct,2)-2;
-regProduct = regProduct(yrange,xrange,:,:,:); % --> [x, y, plane, volume, trial]
+regProduct = regProduct(yrange,xrange,:,:,:); % --> [y, x, plane, volume, trial]
 
 % Re-offset so minimum value = 1
 regProduct = (regProduct - min(regProduct(:))) + 1;
@@ -49,7 +50,7 @@ disp(['inf count = ', num2str(sum(isinf(regProduct (:))))]);
 % Save output
 outputFileName = [inputDataFileName, '_Reg1'];
 disp(['Saving registered output as ', outputFileName, '.mat...'])
-save(fullfile(parentDir, outputFileName),'regProduct','trialType','origFileNames','tE_sec','expDate');
+save(fullfile(parentDir, outputFileName),'regProduct','trialType','origFileNames', 'scanimageInfo', 'tE_sec','expDate');
 disp('Saving complete')
 
 end

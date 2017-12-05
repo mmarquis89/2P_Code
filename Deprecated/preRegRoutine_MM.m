@@ -90,10 +90,11 @@ for iSession = mySessions
         if iFile==1
             arraySize=size(filtFile);
             arraySize(end+1)=size(currFiles,1);
-            wholeSession=uint16(zeros(arraySize)); % [x, y ,z, volume, trialNum]
+            wholeSession=uint16(zeros(arraySize)); % [y, x ,z, volume, trialNum]
         end
         
-        wholeSession(:,:,:,:,trialNum)=filtFile;
+        wholeSession(:,:,:,:,trialNum)=filtFile;clc
+        
         trialType{trialNum}=trType;
         origFileNames{trialNum}=fName;
         
@@ -101,7 +102,7 @@ for iSession = mySessions
         
     end%for
     
-    % Save session data ( [x, y , plane, volume, trialNum] )
+    % Save session data ( [y, x , plane, volume, trialNum] )
     save(fullfile(sessionDir, sprintf('sid_%.0f_sessionFile.mat',iSession)),'wholeSession','trialType','origFileNames', 'expDate');
     clear wholeSession trialTypes origFileNames
 

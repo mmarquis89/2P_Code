@@ -5,7 +5,8 @@ function h = implay_scaled(vidArr, mapRange, fps)
 %
 % INPUTS:
 %
-%   vidArr    = an array containing the video data (M x 3), [x, y, frame].
+%   vidArr    = an array containing the video data (M x 3), [y, x, frame]. You can also pass a 4-D
+%               array as long as one dimension is a singleton, which will be squeezed out.
 %
 %   mapRange  = a 1x2 vector with the [min, max] values for the colormap scaling. Can pass a scalar 
 %               value instead to use as the max map value and set the min value to zero.
@@ -25,7 +26,7 @@ elseif length(mapRange) ~= 2
 end
 
 % Open video
-h = implay(vidArr, fps);
+h = implay(squeeze(vidArr), fps);
 
 % Apply range parameters
 h.Visual.ColorMap.UserRangeMin = mapRange(1);

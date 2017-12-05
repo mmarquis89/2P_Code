@@ -6,7 +6,7 @@ function ImagingAnalysisGui()
 %
 %
 %
-% myData.wholeSession = [x, y, plane, volume, trial]
+% myData.wholeSession = [y, x, plane, volume, trial]
 
 close all
 
@@ -422,7 +422,7 @@ end%if
             disp('Plotting dF/F heatmaps...')
             
             % Divide data into different stim types
-            stimTypeData = sep_stim_types(myData, combineStimTrials); % --> [x, y, plane, volume, trial, stimType]
+            stimTypeData = sep_stim_types(myData, combineStimTrials); % --> [y, x, plane, volume, trial, stimType]
             
             % Pull out volumes from the baseline and response periods
             baselineDurSec = str2double(baselineDurBox_stim.String);
@@ -432,11 +432,11 @@ end%if
             stimTypeDff = [];
             for iStim = 1:size(stimTypeData)
                 currStimData = stimTypeData{iStim};
-                [~, baselineData, respData] = extract_target_volumes(currStimData, onsetTime, volumeRate, baselineDurSec, respDurSec);  % --> [x, y, plane, volume, trial]
-                respAvg = squeeze(mean(mean(respData, 5), 4));                                                                          % --> [x, y, plane]
-                baselineAvg = squeeze(mean(mean(baselineData, 5), 4));                                                                  % --> [x, y, plane]
-                currStimDff = (respAvg - baselineAvg) ./ baselineAvg;                                                                   % --> [x, y, plane]
-                stimTypeDff(:,:,:, iStim) = currStimDff;                                                                                % --> [x, y, plane, stimType]
+                [~, baselineData, respData] = extract_target_volumes(currStimData, onsetTime, volumeRate, baselineDurSec, respDurSec);  % --> [y, x, plane, volume, trial]
+                respAvg = squeeze(mean(mean(respData, 5), 4));                                                                          % --> [y, x, plane]
+                baselineAvg = squeeze(mean(mean(baselineData, 5), 4));                                                                  % --> [y, x, plane]
+                currStimDff = (respAvg - baselineAvg) ./ baselineAvg;                                                                   % --> [y, x, plane]
+                stimTypeDff(:,:,:, iStim) = currStimDff;                                                                                % --> [y, x, plane, stimType]
             end
             
             stimTypeDff(isinf(stimTypeDff)) = 0; % To eliminate inf values from dividing by zero above...baseline shouldn't be zero in valid data anyways
@@ -594,7 +594,7 @@ end%if
         
         %----- Calculate average dF/F values for each plane across behavioral states -----
         
-            imgData = myData.wholeSession; %--> [x, y, plane, volume, trial]
+            imgData = myData.wholeSession; %--> [y, x, plane, volume, trial]
             
             % Preallocate for speed
             dataSize = size(imgData);
@@ -607,11 +607,11 @@ end%if
                 currBehaviorVols = logical(squeeze(behaviorVols(iTrial,:,:))); % --> [behavior, volume]
                 for iBehav = 1:size(behaviorVols, 2)
                     if sum(currBehaviorVols(iBehav, :)) > 0
-                        meanBehavVols(:,:,:,iTrial,iBehav) = mean(imgData(:,:,:,currBehaviorVols(iBehav,:), iTrial), 4); %--> [x, y, plane, trial, behavior]
+                        meanBehavVols(:,:,:,iTrial,iBehav) = mean(imgData(:,:,:,currBehaviorVols(iBehav,:), iTrial), 4); %--> [y, x, plane, trial, behavior]
                     end
                 end
             end
-            behaviorMean = squeeze(nanmean(meanBehavVols, 4)); %--> [x, y, plane, behavior]
+            behaviorMean = squeeze(nanmean(meanBehavVols, 4)); %--> [y, x, plane, behavior]
             
             % Drop any behaviors that never ocurred
             behaviorLabels = myData.behaviorLabels;
@@ -627,7 +627,7 @@ end%if
             % Calculate dF/F and range for each behavior
             behaviorDff = [];
             for iBehav = 1:length(behaviorLabels)
-                behaviorDff(:,:,:,iBehav) = (behaviorMean(:,:,:,iBehav) - quiescenceMean) ./ quiescenceMean; %--> [x, y, plane, behavior]
+                behaviorDff(:,:,:,iBehav) = (behaviorMean(:,:,:,iBehav) - quiescenceMean) ./ quiescenceMean; %--> [y, x, plane, behavior]
                 ranges(iBehav,:) = calc_range(behaviorDff(:,:,:,iBehav), []);
             end
             
@@ -732,9 +732,9 @@ end%if
                     
                     % Plot dF/F heatmaps for each of the trial types in the other axes
                     if combineBehavTrials
-                        actionDff = behaviorDff(:,:,:,locomotionPos);  %--> [x, y, plane, behavior]
+                        actionDff = behaviorDff(:,:,:,locomotionPos);  %--> [y, x, plane, behavior]
                     else
-                        actionDff = behaviorDff(:,:,:,~quiescencePos); %--> [x, y, plane, behavior]
+                        actionDff = behaviorDff(:,:,:,~quiescencePos); %--> [y, x, plane, behavior]
                         actionLabels = behaviorLabels(~quiescencePos);
                     end
                     for iBehav = 1:size(actionDff, 4)
@@ -809,7 +809,7 @@ end%if
                 %----- Calculate mean dF/F for baseline and response periods -----
                                 
                 % Divide data into different stim types
-                stimTypeData = sep_stim_types(myData, combineStimTrials); % --> [x, y, plane, volume, trial, stimType]
+                stimTypeData = sep_stim_types(myData, combineStimTrials); % --> [y, x, plane, volume, trial, stimType]
                 
                 % Pull out volumes from the baseline and response periods
                 baselineDurSec = str2num(baselineDurBox_stim.String);
@@ -822,21 +822,21 @@ end%if
                 dataSize = size(myData.wholeSession);
                 stimTypeDff = zeros([dataSize(1:3), numel(baselineStartVol:respEndVol), numel(stimTypeData)]);
                 for iStim = 1:size(stimTypeData)
-                    currStimData = stimTypeData{iStim};                                                                                    % --> [x, y, plane, volume, trial]
-                    [~, baselineData, respData] = extract_target_volumes(currStimData, onsetTime, volumeRate, baselineDurSec, respDurSec); % --> [x, y, plane, volume, trial]
-                    currStimDff = calc_dFF(cat(4, baselineData, respData), baselineData);                                                  % --> [x, y, plane, volume]
-                    stimTypeDff(:,:,:,:, iStim) = currStimDff;                                                                             % --> [x, y, plane, volume, stimType]
+                    currStimData = stimTypeData{iStim};                                                                                    % --> [y, x, plane, volume, trial]
+                    [~, baselineData, respData] = extract_target_volumes(currStimData, onsetTime, volumeRate, baselineDurSec, respDurSec); % --> [y, x, plane, volume, trial]
+                    currStimDff = calc_dFF(cat(4, baselineData, respData), baselineData);                                                  % --> [y, x, plane, volume]
+                    stimTypeDff(:,:,:,:, iStim) = currStimDff;                                                                             % --> [y, x, plane, volume, stimType]
                 end
                 stimTypeDff(isinf(stimTypeDff)) = 0; % To eliminate inf values from dividing by zero above...baseline shouldn't be zero in valid data anyways
                 stimTypeDff(isnan(stimTypeDff)) = 0;
                 
                 % Separate out data from the current ROI's plane
-                currPlaneDff = squeeze(stimTypeDff(:,:,str2double(myData.ROIs.planes{iROI}),:,:));                   % --> [x, y, volume, stimType]
+                currPlaneDff = squeeze(stimTypeDff(:,:,str2double(myData.ROIs.planes{iROI}),:,:));                   % --> [y, x, volume, stimType]
                 
                 % Get average dF/F within ROI
                 currVolNum = size(currPlaneDff, 3);
-                repMask = repmat(myData.ROIs.masks(:,:,iROI), [1 1 currVolNum, size(currPlaneDff, 4)]);              % Expand ROI mask to cover all volumes --> [x, y, volume, stimType]
-                currPlaneDff(~repMask) = NaN;                                                                        % --> [x, y, volume, stimType]
+                repMask = repmat(myData.ROIs.masks(:,:,iROI), [1 1 currVolNum, size(currPlaneDff, 4)]);              % Expand ROI mask to cover all volumes --> [y, x, volume, stimType]
+                currPlaneDff(~repMask) = NaN;                                                                        % --> [y, x, volume, stimType]
                 ROIdff = squeeze(nanmean(nanmean(currPlaneDff, 2),1));                                               % --> [volume, stimType]
                 
                 % Offset all mean dF/F values so the average value from the baseline period is zero
@@ -1015,7 +1015,7 @@ end%if
                     behavROItabs{iROI} = uitab(behavROISubtabGroup, 'Title', ['ROI #', num2str(iROI)]);
                     behavROItabs{iROI}.Tag = ['ROI #', num2str(iROI)];
                     % Separate out data from the current ROI's plane
-                    currData = squeeze(myData.wholeSession(:,:,str2double(myData.ROIs.planes{iROI}),:,:)); % --> [x, y, volume, trial]
+                    currData = squeeze(myData.wholeSession(:,:,str2double(myData.ROIs.planes{iROI}),:,:)); % --> [y, x, volume, trial]
                     
                     % Pull out volumes for each behavior bout onset/offset
                     dataSize = size(currData);
@@ -1027,7 +1027,7 @@ end%if
                                 currOnsets = onsetVols{iTrial, iBehav};
                                 for iOnset = 1:length(currOnsets)
                                     volIdx = currOnsets(iOnset):currOnsets(iOnset) + patternLen-1;
-                                    onsetData(:,:,:,onsetCount,iBehav) = currData(:,:,volIdx,iTrial); % --> [x, y, onsetVolume, onsetNum, behavior]
+                                    onsetData(:,:,:,onsetCount,iBehav) = currData(:,:,volIdx,iTrial); % --> [y, x, onsetVolume, onsetNum, behavior]
                                     onsetCount = onsetCount + 1;
                                 end
                             end
@@ -1039,17 +1039,17 @@ end%if
                         onsetData(:,:,:,:, ~locomotionPos) = [];
                         currBehaviorLabels = behaviorLabels(locomotionPos);
                 end
-                onsetBaselines = onsetData(:,:, 1:baseLenVol, :, :);                        % --> [x, y, onsetVolume, onsetNum, behavior]
-                onsetBaselineMean = squeeze(mean(squeeze(mean(onsetBaselines, 3)), 3));     % --> [x, y, behavior]
-                onsetBaselineMeanRep = repmat(onsetBaselineMean, 1, 1, patternLen, 1);      % --> [x, y, onsetVolume, behavior]
-                onsetMean = squeeze(mean(onsetData, 4));                                    % --> [x, y, onsetVolume, behavior]
-                onsetDffVols = (onsetMean - onsetBaselineMeanRep) ./ onsetBaselineMeanRep;  % --> [x, y, onsetVolume, behavior]
+                onsetBaselines = onsetData(:,:, 1:baseLenVol, :, :);                        % --> [y, x, onsetVolume, onsetNum, behavior]
+                onsetBaselineMean = squeeze(mean(squeeze(mean(onsetBaselines, 3)), 3));     % --> [y, x, behavior]
+                onsetBaselineMeanRep = repmat(onsetBaselineMean, 1, 1, patternLen, 1);      % --> [y, x, onsetVolume, behavior]
+                onsetMean = squeeze(mean(onsetData, 4));                                    % --> [y, x, onsetVolume, behavior]
+                onsetDffVols = (onsetMean - onsetBaselineMeanRep) ./ onsetBaselineMeanRep;  % --> [y, x, onsetVolume, behavior]
                 
                 
                 % Zero baseline and trial averaged data outside of ROI
                 nOnsetVols = size(onsetDffVols, 3);
-                repMask = repmat(myData.ROIs.masks(:,:,iROI), [1 1 nOnsetVols, size(onsetDffVols, 4)]); % Expand ROI mask to cover all volumes and behaviors --> [x, y, onsetVolume, behavior]
-                onsetDffVolsROI = onsetDffVols .* repMask;                                              % --> [x, y, onsetVolume, behavior] 
+                repMask = repmat(myData.ROIs.masks(:,:,iROI), [1 1 nOnsetVols, size(onsetDffVols, 4)]); % Expand ROI mask to cover all volumes and behaviors --> [y, x, onsetVolume, behavior]
+                onsetDffVolsROI = onsetDffVols .* repMask;                                              % --> [y, x, onsetVolume, behavior] 
                 dffMean = squeeze(nanmean(nanmean(onsetDffVolsROI, 1), 2));                             % --> [volume, behavior]
                 
                 % Offset all mean dF/F values so the average value from the baseline period is zero
@@ -1139,8 +1139,8 @@ end%if
             baselineDurSec = str2double(baselineDurBox_stim.String);
             respDurSec = str2double(respDurBox_stim.String);
             windTrialData = myData.wholeSession(:,:,:,:, myData.stimSepTrials.windTrials);
-            [~, baselineData, respData] = extract_target_volumes(windTrialData, onsetTime, volumeRate, baselineDurSec, respDurSec); % --> [x, y, plane, volume, trial]
-            dffData = calc_dFF(cat(4, baselineData, respData), baselineData);                                                       % --> [x, y, plane, volume]
+            [~, baselineData, respData] = extract_target_volumes(windTrialData, onsetTime, volumeRate, baselineDurSec, respDurSec); % --> [y, x, plane, volume, trial]
+            dffData = calc_dFF(cat(4, baselineData, respData), baselineData);                                                       % --> [y, x, plane, volume]
             
             dffData(isinf(dffData)) = 0; % To eliminate inf values from dividing by zero above...baseline shouldn't be zero in valid data anyways
             disp(max(dffData(:)))
@@ -1213,7 +1213,7 @@ end%if
             
             %----- Calculate mean dF/F for baseline and response periods -----
             
-            imgData = myData.wholeSession; % --> [x, y, plane, volume, trial]
+            imgData = myData.wholeSession; % --> [y, x, plane, volume, trial]
             
             onsetVols = [];
             for iTrial = 1:nTrials
@@ -1245,17 +1245,17 @@ end%if
                     currOnsets = onsetVols{iTrial};
                     for iOnset = 1:length(currOnsets)
                         volIdx = currOnsets(iOnset):currOnsets(iOnset) + patternLen-1;
-                        onsetData(:,:,:,:,end+1) = imgData(:,:,:, volIdx, iTrial); % --> [x, y, plane, onsetVolume, onsetNum]
+                        onsetData(:,:,:,:,end+1) = imgData(:,:,:, volIdx, iTrial); % --> [y, x, plane, onsetVolume, onsetNum]
                     end
                 end
             end
             
             % Calculate dF/F before and after behavior onset using pre-onset period as baseline
-            onsetBaselines = onsetData(:,:, :, 1:baseLenVol, :);                        % --> [x, y, plane, onsetVolume, onsetNum]
-            onsetBaselineMean = squeeze(mean(squeeze(mean(onsetBaselines, 4)), 4));     % --> [x, y, plane]
-            onsetBaselineMeanRep = repmat(onsetBaselineMean, 1, 1, 1, patternLen);      % --> [x, y, plane, onsetVolume]
-            onsetMean = squeeze(mean(onsetData, 5));                                    % --> [x, y, plane, onsetVolume]
-            onsetDffVols = (onsetMean - onsetBaselineMeanRep) ./ onsetBaselineMeanRep;  % --> [x, y, plane, onsetVolume]
+            onsetBaselines = onsetData(:,:, :, 1:baseLenVol, :);                        % --> [y, x, plane, onsetVolume, onsetNum]
+            onsetBaselineMean = squeeze(mean(squeeze(mean(onsetBaselines, 4)), 4));     % --> [y, x, plane]
+            onsetBaselineMeanRep = repmat(onsetBaselineMean, 1, 1, 1, patternLen);      % --> [y, x, plane, onsetVolume]
+            onsetMean = squeeze(mean(onsetData, 5));                                    % --> [y, x, plane, onsetVolume]
+            onsetDffVols = (onsetMean - onsetBaselineMeanRep) ./ onsetBaselineMeanRep;  % --> [y, x, plane, onsetVolume]
             
             % Calculate absolute max dF/F value across all planes
             range = calc_range(onsetDffVols,[]);
@@ -1328,7 +1328,7 @@ end%if
             
             % Divide data into different stim types
             combineStimTrials = ~strcmp(stimTypeButtonGroup.SelectedObject.Tag, 'trialTypeRadio');
-            stimTypeData = sep_stim_types(myData, combineStimTrials); % --> [x, y, plane, volume, trial, stimType]
+            stimTypeData = sep_stim_types(myData, combineStimTrials); % --> [y, x, plane, volume, trial, stimType]
             
             % Pull out volumes for the baseline and response periods
             baselineDurSec = str2num(baselineDurBox_stim.String);
@@ -1341,16 +1341,16 @@ end%if
             stimTypeDff = [];
             for iStim = 1:size(stimTypeData)
                 currStimData = stimTypeData{iStim};
-                [~, baselineData, respData] = extract_target_volumes(currStimData, onsetTime, volumeRate, baselineDurSec, respDurSec);  % --> [x, y, plane, volume, trial]
-                currStimDff = calc_dFF(cat(4, baselineData, respData), baselineData);                                                   % --> [x, y, plane, volume]
-                stimTypeDff(:,:,:,:, iStim) = currStimDff;                                                                              % --> [x, y, plane, volume, stimType]
+                [~, baselineData, respData] = extract_target_volumes(currStimData, onsetTime, volumeRate, baselineDurSec, respDurSec);  % --> [y, x, plane, volume, trial]
+                currStimDff = calc_dFF(cat(4, baselineData, respData), baselineData);                                                   % --> [y, x, plane, volume]
+                stimTypeDff(:,:,:,:, iStim) = currStimDff;                                                                              % --> [y, x, plane, volume, stimType]
             end
             
             % Pull out data for the chosen plane
             if ~isnumeric(vidPlane)
                 vidPlane = str2double(vidPlane);
             end
-            planeData = squeeze(stimTypeDff(:,:, vidPlane, :,:)); % --> [x, y, volume, stimType]
+            planeData = squeeze(stimTypeDff(:,:, vidPlane, :,:)); % --> [y, x, volume, stimType]
             
             % Calculate absolute max dF/F value across all and action states for each stim type
             ranges = [];
@@ -1425,7 +1425,7 @@ end%if
             errordlg('You must enter baseline and response durations');
         else
             % Separate out data from the chosen plane
-            currData = squeeze(myData.wholeSession(:,:, vidPlane,:,:)); % --> [x, y, volume, trial]
+            currData = squeeze(myData.wholeSession(:,:, vidPlane,:,:)); % --> [y, x, volume, trial]
             
             % Identify behavioral state during each volume
             behaviorVols = match_behavior_annotations(myData); % --> [trial, behavior, volume]
@@ -1473,7 +1473,7 @@ end%if
                         currOnsets = onsetVols{iTrial, iBehav};
                         for iOnset = 1:length(currOnsets)
                             volIdx = currOnsets(iOnset):currOnsets(iOnset) + patternLen-1;
-                            onsetData(:,:,:,end+1,iBehav) = currData(:,:,volIdx,iTrial); % --> [x, y, onsetVolume, onsetNum, behavior]
+                            onsetData(:,:,:,end+1,iBehav) = currData(:,:,volIdx,iTrial); % --> [y, x, onsetVolume, onsetNum, behavior]
                         end
                     end
                 end
@@ -1486,11 +1486,11 @@ end%if
                 behaviorLabels(~locomotionPos) = [];
             end
             
-            onsetBaselines = onsetData(:,:, 1:baseLenVol, :, :);                        % --> [x, y, onsetVolume, onsetNum, behavior]
-            onsetBaselineMean = squeeze(mean(squeeze(mean(onsetBaselines, 3)), 3));     % --> [x, y, behavior]
-            onsetBaselineMeanRep = repmat(onsetBaselineMean, 1, 1, patternLen, 1);      % --> [x, y, onsetVolume, behavior]
-            onsetMean = squeeze(mean(onsetData, 4));                                    % --> [x, y, onsetVolume, behavior]
-            onsetDffVols = (onsetMean - onsetBaselineMeanRep) ./ onsetBaselineMeanRep;  % --> [x, y, onsetVolume, behavior]
+            onsetBaselines = onsetData(:,:, 1:baseLenVol, :, :);                        % --> [y, x, onsetVolume, onsetNum, behavior]
+            onsetBaselineMean = squeeze(mean(squeeze(mean(onsetBaselines, 3)), 3));     % --> [y, x, behavior]
+            onsetBaselineMeanRep = repmat(onsetBaselineMean, 1, 1, patternLen, 1);      % --> [y, x, onsetVolume, behavior]
+            onsetMean = squeeze(mean(onsetData, 4));                                    % --> [y, x, onsetVolume, behavior]
+            onsetDffVols = (onsetMean - onsetBaselineMeanRep) ./ onsetBaselineMeanRep;  % --> [y, x, onsetVolume, behavior]
 
              % Calculate absolute max dF/F value across all behaviors
              ranges = [];
@@ -1770,7 +1770,7 @@ end%if
         currcolor = cm(mod(indexROI,size(cm,1))+1,:); % indexROI starts at 1 when gui initializes
         
         % Prompt user to create a polygon ROI
-        [myData.ROIs.masks(:,:,indexROI), xi, yi] = roipoly; % --> [x, y, ROInum]
+        [myData.ROIs.masks(:,:,indexROI), xi, yi] = roipoly; % --> [y, x, ROInum]
         currAxes = gca;
         
         % Save other useful information about the ROI

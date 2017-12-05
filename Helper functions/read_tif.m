@@ -44,10 +44,10 @@ end
 % Save image stack to array, accounting for multiple channels if necessary
 chanData = [];
 for iChannel = 1:nChannels
-    tifData = zeros(numLines,numPixels,nFrames,imageDataType);  % --> [x, y, frame]
+    tifData = zeros(numLines,numPixels,nFrames,imageDataType);  % --> [y, x, frame]
     for iFrame = 1:nFrames
         tifObj.setDirectory(iFrame);
-        tifData(:,:,iFrame) = tifObj.read(); % --> [x, y, frame]
+        tifData(:,:,iFrame) = tifObj.read(); % --> [y, x, frame]
     end
     currChanData = tifData(:,:,iChannel:nChannels:end);
     chanData(:,:,:,:, iChannel) = reshape(currChanData, [numLines, numPixels, nPlanes, nVolumes]);

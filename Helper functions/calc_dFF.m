@@ -4,7 +4,7 @@ function dffData = calc_dFF(respData, baselineData, avgDims)
 % trials, volumes, or both. Always averages across both when calculating the baseline.
 %
 % INPUTS:
-%       respData     = data from the period you want to get dF/F for: [x, y, plane, volume, trial]
+%       respData     = data from the period you want to get dF/F for: [y, x, plane, volume, trial]
 %
 %       baselineData = data in the same format, but from the baseline period only
 %
@@ -21,11 +21,11 @@ avgDims = sort(avgDims, 'descend');
 
 respMean = respData;
 for iDim = 1:length(avgDims)
-    respMean = squeeze(mean(respMean, avgDims(iDim)));                                  % --> [x, y, plane, volume] (ex. for avgDims = 5)
+    respMean = squeeze(mean(respMean, avgDims(iDim)));                                  % --> [y, x, plane, volume] (ex. for avgDims = 5)
 end
-baselineMean = squeeze(mean(mean(baselineData, 5), 4));                                 % --> [x, y, plane]
-baselineMeanRep = repmat(baselineMean, 1, 1, 1, size(respMean, 4), size(respMean, 5));  % --> [x, y, plane, volume]
+baselineMean = squeeze(mean(mean(baselineData, 5), 4));                                 % --> [y, x, plane]
+baselineMeanRep = repmat(baselineMean, 1, 1, 1, size(respMean, 4), size(respMean, 5));  % --> [y, x, plane, volume]
 
-dffData = (respMean - baselineMeanRep) ./ baselineMeanRep;                              % --> [x, y, plane, volume]
+dffData = (respMean - baselineMeanRep) ./ baselineMeanRep;                              % --> [y, x, plane, volume]
 
 end

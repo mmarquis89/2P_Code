@@ -3,7 +3,7 @@ function ROIselectionGui()
 
 
 
-% myData.wholeSession = [x, y, plane, volume, trial]
+% myData.wholeSession = [y, x, plane, volume, trial]
 
 close all
 
@@ -173,7 +173,7 @@ roiSubtabGroup.Units = 'normalized';
             currcolor = cm(mod(indexROI,size(cm,1))+1,:); % indexROI starts at 1 when gui initializes
             
             % Prompt user to create a polygon ROI
-            [myData.ROIs.masks(:,:,indexROI), xi, yi] = roipoly; % --> [x, y, ROInum]
+            [myData.ROIs.masks(:,:,indexROI), xi, yi] = roipoly; % --> [y, x, ROInum]
             currAxes = gca;
             
             % Save other useful information about the ROI
@@ -218,6 +218,7 @@ roiSubtabGroup.Units = 'normalized';
         % Prompt user for file name
         fileName = inputdlg('Please choose a file name', 'Save ROI data', 1, {'ROI_Data'});
         fileName = fileName{:};
+        
         % Warn user and offer to cancel save if this video will overwrite an existing file
         overwrite = 1;
         if exist(fullfile(saveDir, [fileName, '.mat']), 'file') ~= 0

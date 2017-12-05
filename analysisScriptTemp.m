@@ -47,7 +47,7 @@ myData.ROIdata = ROIdata;
  
 %% PLOT AND SAVE VISUALIZATION OF BEHAVIOR DATA ANNOTATIONS
 
-saveFigs = 1;
+saveFigs = 0;
 trialGroups = []; %myData.stimSepTrials.windTrials + 2 * (~myData.stimSepTrials.windTrials);
 
 for iFold = 0
@@ -60,7 +60,7 @@ for iTrial = annotTrials(myData.goodTrials) % Skip any trials with dropped frame
 end
 
 %----------Plot 2D data with seconds on X-axis----------
-titleStr = [regexprep(expDate, '_(?<num>..)', '\\_$<num>'), '  Behavior Summary']; % regex to add escape characters
+titleStr = [regexprep(expDate, '_', '\\_'), '  Behavior Summary']; % regex to add escape characters
 [~, ~, f] = plot_behavior_summary_2D(myData, annotationArr, [], titleStr, trialGroups);
 
 %----- Plot 1D trial-averaged movement data -----
@@ -86,7 +86,7 @@ ylim(yL);
 subplot(2,1,2); ax2 = gca();
 [~, ~, ~] = plot_behavior_summary_1D(myData, annotArrSum_noWind, ax2, 'Control Trials');
 
-suptitle([regexprep(expDate, '_(?<num>..)', '\\_$<num>'), '  Summed Movement Frames']) % regex to add escape characters
+suptitle([regexprep(expDate, '_', '\\_'), '  Summed Movement Frames']) % regex to add escape characters
 
 % ----------Save data as a .fig file and a .png file for each figure----------
 if saveFigs
@@ -121,7 +121,7 @@ end%iFold
 
 %% PLOT AND SAVE SUMMARY OF BALL STOPPING ANNOTATIONS
 
-saveFig = 1;
+saveFig = 0;
 
 for iFold = 1
     
@@ -135,8 +135,9 @@ end
 %----------Plot 2D data with seconds on X-axis----------
 f = figure(5);clf
 f.Position = [200 100 1120 840];
+f.Color = [1 1 1];
 ax = gca;
-titleStr = [regexprep(expDate, '_(?<num>..)', '\\_$<num>'), ' ball-stopping Summary']; % regex to add escape characters
+titleStr = [regexprep(expDate, '_', '\\_'), ' ball-stopping Summary']; % regex to add escape characters
 [~, ~, ~] = plot_behavior_summary_2D(myData, annotationArr, ax, titleStr, []);
 
 
@@ -203,20 +204,20 @@ for iFold = 1
 
             % Extract baseline and response period volumes from the each stim type
             disp('Extracting volumes...')
-            onsetBaseline(:,:,:,:,:,iStim) = stimTypeData{iStim}(:,:,:, onsetBaselineVols,:);                           % --> [x, y, plane, volume, trial, stimType]
-            offsetBaseline(:,:,:,:,:,iStim) = stimTypeData{iStim}(:,:,:, offsetBaselineVols,:);                         % --> [x, y, plane, volume, trial, stimType]
-            onsetResp(:,:,:,:,:,iStim) = stimTypeData{iStim}(:,:,:, onsetRespVols,:);                                   % --> [x, y, plane, volume, trial, stimType]
-            offsetResp(:,:,:,:,:,iStim) = stimTypeData{iStim}(:,:,:, offsetRespVols,:);                                 % --> [x, y, plane, volume, trial, stimType]
+            onsetBaseline(:,:,:,:,:,iStim) = stimTypeData{iStim}(:,:,:, onsetBaselineVols,:);                           % --> [y, x, plane, volume, trial, stimType]
+            offsetBaseline(:,:,:,:,:,iStim) = stimTypeData{iStim}(:,:,:, offsetBaselineVols,:);                         % --> [y, x, plane, volume, trial, stimType]
+            onsetResp(:,:,:,:,:,iStim) = stimTypeData{iStim}(:,:,:, onsetRespVols,:);                                   % --> [y, x, plane, volume, trial, stimType]
+            offsetResp(:,:,:,:,:,iStim) = stimTypeData{iStim}(:,:,:, offsetRespVols,:);                                 % --> [y, x, plane, volume, trial, stimType]
 
             % Calculate dF/F for trial-averaged data
             disp('Calculating trial-averaged dF/F...')
-            onsetDff(:,:,:,:,iStim) = calc_dFF(onsetResp(:,:,:,:,:,iStim), onsetBaseline(:,:,:,:,:,iStim), 5);          % --> [x, y, plane, volume, stimType]
-            offsetDff(:,:,:,:,iStim) = calc_dFF(offsetResp(:,:,:,:,:,iStim), offsetBaseline(:,:,:,:,:,iStim), 5);       % --> [x, y, plane, volume, stimType]
+            onsetDff(:,:,:,:,iStim) = calc_dFF(onsetResp(:,:,:,:,:,iStim), onsetBaseline(:,:,:,:,:,iStim), 5);          % --> [y, x, plane, volume, stimType]
+            offsetDff(:,:,:,:,iStim) = calc_dFF(offsetResp(:,:,:,:,:,iStim), offsetBaseline(:,:,:,:,:,iStim), 5);       % --> [y, x, plane, volume, stimType]
 
             % Avgerage dF/F data across volumes as well
             disp('Calculating trial- and volume-averaged dF/F...')
-            onsetDffAvg(:,:,:,iStim) = calc_dFF(onsetResp(:,:,:,:,:,iStim), onsetBaseline(:,:,:,:,:,iStim), [4 5]);     % --> [x, y, plane, stimType]
-            offsetDffAvg(:,:,:,iStim) = calc_dFF(offsetResp(:,:,:,:,:,iStim), offsetBaseline(:,:,:,:,:,iStim), [4 5]);  % --> [x, y, plane, stimType]
+            onsetDffAvg(:,:,:,iStim) = calc_dFF(onsetResp(:,:,:,:,:,iStim), onsetBaseline(:,:,:,:,:,iStim), [4 5]);     % --> [y, x, plane, stimType]
+            offsetDffAvg(:,:,:,iStim) = calc_dFF(offsetResp(:,:,:,:,:,iStim), offsetBaseline(:,:,:,:,:,iStim), [4 5]);  % --> [y, x, plane, stimType]
             disp('Calculations complete');
         end
     end%iFold
@@ -333,7 +334,7 @@ for iFoldIn = 1
     meanActionVols = [];
     meanStoppedVols = [];
     test = [];
-    imgData = myData.wholeSession; %--> [x, y, plane, volume, trial]
+    imgData = myData.wholeSession; %--> [y, x, plane, volume, trial]
     for iTrial = 1:myData.nTrials
        currImgData = imgData(:,:,:,:,iTrial);
        currActionVols = logical(actionVols(iTrial,:));
@@ -351,30 +352,30 @@ for iFoldIn = 1
     test = 2;
        % Pull out running volumes, if any exist, from the current trial
        if sum(currActionVols) > 0
-           meanActionVols(:,:,:,end+1) = mean(currImgData(:,:,:,currActionVols),4);    %--> [x, y, plane, trial]
+           meanActionVols(:,:,:,end+1) = mean(currImgData(:,:,:,currActionVols),4);    %--> [y, x, plane, trial]
        end 
     test = 3;
        % Pull out stopping volumes, if any exist, from the current trial
        if sum(currStoppedVols) > 0
-           meanStoppedVols(:,:,:,end+1) = mean(currImgData(:,:,:,currStoppedVols),4);  %--> [x, y, plane, trial]
+           meanStoppedVols(:,:,:,end+1) = mean(currImgData(:,:,:,currStoppedVols),4);  %--> [y, x, plane, trial]
        end
 
     end
-    actionMean = mean(meanActionVols, 4);   %--> [x, y, plane]
-    stoppedMean = mean(meanStoppedVols, 4); %--> [x, y, plane] 
+    actionMean = mean(meanActionVols, 4);   %--> [y, x, plane]
+    stoppedMean = mean(meanStoppedVols, 4); %--> [y, x, plane] 
 
     % Get dF/F values for action relative to quiescence
-    actionDff = (actionMean - stoppedMean) ./ stoppedMean; % --> [x, y, plane]
+    actionDff = (actionMean - stoppedMean) ./ stoppedMean; % --> [y, x, plane]
     
 end%iFoldIn
                     %% PLOT BEHAVIORAL STATE HEATMAPS FOR EACH PLANE
 
     smoothingSigma = [0.5];    
-    scalingFactor = [0.75];
+    scalingFactor = [1];
     makeVid = 0;
     saveDir = [];
-    fileName = 'Locomotion_Plane_Heatmaps';
-    titleStr = {'dF/F - Locomotion vs. Quiescence'};
+    fileName = 'IsoMovement_Plane_Heatmaps';
+    titleStr = {'dF/F - Isolated leg movements vs. Quiescence'};
 
     % Calculate absolute max dF/F value across all planes and action states
     range = calc_range(actionDff, scalingFactor);
@@ -437,23 +438,23 @@ for iFoldIn = 1
     %---------- Get imaging data for running onsets ----------
     onsetData = [];
     for iTrial = 1:myData.nTrials
-        % myData.wholeSession = [x, y, plane, volume, trial]
+        % myData.wholeSession = [y, x, plane, volume, trial]
         if ~isempty(onsetVols{iTrial})
             onsets = onsetVols{iTrial};
             for iOnset = 1:length(onsets)
                 volIdx = onsets(iOnset):onsets(iOnset) + patternLen-1;
-                onsetData(:,:,:,:,end+1) =  myData.wholeSession(:,:,:, volIdx, iTrial); % --> [x, y, plane, onsetVolume, onsetNum]
+                onsetData(:,:,:,:,end+1) =  myData.wholeSession(:,:,:, volIdx, iTrial); % --> [y, x, plane, onsetVolume, onsetNum]
             end
         end
     end
 
     % Calculate dF/F before and after movment onset using pre-movement period as baseline
-    onsetBaselines = onsetData(:,:,:, 1:baseLen,:);                            % --> [x, y, plane, volume, onsetNum]
-    onsetBaselineMean = mean(mean(onsetBaselines, 5), 4);                      % --> [x, y, plane]
-    onsetBaselineMeanRep = repmat(onsetBaselineMean, 1, 1, 1, patternLen);     % --> [x, y, plane, volume]
-    onsetMean = mean(onsetData, 5);                                            % --> [x, y, plane, volume]
-    onsetDffVols = (onsetMean - onsetBaselineMeanRep) ./ onsetBaselineMeanRep; % --> [x, y, plane, volume]
-    onsetMeanDff = mean(onsetDffVols, 4);                                      % --> [x, y, plane]
+    onsetBaselines = onsetData(:,:,:, 1:baseLen,:);                            % --> [y, x, plane, volume, onsetNum]
+    onsetBaselineMean = mean(mean(onsetBaselines, 5), 4);                      % --> [y, x, plane]
+    onsetBaselineMeanRep = repmat(onsetBaselineMean, 1, 1, 1, patternLen);     % --> [y, x, plane, volume]
+    onsetMean = mean(onsetData, 5);                                            % --> [y, x, plane, volume]
+    onsetDffVols = (onsetMean - onsetBaselineMeanRep) ./ onsetBaselineMeanRep; % --> [y, x, plane, volume]
+    onsetMeanDff = mean(onsetDffVols, 4);                                      % --> [y, x, plane]
 end%iFoldIn
                     %% PLOT MOVEMENT ONSET HEATMAPS FOR EACH PLANE
 
@@ -551,10 +552,10 @@ for iFoldIn = 1
         disp(['Plotting bout ', num2str(iBout), ' of ' num2str(size(allBouts, 1))]);
 
         % Calculate dF/F for the current bout ****Is this an acceptable way to calculate dF/F?*****
-        boutData = double(squeeze(myData.wholeSession(:,:,:, allBouts(iBout,2):allBouts(iBout,3),allBouts(iBout,1))));   % --> [x, y, plane, volume]
-        boutBaseline = mean(boutData(:,:,:,1:baselineLength),4);                                                         % --> [x, y, plane]
-        boutBaselineRep = repmat(boutBaseline,1,1,1,length(allBouts(iBout,2):allBouts(iBout,3)));                        % --> [x, y, plane, volume]
-        boutDff = (boutData - boutBaselineRep) ./ boutBaselineRep;                                                       % --> [x, y, plane, volume]
+        boutData = double(squeeze(myData.wholeSession(:,:,:, allBouts(iBout,2):allBouts(iBout,3),allBouts(iBout,1))));   % --> [y, x, plane, volume]
+        boutBaseline = mean(boutData(:,:,:,1:baselineLength),4);                                                         % --> [y, x, plane]
+        boutBaselineRep = repmat(boutBaseline,1,1,1,length(allBouts(iBout,2):allBouts(iBout,3)));                        % --> [y, x, plane, volume]
+        boutDff = (boutData - boutBaselineRep) ./ boutBaselineRep;                                                       % --> [y, x, plane, volume]
 
         boutDff(isinf(boutDff)) = 0; % To eliminate inf values from dividiing by zero above...baseline shouldn't be zero in valid data anyways
         boutDff(isnan(boutDff)) = 0;
@@ -640,7 +641,7 @@ for iFold = 1
     %% CALCULATE MEAN dF/F AROUND BALL STOPPING
 
     % Exclude vols
-    excludeTrials = [14 22 23];
+    excludeTrials = [];
     
 for iFoldIn = 1
         
@@ -671,17 +672,17 @@ for iFoldIn = 1
     
     % Extract imaging data for each phase
     wsSize = size(myData.wholeSession);
-    ballStopBaselineData = zeros([wsSize(1:3), ballStopDur, size(ballStopVols, 1)]);    % --> [x, y, plane, stopVol, stopNum]
+    ballStopBaselineData = zeros([wsSize(1:3), ballStopDur, size(ballStopVols, 1)]);    % --> [y, x, plane, stopVol, stopNum]
     ballReleaseBaselineData = ballStopBaselineData; ballStopData = ballStopBaselineData; ballReleaseData = ballStopBaselineData;
     for iStop = 1:size(ballStopVols, 1)
         ballStopBaselineVolRange = (ballStopVols(iStop, 1) - ballStopDur):(ballStopVols(iStop, 1) - 1);
         ballStopVolRange = ballStopVols(iStop, 1):(ballStopVols(iStop, 1) + ballStopDur - 1);
         ballReleaseBaselineVolRange = (ballStopVols(iStop, 2) - ballStopDur):(ballStopVols(iStop, 2) - 1);
         ballReleaseVolRange = ballStopVols(iStop, 2):(ballStopVols(iStop, 2) + ballStopDur - 1);
-        ballStopBaselineData(:,:,:,:,iStop) = myData.wholeSession(:,:,:, ballStopBaselineVolRange, ballStopVols(iStop, 3));         % --> [x, y, plane, stopVol, stopNum]
-        ballStopData(:,:,:,:,iStop) = myData.wholeSession(:,:,:, ballStopVolRange, ballStopVols(iStop, 3));                         % --> [x, y, plane, stopVol, stopNum]
-        ballReleaseBaselineData(:,:,:,:,iStop) = myData.wholeSession(:,:,:, ballReleaseBaselineVolRange, ballStopVols(iStop,3));    % --> [x, y, plane, stopVol, stopNum]
-        ballReleaseData(:,:,:,:,iStop) = myData.wholeSession(:,:,:, ballReleaseVolRange, ballStopVols(iStop,3));                    % --> [x, y, plane, stopVol, stopNum]
+        ballStopBaselineData(:,:,:,:,iStop) = myData.wholeSession(:,:,:, ballStopBaselineVolRange, ballStopVols(iStop, 3));         % --> [y, x, plane, stopVol, stopNum]
+        ballStopData(:,:,:,:,iStop) = myData.wholeSession(:,:,:, ballStopVolRange, ballStopVols(iStop, 3));                         % --> [y, x, plane, stopVol, stopNum]
+        ballReleaseBaselineData(:,:,:,:,iStop) = myData.wholeSession(:,:,:, ballReleaseBaselineVolRange, ballStopVols(iStop,3));    % --> [y, x, plane, stopVol, stopNum]
+        ballReleaseData(:,:,:,:,iStop) = myData.wholeSession(:,:,:, ballReleaseVolRange, ballStopVols(iStop,3));                    % --> [y, x, plane, stopVol, stopNum]
     end
     
     % 8:13  15:20 22:26  29:33  35:39
@@ -691,29 +692,29 @@ for iFoldIn = 1
 %     lateTrials =   ((nTrials/2)+1):nTrials;
 
     % Calc dF/F for stop-averaged data
-    ballStopDff = calc_dFF(ballStopData, ballStopBaselineData, 5);              % --> [x, y, plane, volume]
-    ballReleaseDff = calc_dFF(ballReleaseData, ballReleaseBaselineData, 5);     % --> [x, y, plane, volume]
-    ballReleaseRelDff = calc_dFF(ballReleaseData, ballStopBaselineData, 5);     % --> [x, y, plane, volume]
-%     ballStopEarlyTrialsDff = calc_dFF(ballStopData(:,:,:,:, ballStopVols(:,3) == earlyTrials), ballStopBaselineData(:,:,:,:, earlyTrials), 5);   % --> [x, y, plane, volume]
-%     ballReleaseEarlyTrialsDff = calc_dFF(ballReleaseData(:,:,:,:, earlyTrials), ballReleaseBaselineData(:,:,:,:, earlyTrials), 5);   % --> [x, y, plane, volume]
-%     ballStopLateTrialsDff = calc_dFF(ballStopData(:,:,:,:, lateTrials), ballStopBaselineData(:,:,:,:, lateTrials), 5);      % --> [x, y, plane, volume]
-%     ballReleaseLateTrialsDff = calc_dFF(ballReleaseData(:,:,:,:, lateTrials), ballReleaseBaselineData(:,:,:,:, lateTrials), 5);      % --> [x, y, plane, volume] 
+    ballStopDff = calc_dFF(ballStopData, ballStopBaselineData, 5);              % --> [y, x, plane, volume]
+    ballReleaseDff = calc_dFF(ballReleaseData, ballReleaseBaselineData, 5);     % --> [y, x, plane, volume]
+    ballReleaseRelDff = calc_dFF(ballReleaseData, ballStopBaselineData, 5);     % --> [y, x, plane, volume]
+%     ballStopEarlyTrialsDff = calc_dFF(ballStopData(:,:,:,:, ballStopVols(:,3) == earlyTrials), ballStopBaselineData(:,:,:,:, earlyTrials), 5);   % --> [y, x, plane, volume]
+%     ballReleaseEarlyTrialsDff = calc_dFF(ballReleaseData(:,:,:,:, earlyTrials), ballReleaseBaselineData(:,:,:,:, earlyTrials), 5);   % --> [y, x, plane, volume]
+%     ballStopLateTrialsDff = calc_dFF(ballStopData(:,:,:,:, lateTrials), ballStopBaselineData(:,:,:,:, lateTrials), 5);      % --> [y, x, plane, volume]
+%     ballReleaseLateTrialsDff = calc_dFF(ballReleaseData(:,:,:,:, lateTrials), ballReleaseBaselineData(:,:,:,:, lateTrials), 5);      % --> [y, x, plane, volume] 
 
     % Average the dF/F data over volumes as well
-    ballStopDffAvg = calc_dFF(ballStopData, ballStopBaselineData, [4 5]);           % --> [x, y, plane]
-    ballReleaseDffAvg = calc_dFF(ballReleaseData, ballReleaseBaselineData, [4 5]);  % --> [x, y, plane]
-    ballReleaseRelDffAvg = calc_dFF(ballReleaseData, ballStopBaselineData, [4 5]);  % --> [x, y, plane]
-%     ballStopEarlyTrialsDffAvg = calc_dFF(ballStopData(:,:,:,:, earlyTrials), ballStopBaselineData(:,:,:,:, earlyTrials), [4 5]);    % --> [x, y, plane]
-%     ballReleaseEarlyTrialsDffAvg = calc_dFF(ballReleaseData(:,:,:,:, earlyTrials), ballReleaseBaselineData(:,:,:,:, earlyTrials), [4 5]);    % --> [x, y, plane]
-%     ballStopLateTrialsDffAvg = calc_dFF(ballStopData(:,:,:,:, lateTrials), ballStopBaselineData(:,:,:,:, lateTrials), [4 5]);       % --> [x, y, plane]
-%     ballReleaseLateTrialsDffAvg = calc_dFF(ballReleaseData(:,:,:,:, lateTrials), ballReleaseBaselineData(:,:,:,:, lateTrials), [4 5]);       % --> [x, y, plane]
+    ballStopDffAvg = calc_dFF(ballStopData, ballStopBaselineData, [4 5]);           % --> [y, x, plane]
+    ballReleaseDffAvg = calc_dFF(ballReleaseData, ballReleaseBaselineData, [4 5]);  % --> [y, x, plane]
+    ballReleaseRelDffAvg = calc_dFF(ballReleaseData, ballStopBaselineData, [4 5]);  % --> [y, x, plane]
+%     ballStopEarlyTrialsDffAvg = calc_dFF(ballStopData(:,:,:,:, earlyTrials), ballStopBaselineData(:,:,:,:, earlyTrials), [4 5]);    % --> [y, x, plane]
+%     ballReleaseEarlyTrialsDffAvg = calc_dFF(ballReleaseData(:,:,:,:, earlyTrials), ballReleaseBaselineData(:,:,:,:, earlyTrials), [4 5]);    % --> [y, x, plane]
+%     ballStopLateTrialsDffAvg = calc_dFF(ballStopData(:,:,:,:, lateTrials), ballStopBaselineData(:,:,:,:, lateTrials), [4 5]);       % --> [y, x, plane]
+%     ballReleaseLateTrialsDffAvg = calc_dFF(ballReleaseData(:,:,:,:, lateTrials), ballReleaseBaselineData(:,:,:,:, lateTrials), [4 5]);       % --> [y, x, plane]
 end%iFoldIn
     
                     %% PLOT HEATMAPS ALIGNED TO BALL STOPPING
 
-    currPhases = [1 2 3 4];
+    currPhases = [1 2 3];
     smoothingSigma = [0.5];    
-    scalingFactor = [0.6];
+    scalingFactor = [0.3];
     makeVid = 0;
     saveDir = [];
     fileName = 'ballStoppingHeatmaps';
@@ -721,10 +722,10 @@ end%iFoldIn
 for iFoldIn = 1
     
     phasesDff = [];
-    phasesDff(:,:,:,1) = ballStopDffAvg;                        % --> [x, y, plane, trialPhase]
-    phasesDff(:,:,:,2) = ballReleaseDffAvg;                     % --> [x, y, plane, trialPhase]
-    phasesDff(:,:,:,3) = ballReleaseRelDffAvg;                  % --> [x, y, plane, trialPhase]
-    phasesDff(:,:,:,4) = ballReleaseRelDffAvg - ballStopDffAvg; % --> [x, y, plane, trialPhase]
+    phasesDff(:,:,:,1) = ballStopDffAvg;                        % --> [y, x, plane, trialPhase]
+    phasesDff(:,:,:,2) = ballReleaseDffAvg;                     % --> [y, x, plane, trialPhase]
+    phasesDff(:,:,:,3) = ballReleaseRelDffAvg;                  % --> [y, x, plane, trialPhase]
+    phasesDff(:,:,:,4) = ballReleaseRelDffAvg - ballStopDffAvg; % --> [y, x, plane, trialPhase]
 %     phasesDff(:,:,:,5) = ballStopEarlyTrialsDffAvg;
 %     phasesDff(:,:,:,6) = ballReleaseEarlyTrialsDffAvg;
 %     phasesDff(:,:,:,7) = ballStopLateTrialsDffAvg;
@@ -748,6 +749,7 @@ for iFoldIn = 1
     [~, ~] = plot_heatmaps(phasesDff(:,:,:, currPhases), myData, range, titleStrings(currPhases), [], [], smoothingSigma, makeVid, saveDir, fileName);
 
 end%iFoldIn
+    
     %% SEPARATE TRIALS BASED ON FLY'S BEHAVIOR AROUND BALL STOPPING
 
     %---------- Identify behavioral state during each volume ----------
@@ -819,40 +821,40 @@ for iFoldIn = 1
     
     
     % Average across volumes for each stopping instance
-    ws = size(myData.wholeSession);                                                                             % --> [x, y, plane, volume, trial]                
+    ws = size(myData.wholeSession);                                                                             % --> [y, x, plane, volume, trial]                
     preStopAvg = zeros([ws(1:3), size(ballStopVols, 1)]);
     postStopAvg = preStopAvg; preReleaseAvg = preStopAvg; postReleaseAvg = preStopAvg;     
     for iStop = 1:size(ballStopVols, 1)
         currTrial = ballStopVols(iStop, 3);
-        preStopAvg(:,:,:,iStop) = mean(myData.wholeSession(:,:,:, preStopVols(iStop, :), currTrial), 4);        % --> [x, y, plane, stopNum] 
-        postStopAvg(:,:,:,iStop) = mean(myData.wholeSession(:,:,:, postStopVols(iStop, :), currTrial), 4);      % --> [x, y, plane, stopNum]
-        preReleaseAvg(:,:,:,iStop) = mean(myData.wholeSession(:,:,:, preReleaseVols(iStop, :), currTrial), 4);  % --> [x, y, plane, stopNum]
-        postReleaseAvg(:,:,:,iStop) = mean(myData.wholeSession(:,:,:, postReleaseVols(iStop, :), currTrial), 4);% --> [x, y, plane, stopNum] 
+        preStopAvg(:,:,:,iStop) = mean(myData.wholeSession(:,:,:, preStopVols(iStop, :), currTrial), 4);        % --> [y, x, plane, stopNum] 
+        postStopAvg(:,:,:,iStop) = mean(myData.wholeSession(:,:,:, postStopVols(iStop, :), currTrial), 4);      % --> [y, x, plane, stopNum]
+        preReleaseAvg(:,:,:,iStop) = mean(myData.wholeSession(:,:,:, preReleaseVols(iStop, :), currTrial), 4);  % --> [y, x, plane, stopNum]
+        postReleaseAvg(:,:,:,iStop) = mean(myData.wholeSession(:,:,:, postReleaseVols(iStop, :), currTrial), 4);% --> [y, x, plane, stopNum] 
     end
 
     % Now separate by and average across stopping conditions
     preStopCondAvg = zeros([ws(1:3), length(stoppingCondNames)]);
     postStopCondAvg = preStopCondAvg; preReleaseCondAvg = preStopCondAvg; postReleaseCondAvg = preStopCondAvg;
     for iCond = 1:length(stoppingCondNames)
-        preStopCondAvg(:,:,:, iCond) = mean(preStopAvg(:,:,:, stoppingConds(:, iCond)), 4);         % --> [x, y, plane, stoppingCondition]
-        postStopCondAvg(:,:,:, iCond) = mean(postStopAvg(:,:,:, stoppingConds(:, iCond)), 4);       % --> [x, y, plane, stoppingCondition]
-        preReleaseCondAvg(:,:,:, iCond) = mean(preReleaseAvg(:,:,:, stoppingConds(:, iCond)), 4);   % --> [x, y, plane, stoppingCondition]
-        postReleaseCondAvg(:,:,:, iCond) = mean(postReleaseAvg(:,:,:, stoppingConds(:, iCond)), 4); % --> [x, y, plane, stoppingCondition]                                                                                                                    
+        preStopCondAvg(:,:,:, iCond) = mean(preStopAvg(:,:,:, stoppingConds(:, iCond)), 4);         % --> [y, x, plane, stoppingCondition]
+        postStopCondAvg(:,:,:, iCond) = mean(postStopAvg(:,:,:, stoppingConds(:, iCond)), 4);       % --> [y, x, plane, stoppingCondition]
+        preReleaseCondAvg(:,:,:, iCond) = mean(preReleaseAvg(:,:,:, stoppingConds(:, iCond)), 4);   % --> [y, x, plane, stoppingCondition]
+        postReleaseCondAvg(:,:,:, iCond) = mean(postReleaseAvg(:,:,:, stoppingConds(:, iCond)), 4); % --> [y, x, plane, stoppingCondition]                                                                                                                    
 
     end%for
 
     % Calculate dF/F values
-    dffAvgBallStop = (postStopCondAvg - preStopCondAvg) ./ preStopCondAvg;                          % --> [x, y, plane, stoppingCondition]
-    dffAvgBallRelease = (postReleaseCondAvg - preReleaseCondAvg) ./ preReleaseCondAvg;              % --> [x, y, plane, stoppingCondition]
+    dffAvgBallStop = (postStopCondAvg - preStopCondAvg) ./ preStopCondAvg;                          % --> [y, x, plane, stoppingCondition]
+    dffAvgBallRelease = (postReleaseCondAvg - preReleaseCondAvg) ./ preReleaseCondAvg;              % --> [y, x, plane, stoppingCondition]
 
     % Want the baseline/response aligned to ball stop for the first 4 trial conditions, ball release for the rest
     dffAvg = dffAvgBallStop;
-    dffAvg(:,:,:, 5:8) = dffAvgBallRelease(:,:,:, 5:8);                                             % --> [x, y, plane, stoppingCondition]
+    dffAvg(:,:,:, 5:8) = dffAvgBallRelease(:,:,:, 5:8);                                             % --> [y, x, plane, stoppingCondition]
 
     % Eliminate any inf values caused by dividing by zero above
-    dffAvg(isinf(dffAvg)) = 0;                                                                      % --> [x, y, plane, stoppingCondition]
+    dffAvg(isinf(dffAvg)) = 0;                                                                      % --> [y, x, plane, stoppingCondition]
 
-    ballStopMoveDiff = dffAvgBallStop(:,:,:,2) - dffAvgBallStop(:,:,:,1);                           % --> [x, y, plane] 
+    ballStopMoveDiff = dffAvgBallStop(:,:,:,2) - dffAvgBallStop(:,:,:,1);                           % --> [y, x, plane] 
     ballReleaseMoveDiff = dffAvgBallStop(:,:,:,6) - dffAvgBallStop(:,:,:,5);                        
 
 %     disp('  ')
@@ -865,8 +867,8 @@ end%iFoldIn
 
     % Calculate absolute max dF/F value across all planes and stim types
     currConds = [1 2 5 8];
-    smoothingSigma = [0.5];    
-    scalingFactor = [0.5];
+    smoothingSigma = [0.75];    
+    scalingFactor = [0.1];
     makeVid = 0;
     saveDir = [];
     fileName = 'Ball_Stop_Behavior_Interaction_Heatmaps';
@@ -894,13 +896,13 @@ for iFold = 1
 
 %++++++++++ Calculate whole-trial dF/F using overall mean as baseline ++++++++++
 
-allWindTrials = myData.wholeSession(:,:,:,:,myData.stimSepTrials.windTrials);   % --> [x, y, plane, volume, trial]   
+allWindTrials = myData.wholeSession(:,:,:,:,myData.stimSepTrials.windTrials);   % --> [y, x, plane, volume, trial]   
 
 % Calculate dF/F using whole trial average as baseline
-baseline = mean(mean(allWindTrials, 5), 4);                           % --> [x, y, plane]
-baselineMeanRep = repmat(baseline, 1, 1, 1, size(allWindTrials, 4));  % --> [x, y, plane, volume]
-trialAvg = mean(allWindTrials, 5);                                    % --> [x, y, plane, volume]
-wholeTrialDff = (trialAvg - baselineMeanRep) ./ baselineMeanRep;      % --> [x, y, plane, volume]
+baseline = mean(mean(allWindTrials, 5), 4);                           % --> [y, x, plane]
+baselineMeanRep = repmat(baseline, 1, 1, 1, size(allWindTrials, 4));  % --> [y, x, plane, volume]
+trialAvg = mean(allWindTrials, 5);                                    % --> [y, x, plane, volume]
+wholeTrialDff = (trialAvg - baselineMeanRep) ./ baselineMeanRep;      % --> [y, x, plane, volume]
 
 % Calculate absolute max dF/F value across all planes and action states
 rangeScalar = .3;
@@ -1015,32 +1017,32 @@ trialCondNames = {'windOnsetNoMove','windOffsetNoMove','windOnsetStartMove', 'wi
 wholeTrialAvg = []; baselineAvg = []; dffAvg = []; stimAvg = [];
 for iCond = 1:length(trialCondNames)
     
-    %---------- Get trial averaged baseline and stimulus data ----------                                                % myData.wholeSession = [x, y, plane, volume, trial]                                                                                                          
-    wholeTrialAvg(:,:,:,:,iCond) = mean(myData.wholeSession(:,:,:,:,trialConds(:,iCond)), 5);                                                 % --> [x, y, plane, volume, trialCondition]
+    %---------- Get trial averaged baseline and stimulus data ----------                                                % myData.wholeSession = [y, x, plane, volume, trial]                                                                                                          
+    wholeTrialAvg(:,:,:,:,iCond) = mean(myData.wholeSession(:,:,:,:,trialConds(:,iCond)), 5);                                                 % --> [y, x, plane, volume, trialCondition]
         
     % Pre-stim
     if floor((stimStart-preStimTime)*volumeRate) > 0 
-        baselineAvg(:,:,:,iCond) = mean(wholeTrialAvg(:,:,:, preStimVols, iCond), 4);                                   % --> [x, y, plane, StimType]
+        baselineAvg(:,:,:,iCond) = mean(wholeTrialAvg(:,:,:, preStimVols, iCond), 4);                                   % --> [y, x, plane, StimType]
     else
         % if stimDuration > preStimDuration, start baseline one second after beginning of trial
-        baselineAvg(:,:,:,iCond) = mean(wholeTrialAvg(:,:,:,floor(volumeRate):floor(stimStart*volumeRate),iCond), 4);  	% --> [x, y, plane, trialCondition]
+        baselineAvg(:,:,:,iCond) = mean(wholeTrialAvg(:,:,:,floor(volumeRate):floor(stimStart*volumeRate),iCond), 4);  	% --> [y, x, plane, trialCondition]
     end
     
     % During stim
-    stimAvg(:,:,:,iCond) = mean(wholeTrialAvg(:,:,:, stimVols, iCond), 4);                                              % --> [x, y, plane, trialCondition]
+    stimAvg(:,:,:,iCond) = mean(wholeTrialAvg(:,:,:, stimVols, iCond), 4);                                              % --> [y, x, plane, trialCondition]
     
     % Post-stim 
-    postStimAvg(:,:,:,iCond) = mean(wholeTrialAvg(:,:,:, postStimVols, iCond), 4);                                      % --> [x, y, plane, trialCondition]
+    postStimAvg(:,:,:,iCond) = mean(wholeTrialAvg(:,:,:, postStimVols, iCond), 4);                                      % --> [y, x, plane, trialCondition]
     
 end%for
 
 % Calculate dF/F values
-dffAvgOnset = (stimAvg - baselineAvg) ./ baselineAvg;                                                                   % --> [x, y, plane, trialCondition]
-dffAvgOffset = (postStimAvg - stimAvg) ./ stimAvg;                                                                      % --> [x, y, plane, trialCondition]
+dffAvgOnset = (stimAvg - baselineAvg) ./ baselineAvg;                                                                   % --> [y, x, plane, trialCondition]
+dffAvgOffset = (postStimAvg - stimAvg) ./ stimAvg;                                                                      % --> [y, x, plane, trialCondition]
 
 % Want the baseline/response aligned to stim offset for two trial conditions, stim onset for the rest
 dffAvg = dffAvgOnset;
-dffAvg(:,:,:,[2 4]) = dffAvgOffset(:,:,:,[2 4]);                                                                        % --> [x, y, plane, trialCondition]
+dffAvg(:,:,:,[2 4]) = dffAvgOffset(:,:,:,[2 4]);                                                                        % --> [y, x, plane, trialCondition]
 
 % Eliminate inf values from dividing by zero above...baseline shouldn't be zero in valid data anyways
 dffAvg(isinf(dffAvg)) = 0;
@@ -1077,19 +1079,19 @@ stimSepTrials = [];
 for iStim = 1:length(stimTypes)
     stimSepTrials.(stimTypes{iStim}) = logical(cellfun(@(x) strcmp(x, stimTypes{iStim}), myData.trialType));  
 end 
-windTrials = myData.wholeSession(:,:,:,:,logical(stimSepTrials.CenterWind + stimSepTrials.RightWind));                                                   % --> [x, y, plane, volume, trial]
+windTrials = myData.wholeSession(:,:,:,:,logical(stimSepTrials.CenterWind + stimSepTrials.RightWind));                                                   % --> [y, x, plane, volume, trial]
 
 % Calculate dF/F before and after wind onset
 stimLength = stimEnd - stimStart;
 stimLengthVols = floor(responseDur * volumeRate);
-baselineVols = windTrials(:,:,:,floor((stimStart-baselineDur)*volumeRate):floor(stimStart*volumeRate),:);               % --> [x, y, plane, volume, trial]
+baselineVols = windTrials(:,:,:,floor((stimStart-baselineDur)*volumeRate):floor(stimStart*volumeRate),:);               % --> [y, x, plane, volume, trial]
 
-stimVols = windTrials(:,:,:,ceil((stimStart*volumeRate)-size(baselineVols, 4)):ceil((stimStart*volumeRate)+stimLengthVols),:); % --> [x, y, plane, volume, trial]  
-stimVolsMean = mean(stimVols, 5);                                                                                                    % --> [x, y, plane, volume]
+stimVols = windTrials(:,:,:,ceil((stimStart*volumeRate)-size(baselineVols, 4)):ceil((stimStart*volumeRate)+stimLengthVols),:); % --> [y, x, plane, volume, trial]  
+stimVolsMean = mean(stimVols, 5);                                                                                                    % --> [y, x, plane, volume]
 nVols = size(stimVols, 4);
-baselineMean = mean(mean(baselineVols, 5), 4);                                                                                       % --> [x, y, plane]
-baselineMeanRep = repmat(baselineMean, 1, 1, 1, nVols);                                                                              % --> [x, y, plane, volume]
-windDffVols = (stimVolsMean - baselineMeanRep) ./ baselineMeanRep;                                                                   % --> [x, y, plane, volume]
+baselineMean = mean(mean(baselineVols, 5), 4);                                                                                       % --> [y, x, plane]
+baselineMeanRep = repmat(baselineMean, 1, 1, 1, nVols);                                                                              % --> [y, x, plane, volume]
+windDffVols = (stimVolsMean - baselineMeanRep) ./ baselineMeanRep;                                                                   % --> [y, x, plane, volume]
 
 % MOVEMENT RESPONSE DATA
 %---------- Identify behavioral state during each volume ----------
@@ -1139,23 +1141,23 @@ end
 %---------- Get imaging data for running onsets ----------
 onsetData = [];
 for iTrial = 1:myData.nTrials
-    % myData.wholeSession = [x, y, plane, volume, trial]
+    % myData.wholeSession = [y, x, plane, volume, trial]
     if ~isempty(onsetVols{iTrial})
         onsets = onsetVols{iTrial};
         for iOnset = 1:length(onsets)
             volIdx = onsets(iOnset):onsets(iOnset) + patternLen-1;
-            onsetData(:,:,:,:,end+1) =  myData.wholeSession(:,:,:, volIdx, iTrial); % --> [x, y, plane, onsetVolume, onsetNum]
+            onsetData(:,:,:,:,end+1) =  myData.wholeSession(:,:,:, volIdx, iTrial); % --> [y, x, plane, onsetVolume, onsetNum]
         end
     end
 end
 
 % Calculate dF/F before and after movment onset using pre-movement period as baseline
-onsetBaselines = onsetData(:,:,:, 1:baseLen,:);                            % --> [x, y, plane, volume, onsetNum]
-onsetBaselineMean = mean(mean(onsetBaselines, 5), 4);                      % --> [x, y, plane]
-onsetBaselineMeanRep = repmat(onsetBaselineMean, 1, 1, 1, patternLen);     % --> [x, y, plane, volume]
-onsetMean = mean(onsetData, 5);                                            % --> [x, y, plane, volume]
-onsetDffVols = (onsetMean - onsetBaselineMeanRep) ./ onsetBaselineMeanRep; % --> [x, y, plane, volume]
-onsetMeanDff = mean(onsetDffVols, 4);                                      % --> [x, y, plane]
+onsetBaselines = onsetData(:,:,:, 1:baseLen,:);                            % --> [y, x, plane, volume, onsetNum]
+onsetBaselineMean = mean(mean(onsetBaselines, 5), 4);                      % --> [y, x, plane]
+onsetBaselineMeanRep = repmat(onsetBaselineMean, 1, 1, 1, patternLen);     % --> [y, x, plane, volume]
+onsetMean = mean(onsetData, 5);                                            % --> [y, x, plane, volume]
+onsetDffVols = (onsetMean - onsetBaselineMeanRep) ./ onsetBaselineMeanRep; % --> [y, x, plane, volume]
+onsetMeanDff = mean(onsetDffVols, 4);                                      % --> [y, x, plane]
 
                 %% MAKE COMBINED VIDEO
     % Calculate dF/F ranges
@@ -1256,20 +1258,20 @@ onsetMeanDff = mean(onsetDffVols, 4);                                      % -->
 
 % Need rows = volumes and columns = pixels (linearized)
 
-windTrials = myData.wholeSession(:,:,:,:,~logical(myData.stimSepTrials.windTrials));   % --> [x, y, plane, volume, trial]
+windTrials = myData.wholeSession(:,:,:,:,~logical(myData.stimSepTrials.windTrials));   % --> [y, x, plane, volume, trial]
 
 
 %% PCA PLOTTING
 
 
 % Pull out data for one plane
-planeNum = 12;
-planeData = squeeze(windTrials(:,:,planeNum,:,:)); % --> [x, y, volume, trial]
+planeNum = 11;
+planeData = squeeze(windTrials(:,:,planeNum,:,:)); % --> [y, x, volume, trial]
 [w,x,y,z] = size(planeData);
-planeDataRS = reshape(planeData, [w, x, y*z]); % --> [x, y, volume]
+planeDataRS = reshape(planeData, [w, x, y*z]); % --> [y, x, volume]
 
 
-pcaData = mean(squeeze(myData.wholeSession(:,:,planeNum,:,:)),4); % --> [x, y, volume]
+pcaData = mean(squeeze(myData.wholeSession(:,:,planeNum,:,:)),4); % --> [y, x, volume]
 [n,m,d] = size(pcaData);
 data2D = double(reshape(pcaData, [(n*m), d])); % --> [pixel, volume]
 
@@ -1344,33 +1346,33 @@ end%iFold
 %     % Separate trials by stimulus type
 %     stimSepTrials.(stimTypes{iStim}) = logical(cellfun(@(x) strcmp(x, stimTypes{iStim}), myData.trialType));
 %     
-%     %---------- Get trial averaged baseline and stimulus data ----------                                                                                              % myData.wholeSession = [x, y, plane, volume, trial]                                                                                                          
-%     wholeTrialAvg(:,:,:,:,iStim) = mean(myData.wholeSession(:,:,:,:,stimSepTrials.(stimTypes{iStim})), 5);                                                            % --> [x, y, plane, volume, StimType]
+%     %---------- Get trial averaged baseline and stimulus data ----------                                                                                              % myData.wholeSession = [y, x, plane, volume, trial]                                                                                                          
+%     wholeTrialAvg(:,:,:,:,iStim) = mean(myData.wholeSession(:,:,:,:,stimSepTrials.(stimTypes{iStim})), 5);                                                            % --> [y, x, plane, volume, StimType]
 %     
 %     % Pre-stim
 %     if floor(stimStart*volumeRate)-floor((stimEnd-stimStart)*volumeRate) > 0 
-%         baselineAvg(:,:,:,iStim) = mean(wholeTrialAvg(:,:,:,floor(stimStart*volumeRate)-floor((stimEnd-stimStart)*volumeRate):floor(stimStart*volumeRate),iStim), 4); % --> [x, y, plane, StimType]
+%         baselineAvg(:,:,:,iStim) = mean(wholeTrialAvg(:,:,:,floor(stimStart*volumeRate)-floor((stimEnd-stimStart)*volumeRate):floor(stimStart*volumeRate),iStim), 4); % --> [y, x, plane, StimType]
 %     else
 %         % if stimDuration > preStimDuration, start baseline one second after beginning of trial
-%         baselineAvg(:,:,:,iStim) = mean(wholeTrialAvg(:,:,:,floor(volumeRate):floor(stimStart*volumeRate),iStim), 4);                                                 % --> [x, y, plane, StimType]
+%         baselineAvg(:,:,:,iStim) = mean(wholeTrialAvg(:,:,:,floor(volumeRate):floor(stimStart*volumeRate),iStim), 4);                                                 % --> [y, x, plane, StimType]
 %     end
 %     
 %     % Stim period
-%     stimAvg(:,:,:,iStim) = mean(wholeTrialAvg(:,:,:,ceil(stimStart*volumeRate):floor(stimEnd*volumeRate),iStim), 4);                                                  % --> [x, y, plane, StimType]
+%     stimAvg(:,:,:,iStim) = mean(wholeTrialAvg(:,:,:,ceil(stimStart*volumeRate):floor(stimEnd*volumeRate),iStim), 4);                                                  % --> [y, x, plane, StimType]
 %     
 %     % Post stim
 %     if floor(stimEnd*volumeRate) + floor((stimEnd-stimStart)*volumeRate) < size(wholeTrialAvg, 4)
-%         postStimAvg(:,:,:,iStim) = mean(wholeTrialAvg(:,:,:,floor(stimEnd*volumeRate):floor(stimEnd*volumeRate) + floor((stimEnd-stimStart)*volumeRate),iStim), 4);   % --> [x, y, plane, StimType]
+%         postStimAvg(:,:,:,iStim) = mean(wholeTrialAvg(:,:,:,floor(stimEnd*volumeRate):floor(stimEnd*volumeRate) + floor((stimEnd-stimStart)*volumeRate),iStim), 4);   % --> [y, x, plane, StimType]
 %     else
 %         % if stimEnd + stimLength > fullTrialDuration, end post-stim period at end of trial
-%         postStimAvg(:,:,:,iStim) = mean(wholeTrialAvg(:,:,:,floor(stimEnd*volumeRate):size(wholeTrialAvg, 4)-floor(volumeRate),iStim), 4);                            % --> [x, y, plane, StimType]
+%         postStimAvg(:,:,:,iStim) = mean(wholeTrialAvg(:,:,:,floor(stimEnd*volumeRate):size(wholeTrialAvg, 4)-floor(volumeRate),iStim), 4);                            % --> [y, x, plane, StimType]
 %     end
 %     
 % end%for
 % 
 % % Calculate dF/F values
-% dffAvg = (stimAvg - baselineAvg) ./ baselineAvg; % --> [x, y, plane, StimType]
-% dffAvgPost = (postStimAvg - stimAvg) ./ stimAvg; % --> [x, y, plane, StimType]
+% dffAvg = (stimAvg - baselineAvg) ./ baselineAvg; % --> [y, x, plane, StimType]
+% dffAvgPost = (postStimAvg - stimAvg) ./ stimAvg; % --> [y, x, plane, StimType]
 % 
 % %% CALCULATE MEAN dF/F AROUND WIND RESPONSES
 % stimSepTrials = [];
@@ -1379,7 +1381,7 @@ end%iFold
 % for iStim = 1:length(stimTypes)
 %     stimSepTrials.(stimTypes{iStim}) = logical(cellfun(@(x) strcmp(x, stimTypes{iStim}), myData.trialType));  
 % end 
-% windTrials = myData.wholeSession(:,:,:,:,logical(myData.stimSepTrials.windTrials));  % --> [x, y, plane, volume, trial]
+% windTrials = myData.wholeSession(:,:,:,:,logical(myData.stimSepTrials.windTrials));  % --> [y, x, plane, volume, trial]
 % 
 % % Calculate dF/F before and after wind onset using an equal period before onset as baseline
 % stimLength = stimEnd - stimStart;
@@ -1387,19 +1389,19 @@ end%iFold
 % 
 % % Pre-stim
 % if floor(stimStart*volumeRate) - stimLengthVols > 0
-%     baselineVols = windTrials(:,:,:,floor(stimStart*volumeRate) - stimLengthVols:floor(stimStart*volumeRate),:);                                   % --> [x, y, plane, volume, trial]
+%     baselineVols = windTrials(:,:,:,floor(stimStart*volumeRate) - stimLengthVols:floor(stimStart*volumeRate),:);                                   % --> [y, x, plane, volume, trial]
 % else
 %     % If stimDuration > preStimDuration, start baseline one second after beginning of trial
-%     baselineVols = windTrials(:,:,:,floor(volumeRate):floor(stimStart*volumeRate),:);                                                              % --> [x, y, plane, volume, trial]
+%     baselineVols = windTrials(:,:,:,floor(volumeRate):floor(stimStart*volumeRate),:);                                                              % --> [y, x, plane, volume, trial]
 % end
 % 
 % % Stim period + 3 seconds after the stim offset
-% stimVols = windTrials(:,:,:,ceil((stimStart*volumeRate)-size(baselineVols, 4)):floor((stimStart*volumeRate) + (3*volumeRate) + stimLengthVols),:); % --> [x, y, plane, volume, trial]  
+% stimVols = windTrials(:,:,:,ceil((stimStart*volumeRate)-size(baselineVols, 4)):floor((stimStart*volumeRate) + (3*volumeRate) + stimLengthVols),:); % --> [y, x, plane, volume, trial]  
 % 
-% stimVolsMean = mean(stimVols, 5);                                                                                                                  % --> [x, y, plane, volume]
-% baselineMean = mean(mean(baselineVols, 5), 4);                                                                                                     % --> [x, y, plane]
-% baselineMeanRep = repmat(baselineMean, 1, 1, 1, size(stimVols, 4));                                                                                % --> [x, y, plane, volume]
-% windDffVols = (stimVolsMean - baselineMeanRep) ./ baselineMeanRep;                                                                                 % --> [x, y, plane, volume]
+% stimVolsMean = mean(stimVols, 5);                                                                                                                  % --> [y, x, plane, volume]
+% baselineMean = mean(mean(baselineVols, 5), 4);                                                                                                     % --> [y, x, plane]
+% baselineMeanRep = repmat(baselineMean, 1, 1, 1, size(stimVols, 4));                                                                                % --> [y, x, plane, volume]
+% windDffVols = (stimVolsMean - baselineMeanRep) ./ baselineMeanRep;                                                                                 % --> [y, x, plane, volume]
 % 
 % %% CREATE VIDEO OF dF/F FOR ALL INDIVIDUAL MOVEMENT BOUT ONSETS
 % 
@@ -1450,10 +1452,10 @@ end%iFold
 %     disp(['Plotting bout ', num2str(iBout), ' of ' num2str(size(allBouts, 1))]);
 %     
 %     % Calculate dF/F for the current bout ****Is this an acceptable way to calculate dF/F?*****
-%     boutData = double(squeeze(myData.wholeSession(:,:,:, allBouts(iBout,2):allBouts(iBout,3),allBouts(iBout,1))));   % --> [x, y, plane, volume]
-%     boutBaseline = mean(boutData(:,:,:,1:baselineLength),4);                                                         % --> [x, y, plane]
-%     boutBaselineRep = repmat(boutBaseline,1,1,1,length(allBouts(iBout,2):allBouts(iBout,3)));                        % --> [x, y, plane, volume]
-%     boutDff = (boutData - boutBaselineRep) ./ boutBaselineRep;                                                       % --> [x, y, plane, volume]
+%     boutData = double(squeeze(myData.wholeSession(:,:,:, allBouts(iBout,2):allBouts(iBout,3),allBouts(iBout,1))));   % --> [y, x, plane, volume]
+%     boutBaseline = mean(boutData(:,:,:,1:baselineLength),4);                                                         % --> [y, x, plane]
+%     boutBaselineRep = repmat(boutBaseline,1,1,1,length(allBouts(iBout,2):allBouts(iBout,3)));                        % --> [y, x, plane, volume]
+%     boutDff = (boutData - boutBaselineRep) ./ boutBaselineRep;                                                       % --> [y, x, plane, volume]
 %     
 %     boutDff(isinf(boutDff)) = 0; % To eliminate inf values from dividiing by zero above...baseline shouldn't be zero in valid data anyways
 %     boutDff(isnan(boutDff)) = 0;

@@ -5,7 +5,7 @@ function [trimmedData, preStimData, stimData] = extract_target_volumes(dataArr, 
 % pre-stimulus baseline period or the period during the stimulus.
 %
 % INPUTS:
-%       dataArr        = 5-D imaging data array with dimensions [x, y, plane, volume, trial]
+%       dataArr        = 5-D imaging data array with dimensions [y, x, plane, volume, trial]
 %
 %       onsetTime      = trial time in seconds that you want to align the analysis to 
 %

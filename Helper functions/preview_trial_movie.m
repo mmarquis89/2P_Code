@@ -7,7 +7,7 @@ function preview_trial_movie(sessionData, planeNum, trialNum, cMapRange, sigma, 
 %
 % INPUTS:
 %
-%   sessionData = the full dataset for the experiment with dimensions [x, y, plane, volume, trial]
+%   sessionData = the full dataset for the experiment with dimensions [y, x, plane, volume, trial]
 %
 %   planeNum    = the number of the plane to show video from.
 %

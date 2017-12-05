@@ -24,7 +24,7 @@ disp('Registering...')
 movingFile = in.wholeSession; % [x y plane vol trial]
 
 % Pull out the reference volume
-refVolData = squeeze(in.wholeSession(:,:,:,refVol,refTrial)); % --> [x, y, plane]
+refVolData = squeeze(in.wholeSession(:,:,:,refVol,refTrial)); % --> [y, x, plane]
 
 % Set up registration parameters
 [optimizer, ~] = imregconfig('monomodal');
@@ -44,7 +44,7 @@ for iTrial=1:size(movingFile,5)
     for iVol=1:size(movingFile,4)
         
         % Isolate current volume and register to reference volume
-        currVol = squeeze(movingFile(:,:,:,iVol,iTrial));    % --> [x, y, plane, volume, trial]
+        currVol = squeeze(movingFile(:,:,:,iVol,iTrial));    % --> [y, x, plane, volume, trial]
         disp(['Volume #', num2str(iVol), ' of ', num2str(size(movingFile,4)), ', Trial #', num2str(iTrial), ' of ' num2str(size(movingFile,5))])
         tForms{iTrial, iVol} = imregtform(currVol, refVolData, 'translation', optimizer, metric, 'PyramidLevels', 2);
         

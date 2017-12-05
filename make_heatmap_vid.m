@@ -7,7 +7,7 @@ function make_heatmap_vid(plotData, infoStruct, cLimRange, fileName, titleString
 % title at the top which can change with every volume/frame.
 % 
 % INPUTS:
-%       plotData    =  a 4-D numeric array with dims [x, y, plane, volume] containing the dF/F data. The "volume" 
+%       plotData    =  a 4-D numeric array with dims [y, x, plane, volume] containing the dF/F data. The "volume" 
 %                      dimension will determine how many frames long the video is.
 %
 %       infoStruct  =  the main imaging data structure containing metadata for the experiment. Specifically, must contain 

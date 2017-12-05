@@ -10,16 +10,17 @@ function [f, plotAxes] = plot_heatmaps(dataArr, infoStruct, cLimRange, plotTitle
 %
 % There are also buttons that allow the user to draw an ROI on any figure (after first clicking on
 % the figure to select it), which will then be plotted on all the images...this is intended to 
-% facilitate comparisons of a specific anatomical region across different plots.%
+% facilitate comparisons of a specific anatomical region across different plots. The ROI locations 
+% can also be saved for use in future analyses.
 % 
 % INPUTS:
-%       dataArr    =  a 4-D numeric array with dims [x, y, plane, plotNum] containing the plotting 
+%       dataArr    =  a 4-D numeric array with dims [y, x, plane, plotNum] containing the plotting 
 %                     data. The "plot" dimension will control how many subplots are created for each
 %                     plane and cannot be >5.
 %
 %       infoStruct =  the main imaging data structure containing metadata for the experiment. 
 %                     Specifically, must contain the fields "nPlanes", "refImg", "expDate", 
-%                     and "MAX_INTENSITY".
+%                     and "MAX_INTENSITY" (and "sid" if no save dir is provided).
 %
 %       cLimRange  =  a two-element vector [min max] to set the min and max colormap values.
 %
@@ -56,7 +57,11 @@ function [f, plotAxes] = plot_heatmaps(dataArr, infoStruct, cLimRange, plotTitle
 if makeVid
     
     if isempty(saveDir)
-        saveDir = uigetdir(['D:\Dropbox (HMS)\2P Data\Imaging Data\', infoStruct.expDate], 'Select a save directory');
+        startDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', infoStruct.expDate, '\sid_', num2str(infoStruct.sid), '\Analysis'];
+        if ~isdir(startDir)
+           mkdir(startDir) 
+        end
+        saveDir = uigetdir(startDir, 'Select a save directory');
         if saveDir == 0
             % Display error message if user canceled without choosing a directory
             disp('ERROR: you must select a save directory or provide one as an argument');
@@ -103,9 +108,13 @@ end
 f = figure('position', figPos, 'Name', 'Plane heatmaps', 'Tag', 'mainHeatmapFig', 'NumberTitle', ... 
             'off', 'WindowButtonDownFcn', {@figure_WindowButtonDownFcn}); clf;        
 
-% Create tab group
+% Initialize global vars
 ROIplots = [];
 selected = 0;
+ROIdata = [];
+indexROI = 1;
+
+% Create tab group
 tabGroup = uitabgroup(f, 'Units', 'Normalized', 'Position', [0 0 1 0.99], 'Tag', 'tabGroup');
 
 % Create DrawROI button
@@ -117,6 +126,11 @@ drawROIButton = uicontrol(f, 'Style', 'pushbutton', 'String', 'Draw ROI', 'Units
 clearROIButton = uicontrol(f, 'Style', 'pushbutton', 'String', 'Clear ROIs', 'Units', 'Normalized', ...
     'Position', [0.455, 0.965, 0.05, 0.035], 'FontSize', 12, 'Callback', {@clearROIButton_Callback}, ...
     'Tag', 'clearROIButton');
+
+% Create saveROI button
+ROISaveButton = uicontrol(f, 'Style', 'pushbutton', 'String', 'Save ROIs', 'Units', 'Normalized', ...
+    'Position', [0.51, 0.965, 0.05, 0.035], 'FontSize', 12, 'Callback', {@ROISaveButton_Callback}, ...
+    'Tag', 'ROISaveButton');
 % --------------------------------------------------------------------------------------------------
 % Note that I'm putting these buttons in this weird location because it will make them easier to 
 % crop out when I save these heatmap figures as movie frames.
@@ -168,9 +182,8 @@ for iPlane = 1:infoStruct.nPlanes%:-1:1 % Figure windows arranged dorsal --> ven
     dffPlots = [];
     for iPlot = 1:(nSubplots - 1)
         plotAxes{iPlane, iPlot+1} = axes(tabs{iPlane}, 'Units', 'Normalized', 'Position', axesPosSort(iPlot+1,:), 'Tag', ['ax', num2str(iPlot)]);
-        hold on;
         if ~isempty(sigma)
-            dffPlots{iPlot} = imagesc(imgaussfilt(dataArr(:,:, iPlane, iPlot), sigma));
+            dffPlots{iPlot} = imagesc(imgaussfilt(dataArr(:,:, iPlane, iPlot), sigma)); 
         else
             dffPlots{iPlot} = imagesc(dataArr(:,:, iPlane, iPlot));
         end
@@ -180,6 +193,7 @@ for iPlane = 1:infoStruct.nPlanes%:-1:1 % Figure windows arranged dorsal --> ven
         colorbar(plotAxes{iPlane, iPlot + 1});
         axis equal; axis off;
         title(plotTitles{iPlot});
+        hold on;
     end
     
     % Grab video frame if makeVid == true
@@ -203,7 +217,7 @@ if makeVid
 end
 
 %++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++%
-%   CALLBACK FUNCTIONS
+%   CALLBACK FUNCTIONS                                                                             %
 %++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++%
 
 function image_ButtonDownFcn(src, ~)
@@ -231,28 +245,37 @@ end
 %---------------------------------------------------------------------------------------------------
 function drawROIButton_Callback(~, ~)
     
-    % Clear any previous ROIs on this tab
-    currTab = tabGroup.SelectedTab;
-    oldROIs = findobj(currTab, 'Tag', 'ROIplot');
-    for iROI = 1:length(oldROIs)
-        delete(oldROIs(iROI));
-    end
+if selected
     
-    if selected
+        % Clear any previous ROIs on this tab
+        currTab = tabGroup.SelectedTab;
+        oldROIs = findobj(currTab, 'Tag', 'ROIplot');
+        if ~isempty(oldROIs)
+            indexROI = indexROI - 1;  % Remove this from the count of total ROIs drawn
+        end
+        for iROI = 1:length(oldROIs)
+            delete(oldROIs(iROI));
+        end
         
         % Prompt user to create a polygon ROI
-        [~, xi, yi] = roipoly;
+        [ROIdata.mask{indexROI}, ROIdata.xi{indexROI}, ROIdata.yi{indexROI}] = roipoly;
         
         % Plot the ROI on top of each image in the figure
         ROIplots = [];
         currTabAxes  = findobj(currTab, 'Type', 'Axes');
         for iROI = 1:length(currTabAxes)
-            ROIplots{iROI} = plot(currTabAxes(iROI), xi, yi, 'linewidth', 2, 'color', rgb('LimeGreen'), 'tag', 'ROIplot');
+            ROIplots{iROI} = plot(currTabAxes(iROI), ROIdata.xi{indexROI}, ROIdata.yi{indexROI}, 'linewidth', 2, 'color', rgb('LimeGreen'), 'tag', 'ROIplot');
         end
         
+        % Record other identifying info about the ROI
+        ROIdata.plane{indexROI} = tabGroup.SelectedTab.Tag;
+        ROIdata.expDate{indexROI} = infoStruct.expDate;
     else
         disp('Must click to select a plot before drawing an ROI')
     end
+    
+    indexROI = indexROI + 1; % Track total # of ROIs that have been drawn
+    
 end
 
 %---------------------------------------------------------------------------------------------------
@@ -263,8 +286,42 @@ function clearROIButton_Callback(~, ~)
     for iROI = 1:length(allROIs)
         delete(allROIs(iROI));
     end
+    ROIdata = [];
+    indexROI = 1; % Reset global count of total # of ROIs drawn
     drawnow()
 end
+%---------------------------------------------------------------------------------------------------
+function ROISaveButton_Callback(~,~)
+
+    % Prompt user for save directory
+    saveDir = uigetdir('D:\Dropbox (HMS)\2P Data\Imaging Data\', 'Select a save directory');
+    if saveDir == 0
+        % Throw error if user canceled without choosing a directory
+        disp('ERROR: you must select a save directory or provide one as an argument');
+        return
+    end
+
+    % Prompt user for file name
+    fileName = inputdlg('Please choose a file name', 'Save ROI data', 1, {'ROI_Data'});
+    fileName = fileName{:};
+
+    % Warn user and offer to cancel save if this video will overwrite an existing file
+    overwrite = 1;
+    if exist(fullfile(saveDir, [fileName, '.mat']), 'file') ~= 0
+        dlgAns = questdlg('Creating this data will overwrite an existing file in this directory...are you sure you want to do this?', 'Warning', 'Yes', 'No', 'No');
+        if strcmp(dlgAns, 'No')
+            overwrite = 0;
+            disp('Saving cancelled')
+        end
+    end
+
+    % Save ROI data
+    if overwrite
+        save(fullfile(saveDir, [fileName, '.mat']), 'ROIdata');
+        disp('ROI data saved!')
+    end
+
+end%function
 %---------------------------------------------------------------------------------------------------
 
 end%function

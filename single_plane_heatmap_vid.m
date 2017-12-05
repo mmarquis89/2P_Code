@@ -7,7 +7,7 @@ function single_plane_heatmap_vid(dataArr, planeNum, infoStruct, cLimRanges, fil
 % title at the top which can change with every volume/frame.
 % 
 % INPUTS:
-%       dataArr     =  a 4-D numeric array with dims [x, y, volume, stimType] containing the dF/F data. The "volume" 
+%       dataArr     =  a 4-D numeric array with dims [y, x, volume, stimType] containing the dF/F data. The "volume" 
 %                      dimension will determine how many frames long the video is.
 %
 %       planeNum    =  the number of the imaging plane to use for the video

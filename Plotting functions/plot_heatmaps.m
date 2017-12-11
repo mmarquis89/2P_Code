@@ -1,5 +1,4 @@
-function [f, plotAxes] = plot_heatmaps(dataArr, infoStruct, cLimRange, plotTitles, figPos, cMapName, ... 
-                                       sigma, makeVid, saveDir, fileName)
+function [f, plotAxes] = plot_heatmaps(dataArr, infoStruct, cLimRange, plotTitles, varargin) 
 %===================================================================================================
 % PLOT GCaMP dF/F HEATMAPS IN SEPARATE FIGURE WINDOWS FOR EACH PLANE
 % 
@@ -13,7 +12,12 @@ function [f, plotAxes] = plot_heatmaps(dataArr, infoStruct, cLimRange, plotTitle
 % facilitate comparisons of a specific anatomical region across different plots. The ROI locations 
 % can also be saved for use in future analyses.
 % 
-% INPUTS:
+% The optional arguments 'sigma' and 'fileName' can also be passed as positional arguments after 
+% the required arguments instead of name/value pairs.
+% 
+%
+% REQUIRED INPUTS:
+%
 %       dataArr    =  a 4-D numeric array with dims [y, x, plane, plotNum] containing the plotting 
 %                     data. The "plot" dimension will control how many subplots are created for each
 %                     plane and cannot be >5.
@@ -27,31 +31,67 @@ function [f, plotAxes] = plot_heatmaps(dataArr, infoStruct, cLimRange, plotTitle
 %       plotTitles =  a cell array of strings to be used as titles for each plot. The length of the 
 %                     cell array must equal size(dataArr, 4).
 %
-%       figPos     =  <OPTIONAL> position values [x y width height] for the figure window. Pass [] 
-%                     to use the default figPos of [50 45 1800 950]
+% OPTIONAL NAME-VALUE PAIRS:
 %
-%       cMapName   =  <OPTIONAL> name of a colormap function to use in the heatmaps. Pass [] to use 
-%                     the default colormap 'bluewhitered'.
+%       sigma      =  The degree of gaussian smoothing to be applied to the heatmaps, specified as 
+%                     a standard deviation. If sigma is not specified, no smoothing will be applied.
 %
-%       sigma      =  <OPTIONAL> the degree of gaussian smoothing to be applied to the heatmaps, 
-%                     specified as a standard deviation. Pass [] to skip filtering.
-%
-%       makeVid    =  <OPTIONAL> boolean value indicating whether to also create and save a video 
+%       makeVid    =  Boolean value indicating whether to also create and save a video 
 %                     file with each frame corresponding to the contents of one plane figure.
 %
-%       saveDir    =  <OPTIONAL> if makeVid == 1, the directory to save the video file in. Can pass
-%                     [] even if makeVid == 1 to prompt user to select a save directory.
+%       saveDir    =  If makeVid == 1, the directory to save the video file in. If no saveDir is 
+%                     provided and makeVid == 1, user will be prompted to select a save directory.
 %
-%       fileName   =  <OPTIONAL> if makeVid == 1, the name for the video file to be created. Can be 
-%                     [] if makeVid == 0.
+%       fileName   =  If makeVid == 1, the name for the video file to be created. 
+% 
+%       figPos     =  position values [x y width height] for the figure window. Default position
+%                     is [50 45 1800 950]
+%
+%       cMapName   =  Name of a colormap function to use in the heatmaps. Default is 'bluewhitered'.
 %
 % OUTPUTS:
+%
 %       f          =  Cell array with size(dataArr, 3) of the figure handles that were created.
 %
 %       plotAxes   =  m x (n+1) cell array containing handles to each axes that was created, where m
 %                     is the number of planes and n is the number of plot types/trial types.
 %===================================================================================================
 
+% Parse and validate arguments
+p = inputParser;
+addOptional(p, 'optPos_1', []);
+addOptional(p, 'optPos_2', []);
+addParameter(p, 'figPos', [50 45 1800 950], @isnumeric);
+addParameter(p, 'cMapName', 'bluewhitered', @ischar);
+addParameter(p, 'sigma', []);
+addParameter(p, 'makeVid', 0, @isnumeric);
+addParameter(p, 'saveDir', []);
+addParameter(p, 'fileName', 'heatmaps', @ischar);
+parse(p, varargin{:});
+figPos = p.Results.figPos;
+cMapName = p.Results.cMapName;
+sigma = p.Results.sigma;
+makeVid = p.Results.makeVid;
+saveDir = p.Results.saveDir;
+fileName = p.Results.fileName;
+
+% Figure out what the positional optional arguments are if any were provided
+if ~isempty(p.Results.optPos_1)
+    optArg = p.Results.optPos_1;
+    if isscalar(optArg)
+        sigma = optArg;                 % If scalar, assume it's sigma
+    elseif ischar(optArg) && makeVid
+        fileName = optArg;              % If string and makeVid == 1, assume it's fileName
+    end
+end
+if ~isempty(p.Results.optPos_2)
+    optArg = p.Results.optPos_2;
+    if isscalar(optArg)
+        sigma = optArg;                 % If scalar, assume it's sigma
+    elseif ischar(optArg) && makeVid
+        fileName = optArg;              % If string and makeVid == 1, assume it's fileName
+    end
+end
 
 % Prompt user for saveDir if makeVid == true and none was provided
 if makeVid
@@ -93,13 +133,6 @@ if makeVid
     
 end%if
 
-% Use default figure position and colormap if none were provided
-if isempty(figPos)
-    figPos = [50 45 1800 950];
-end
-if isempty(cMapName)
-    cMapName = 'bluewhitered';
-end
 
 % Figure
 if ~isempty(findobj('Tag', 'mainHeatmapFig'));
@@ -245,8 +278,8 @@ end
 %---------------------------------------------------------------------------------------------------
 function drawROIButton_Callback(~, ~)
     
-if selected
-    
+    if selected
+        
         % Clear any previous ROIs on this tab
         currTab = tabGroup.SelectedTab;
         oldROIs = findobj(currTab, 'Tag', 'ROIplot');
@@ -272,11 +305,11 @@ if selected
         ROIdata.expDate{indexROI} = infoStruct.expDate;
     else
         disp('Must click to select a plot before drawing an ROI')
-    end
+    end%if
     
     indexROI = indexROI + 1; % Track total # of ROIs that have been drawn
     
-end
+end%function
 
 %---------------------------------------------------------------------------------------------------
 function clearROIButton_Callback(~, ~)

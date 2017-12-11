@@ -40,12 +40,55 @@ else
     % Prompt user for a metadata file
     [metadataFile, pathName, ~] = uigetfile('*.mat', 'Select a metadata file', 'D:\Dropbox (HMS)\2P Data\Behavior Vids\');
     if metadataFile == 0
-        disp('No metadata file selected')
-        imgData.trialDuration = [];
-    else
-        metadata = load([pathName, metadataFile]);
-        imgData.trialDuration = metadata.metaData.trialDuration;
+        errordlg('No metadata file selected');
+        return
     end
+    
+    % Extract metadata
+    metadata = load([pathName, metadataFile]);
+    imgData.sid = metadata.metaData.sid;
+    imgData.trialDuration = metadata.metaData.trialDuration;
+    imgData.preStimDur = imgData.trialDuration(1);
+    imgData.postStimDur = imgData.trialDuration(2);
+    imgData.stimPeriodDur = imgData.trialDuration(3);
+    if isfield(metadata.metaData, 'ballStop') && isfield(metadata.metaData, 'odorStim') % Backwards compatibility
+        imgData.ballStop = metadata.metaData.ballStop;
+        imgData.odorStim = metadata.metaData.odorStim;
+    else
+        imgData.ballStop = 0;
+        imgData.odorStim = 0;
+    end
+    if imgData.ballStop
+        imgData.ballStopTiming = metadata.metaData.ballStopTiming;
+        imgData.nStops = imgData.ballStopTiming(2);
+        imgData.stopDur = imgData.ballStopTiming(1);
+        imgData.interStopInterval = imgData.ballStopTiming(3);
+    else
+        imgData.ballStopTiming = [];
+        imgData.nStops = [];
+        imgData.stopDur = [];
+        imgData.interStopInterval = [];
+    end
+    if imgData.odorStim
+        imgData.odorStimTiming = metadata.metaData.odorStimTiming;
+        imgData.nOdorStims = imgData.odorStimTiming(2);
+        imgData.odorStimDur = imgData.odorStimTiming(1);
+        imgData.interOdorInterval = imgData.odorStimTiming(3);
+    else
+        imgData.odorStimTiming = [];
+        imgData.nOdorStims = [];
+        imgData.odorStimDur = [];
+        imgData.interOdorInterval = [];
+    end
+    
+    % Calculate odor stim start and end times
+    imgData.odorStartTimes = []; imgData.odorEndTimes = [];
+    if imgData.odorStim
+        for iStim = 1:imgData.nOdorStims
+            imgData.odorStartTimes(iStim) = imgData.preStimDur + ( ( iStim - 1) * (imgData.odorStimDur + imgData.interOdorInterval) );
+            imgData.odorEndTimes(iStim) = imgData.odorStartTimes(iStim) + imgData.odorStimDur;
+        end
+    end    
     
     % Prompt user for annotation data file
     [annotDataFile, pathName, ~] = uigetfile('*.mat', 'Select a behavioral annotation data file if desired', 'D:\Dropbox (HMS)\2P Data\Imaging Data\');
@@ -100,12 +143,7 @@ else
         cellDate = inputdlg('Please enter experiment date in YYYY_MM_DD format');
         outputData.expDate = cellDate{1};
     end
-    
-    % Extract session number
-    origFileName = outputData.origFileNames{1};
-    sidLoc = strfind(origFileName, 'sid_');
-    outputData.sid = origFileName(sidLoc+4);    
-    
+        
     % Separate trials by stim type
     outputData.stimSepTrials = [];
     for iStim = 1:length(outputData.stimTypes)
@@ -113,7 +151,7 @@ else
             strcmp(x, outputData.stimTypes{iStim}), outputData.trialType));
     end
     
-    % Separate out all wind stim trials
+    % Separate out all wind stim trials (if any)
     windTrials = zeros(1, outputData.nTrials);
     if isfield(outputData.stimSepTrials, 'LeftWind')
         windTrials = windTrials + logical(outputData.stimSepTrials.LeftWind);
@@ -126,7 +164,7 @@ else
     end
     outputData.stimSepTrials.windTrials = logical(windTrials);
     
-    % Separate out all odor stim trials
+    % Separate out all odor stim trials (if any)
     odorTrials = zeros(1, outputData.nTrials);
     if isfield(outputData.stimSepTrials, 'OdorA')
         odorTrials = odorTrials + logical(outputData.stimSepTrials.OdorA);

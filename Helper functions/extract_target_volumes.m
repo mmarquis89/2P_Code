@@ -1,7 +1,7 @@
 function [trimmedData, preStimData, stimData] = extract_target_volumes(dataArr, onsetTime, volumeRate, baselineDurSec, respDurSec)
 %==============================================================================================================
 % 
-% Extract imaging data from a specified period around the wind stimulus onset, and return that and/or just the
+% Extract imaging data from a specified period, and return that and/or just the
 % pre-stimulus baseline period or the period during the stimulus.
 %
 % INPUTS:

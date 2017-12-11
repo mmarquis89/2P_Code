@@ -1,4 +1,4 @@
-function behaviorVols = match_behavioral_states(infoStruct)
+function behaviorVols = match_behavior_annotations(infoStruct)
 %===================================================================================================
 %
 % Takes trial annotation data and matches it up to imaging volumes (since it is originally annotated 

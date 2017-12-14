@@ -4,8 +4,9 @@ function [f, plotAxes] = plot_heatmaps(dataArr, infoStruct, cLimRange, plotTitle
 % 
 % Creates a figure for each plane in the dataStruct and divides it into 2-6 subplots, with the 
 % plane's mean reference image in the first subplot and a dF/F heatmap of each trial type or 
-% condition distributed throughout the rest of the subplots. Returns handles to all the figures and 
-% axes that were created. Can optionally also save each figure as a frame in a video file.
+% condition distributed throughout the rest of the subplots. Returns handles to the figure and all 
+% axes that were created. Can optionally also save each figure as a frame in a video file and/or
+% as a Matlab .fig file.
 %
 % There are also buttons that allow the user to draw an ROI on any figure (after first clicking on
 % the figure to select it), which will then be plotted on all the images...this is intended to 
@@ -93,7 +94,7 @@ if ~isempty(p.Results.optPos_2)
     end
 end
 
-% Prompt user for saveDir if makeVid == true and none was provided
+% Prompt user for saveDir if makeVid or saveFig == true and none was provided
 if makeVid
     
     if isempty(saveDir)
@@ -166,8 +167,9 @@ ROISaveButton = uicontrol(f, 'Style', 'pushbutton', 'String', 'Save ROIs', 'Unit
     'Tag', 'ROISaveButton');
 % --------------------------------------------------------------------------------------------------
 % Note that I'm putting these buttons in this weird location because it will make them easier to 
-% crop out when I save these heatmap figures as movie frames.
+% crop out when saving these heatmap figures as movie frames.
 % --------------------------------------------------------------------------------------------------
+
 
 
 plotAxes = []; frameStruct = []; tabs = [];
@@ -202,6 +204,13 @@ for iPlane = 1:infoStruct.nPlanes%:-1:1 % Figure windows arranged dorsal --> ven
     
     % Sort axes positions to start plotting in upper left corner
     axesPosSort = sortrows(axesPos, [1, -2]);
+    
+    % If there's an event number of heatmaps they look better side-by-side, so switch last two positions
+    if nSubplots == 3
+        axesPosSort = axesPosSort([1 2 4 3], :); 
+    elseif nSubplots == 5
+        axesPosSort = axesPosSort([1 2 3 6 5 4], :);
+    end
     
     % Plot reference image for the current plane
     plotAxes{iPlane, 1} = axes(tabs{iPlane}, 'Units', 'Normalized', 'Position', axesPosSort(1,:));
@@ -256,7 +265,7 @@ end
 function image_ButtonDownFcn(src, ~)
     
     % Append [SELECTED] to the title of an image when it is clicked
-    src.Parent.Title.String = [src.Parent.Title.String, ' [SELECTED]'];
+    src.Parent.Title.String = [src.Parent.Title.String, ' [SELECTED]', num2str(src.Parent.Position)];
     selected = 1; % For tracking purposes when drawing ROI
 end
 

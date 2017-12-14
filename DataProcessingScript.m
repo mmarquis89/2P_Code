@@ -126,12 +126,12 @@ system7zip(parentDir, archiveName, '7z', ['*sid_', num2str(sid), '_t*'], 1);
 
 FRAME_RATE = 25;
 trialDuration = 20;
-expDate = '2017_11_27_exp_1';
-sid = 1;
+expDate = '2017_11_29_exp_2';
+sid = 0;
 
 parentDir = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate, '\_Movies'];
 saveDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)];
-annotationFileName = [expDate, '_sid_', num2str(sid), '_Annotation.txt'];
+annotationFileName = [expDate, '_Annotation.txt'];
 
 tic
 test = process_anvil_annotations(sid, parentDir, saveDir, annotationFileName, FRAME_RATE, trialDuration);

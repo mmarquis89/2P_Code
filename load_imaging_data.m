@@ -38,14 +38,14 @@ else
     disp([dataFile, ' loaded'])
     
     % Prompt user for a metadata file
-    [metadataFile, pathName, ~] = uigetfile('*.mat', 'Select a metadata file', 'D:\Dropbox (HMS)\2P Data\Behavior Vids\');
+    [metadataFile, metaDataPathName, ~] = uigetfile('*.mat', 'Select a metadata file', ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', imgData.expDate]);
     if metadataFile == 0
         errordlg('No metadata file selected');
         return
     end
     
     % Extract metadata
-    metadata = load([pathName, metadataFile]);
+    metadata = load([metaDataPathName, metadataFile]);
     imgData.sid = metadata.metaData.sid;
     imgData.trialDuration = metadata.metaData.trialDuration;
     imgData.preStimDur = imgData.trialDuration(1);
@@ -91,7 +91,7 @@ else
     end    
     
     % Prompt user for annotation data file
-    [annotDataFile, pathName, ~] = uigetfile('*.mat', 'Select a behavioral annotation data file if desired', 'D:\Dropbox (HMS)\2P Data\Imaging Data\');
+    [annotDataFile, pathName, ~] = uigetfile('*.mat', 'Select a behavioral annotation data file if desired', pathName);
     if annotDataFile == 0
         disp('No behavioral annotation data selected')
         annotData.behaviorLabels = [];
@@ -151,6 +151,12 @@ else
             strcmp(x, outputData.stimTypes{iStim}), outputData.trialType));
     end
     
+    % Make sure only goodTrials are labeled as belonging to a stim type;
+    fNames = fieldnames(outputData.stimSepTrials);
+    for iField = 1:numel(fNames)
+       outputData.stimSepTrials.(fNames{iField}) = outputData.stimSepTrials.(fNames{iField}) .* outputData.goodTrials;
+    end
+    
     % Separate out all wind stim trials (if any)
     windTrials = zeros(1, outputData.nTrials);
     if isfield(outputData.stimSepTrials, 'LeftWind')
@@ -188,7 +194,7 @@ else
     end
     
     % Prompt user for a reference images file
-    [refImageFile, pathName, ~] = uigetfile('*.mat', 'Select a reference images file if desired', 'D:\Dropbox (HMS)\2P Data\Imaging Data\');
+    [refImageFile, pathName, ~] = uigetfile('*.mat', 'Select a reference images file if desired', pathName);
     if refImageFile == 0
         disp('No reference images file selected - creating reference images from main data file')
         

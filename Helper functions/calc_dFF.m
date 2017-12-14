@@ -1,7 +1,8 @@
 function dffData = calc_dFF(respData, baselineData, avgDims)
 %================================================================================================
 % Calculates averaged dF/F from baseline and response period data. Can average across either 
-% trials, volumes, or both. Always averages across both when calculating the baseline.
+% trials, volumes, or both. Always averages across both when calculating the baseline. Any 'inf' 
+% values that are caused by dividing by zero will be replaced with zeros in the output array.
 %
 % INPUTS:
 %       respData     = data from the period you want to get dF/F for: [y, x, plane, volume, trial]
@@ -28,4 +29,5 @@ baselineMeanRep = repmat(baselineMean, 1, 1, 1, size(respMean, 4), size(respMean
 
 dffData = (respMean - baselineMeanRep) ./ baselineMeanRep;                              % --> [y, x, plane, volume]
 
+dffData(isinf(dffData)) = 0;
 end

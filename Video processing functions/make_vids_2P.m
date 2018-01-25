@@ -3,7 +3,8 @@ function msg = make_vids_2P(sid, parentDir, frameRate)
 % CREATE MOVIES FROM .TIF FILES FROM 2P EXPERIMENT
 % Creates an .avi movie for each trial of a 2P imaging experiment from the .tif files captured by the fly behavior camera,
 % and returns a message string indicating whether the operation was a success (and if not, which trial it failed on).
-% The videos are saved in a folder within the parent directory named '_Movies'.
+% The videos are saved in a folder within the parent directory named '_Movies'. The function also saves .mat files condtaining 
+% information about the total number of frames and the frame-to-frame optic flow data in the same directory.
 %
 % Inputs:
 %       sid       = the session ID of the videos you want to process.
@@ -17,8 +18,8 @@ dirFiles = dir(fullfile(parentDir, ['*sid_', num2str(sid), '_t*']));
 sessionDirs = dirFiles([dirFiles.isdir]); % Drop any non-folder items in the directory (e.g. ball/metadata files)
 
 disp('Creating videos...')
-try
-    frameCounts = [];
+% try
+    frameCounts = []; flowData = []; rawFlowMags = [];
     for iTrial = 1:length(sessionDirs)
         
         % Pad the trial number with leading zeros if necessary to ensure correct filename sorting
@@ -35,7 +36,6 @@ try
         disp(trialStr)
         folderName = sessionDirs(iTrial).name;
         sourcePath = fullfile(parentDir, folderName);
-        
         
         % Create save directory if it doesn't already exist
         if ~isdir(savePath)
@@ -55,16 +55,32 @@ try
                 outputVid.FrameRate = frameRate;
                 open(outputVid)
                 
-                % Write each .tif file to video
+                % Write each .tif file to video and record optic flow data
+%                 opticFlow = opticalFlowFarneback;
+%                 meanFlowMag = zeros(length(currFrames),1);
+%                 rawFlowMag = [];
                 for iFrame = 1:length(currFrames)
+                    
+                    % Read image
                     currImg = imread(fullfile(sourcePath, currFrames{iFrame}));
-                    writeVideo(outputVid, currImg);
+                    
+%                     % Calculate optic flow
+%                     currFlow = estimateFlow(opticFlow, currImg);
+%                     meanFlowMag(iFrame) = mean(mean(currFlow.Magnitude));
+%                     rawFlowMag(:,:,iFrame) = currFlow.Magnitude;
+                    
+                    % Write frame to video
+                    writeVideo(outputVid, currImg);                    
                 end
+                
+%                 % Save optic flow data for current trial
+%                 savefast(fullfile(savePath, [trialStr, '_opticFlowData.mat']), 'meanFlowMag', 'rawFlowMag')
                 close(outputVid)
                 
                 % Record number of frames in log
                 frameCounts(iTrial).nFrames = length(currFrames);
                 frameCounts(iTrial).trial = trialStr;
+                
             end%if
         else
             disp(['Video already exists...skipping ', trialStr]);
@@ -72,20 +88,19 @@ try
     end%for
     
     % Save frame count log
-    save(fullfile(savePath, ['sid_', num2str(sid) '_frameCountLog.mat']), 'frameCounts')
-    
+    save(fullfile(savePath, ['sid_', num2str(sid) '_frameCountLog.mat']), 'frameCounts')    
     msg = 'Videos created successfully!';
-catch
-    msg = ['Error - video making failed on trial #', num2str(iTrial)];
-    disp(msg)
-    
-    % Create save directory if it doesn't already exist
-    if ~isdir(savePath)
-        mkdir(savePath);
-    end
-    
-    % Save frame count log
-    save(fullfile(savePath, ['sid_', num2str(sid) '_frameCountLog.mat']), 'frameCounts')
-end%try
+% catch
+%     msg = ['Error - video making failed on trial #', num2str(iTrial)];
+%     disp(msg)
+%     
+%     % Create save directory if it doesn't already exist
+%     if ~isdir(savePath)
+%         mkdir(savePath);
+%     end
+%     
+%     % Save frame count log
+%     save(fullfile(savePath, ['sid_', num2str(sid) '_frameCountLog.mat']), 'frameCounts')
+% end%try
 
 end%function

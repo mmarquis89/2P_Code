@@ -110,7 +110,7 @@ for iSession = mySessions
         if iFile == 1
             disp('Creating session data array(s)...')
             arraySize = size(squeeze(chanData(:,:,:,:,1))); % --> [y, x, plane, volume]
-            arraySize(end+1) = size(currFiles,1);           % --> [y, x, plane
+            arraySize(end+1) = size(currFiles,1);           % --> [y, x, plane]
             wholeSession_1 = uint16(zeros(arraySize));      % --> [y, x, plane, volume, trialNum]
             if nChannels > 1
                 % Make a second array if there are two channels of imaging data
@@ -139,21 +139,21 @@ for iSession = mySessions
         for iPlane = 1:size(wholeSession_2, 3)
             refImages{iPlane} = squeeze(mean(mean(wholeSession_2(:,:,iPlane,:,:),4),5)); % --> [y, x]
         end
-        save(fullfile(sessionDir, sprintf('sid_%.0f_refImages.mat', iSession)), 'refImages', 'channelNum');
+        savefast(fullfile(sessionDir, sprintf('sid_%.0f_refImages.mat', iSession)), 'refImages', 'channelNum');
             
         % Save each channel as a separate file
         disp('Saving channel 1...')
         wholeSession = wholeSession_1; % --> [y, x , plane, volume, trial])
-        save(fullfile(sessionDir, sprintf('sid_%.0f_Chan_1_sessionFile.mat',iSession)),'wholeSession','trialType','origFileNames', 'expDate');
+        savefast(fullfile(sessionDir, sprintf('sid_%.0f_Chan_1_sessionFile.mat',iSession)),'wholeSession','trialType','origFileNames', 'expDate');
         
         disp('Saving channel 2...')
         wholeSession = wholeSession_2; % --> [y, x , plane, volume, trial])
-        save(fullfile(sessionDir, sprintf('sid_%.0f_Chan_2_sessionFile.mat',iSession)),'wholeSession','trialType','origFileNames', 'expDate');
+        savefast(fullfile(sessionDir, sprintf('sid_%.0f_Chan_2_sessionFile.mat',iSession)),'wholeSession','trialType','origFileNames', 'expDate');
         
         % Make and save another array for ratiometric analysis if necessary
         disp('Saving ratio channel...')
         wholeSession = wholeSession_1 ./ wholeSession_2; % --> [y, x, plane, volume, trial])
-        save(fullfile(sessionDir, sprintf('sid_%.0f_ChanRatio_sessionFile.mat',iSession)),'wholeSession','trialType','origFileNames', 'expDate');     
+        savefast(fullfile(sessionDir, sprintf('sid_%.0f_ChanRatio_sessionFile.mat',iSession)),'wholeSession','trialType','origFileNames', 'expDate');     
         
     else
         
@@ -163,11 +163,11 @@ for iSession = mySessions
         for iPlane = 1:size(wholeSession_1, 3)
             refImages{iPlane} = squeeze(mean(mean(wholeSession_1(:,:,iPlane,:,:),4),5)); % --> [y, x]
         end
-        save(fullfile(sessionDir, sprintf('sid_%.0f_refImages.mat', iSession)), 'refImages', 'channelNum');
+        savefast(fullfile(sessionDir, sprintf('sid_%.0f_refImages.mat', iSession)), 'refImages', 'channelNum');
         
         disp('Saving session data...')
         wholeSession = wholeSession_1; % --> [y, x , plane, volume, trial])
-        save(fullfile(sessionDir, sprintf('sid_%.0f_sessionFile.mat',iSession)),'wholeSession','trialType','origFileNames', 'expDate', 'scanImageInfo');
+        savefast(fullfile(sessionDir, sprintf('sid_%.0f_sessionFile.mat',iSession)),'wholeSession','trialType','origFileNames', 'expDate', 'scanimageInfo');
     end
 end%for
 

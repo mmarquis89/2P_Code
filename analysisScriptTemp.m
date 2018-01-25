@@ -100,17 +100,19 @@ if ~isempty(myData.trialAnnotations)
             annotArr(iTrial, :, 3) = myData.trialAnnotations{iTrial}.ballStopNums * 2; %--> [trial, frame, eventType]
         end
     end
+   
 end
-annotArr(:,[1, size(annotArr,2)], :) = 0; % To prevent errors later
-myData.annotArr = annotArr; % --> [trial, frame, eventType]
 
 % Convert annotation array from frames to volumes
 annotArrVol = [];
 for iType = 1:size(annotArr, 3)
     for iTrial = 1:nTrials
-        annotArrVol(iTrial, :, iType) = annotArr(iTrial, volFrames, iType); 
+        annotArrVol(iTrial, :, iType) = annotArr(iTrial, volFrames, iType);
     end
 end
+
+annotArr(:,[1, size(annotArr,2)], :) = 0; % To prevent errors later
+myData.annotArr = annotArr; % --> [trial, frame, eventType]
 annotArrVol(:,[1, size(annotArrVol,2)], :) = 0; % To prevent errors later
 myData.annotArrVol = annotArrVol;
 
@@ -260,10 +262,10 @@ myData.ROIdata = ROIdata;
 s = myData.stimSepTrials;
 
 saveFig = 0;
-fileNameSuffix = '_AllTrials_GroomingOnly';%'_OdorAvsOdorBvsControl'; 
-actionLabel = [3]; % locomotionLabel = 2; noActionLabel = 0; groomingLabel = 3; isoMovementLabel = 4;
-trialGroups = []%[s.OdorA + 2 * s.OdorB + 3 * s.NoOdor] .* goodTrials; %[s.odorTrials + 2 * (~s.odorTrials)]; % 
-figTitle = 'Fly movement throughout trial (red = ball stopping), green = odor)';
+fileNameSuffix = '_OdorAvsOdorBvsControl'; %'_AllTrials';%
+actionLabel = [4]; % locomotionLabel = 2; noActionLabel = 0; groomingLabel = 3; isoMovementLabel = 4;
+trialGroups = [s.OdorA + 2 * s.OdorB + 3 * s.NoOdor] .* goodTrials; %[s.odorTrials + 2 * (~s.odorTrials)]; % 
+figTitle = 'Fly movement throughout trial (red = ball stopping, green = odor)';
 plotNames = {'ACV', 'ParaffinOil', 'NoOdor'};
 
 stimShadingColors = {'red', 'green'};
@@ -316,7 +318,7 @@ if isempty(trialGroups)
     end
 else
     annotArrSum = [];
-    for iGroup = 1:length(unique(trialGroups))
+    for iGroup = 1:3%length(unique(trialGroups))
         
         % Plot summed movement data
         f.Position = [100 50 1000 950];
@@ -380,9 +382,9 @@ end%iFold
 saveFig = 0;
 plotTypes = [3 1 2]; % 1 = behavior annotations, 2 = ball stopping, 3 = odor stims
 s = myData.stimSepTrials;
-trialGroups = [s.OdorA + 2 * s.OdorB + 3 * s.NoOdor] .* goodTrials; %[s.odorTrials + 2 * (~s.odorTrials)]; % 
-plotTitleSuffix = ' (ACV vs PO vs Control)';
-fileNameSuffix = '_OdorAvsOdorBvsControl';
+trialGroups = [];%[s.OdorA + 2 * s.OdorB + 3 * s.NoOdor] .* goodTrials; %[s.odorTrials + 2 * (~s.odorTrials)]; % 
+plotTitleSuffix = ''%' (ACV vs PO vs Control)';
+fileNameSuffix = ''%'_OdorAvsOdorBvsControl';
 
 for iFold = 1
 
@@ -479,19 +481,19 @@ end%iFold
 
 
 bStopAnalysisWindow = [ 1.5 1.5 ];
-bStopFilterWindow =   [  1   1  ];
+bStopFilterWindow =   [  2   2  ];
 bStopOvershoot = 0;
 
-odorAnalysisWindow =  [  1   1  ];
+odorAnalysisWindow =  [  2   1  ];
 odorFilterWindow =    [  1   1  ];
 odorOvershoot = 0;
 
-groomAnalysisWindow = [  1   2  ];
-groomFilterWindow =   [  1   0  ];
+groomAnalysisWindow = [  1   1  ];
+groomFilterWindow =   [  1   1  ];
 groomOvershoot = 0;
 
 behavAnalysisWindow = [  1   2  ];
-behavFilterWindow =   [  1   0  ];
+behavFilterWindow =   [  1   1  ];
 behavOvershoot = 0;
 
 for iFold = 1
@@ -615,7 +617,7 @@ analysisWindow = behavAnalysisWindow;
 
 
 % Grooming
-eventList = groomEventList;
+% eventList = groomEventList;
 
 filterDirections = [anyOdor; anyBall; anyMove; anyGroom];
 behavOnset = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', behavOvershoot);
@@ -740,7 +742,7 @@ for iCond = 1:nConds
         else
             offsetAlign = 0;
         end
-        [baselineData, respData] = extract_event_volumes(groomEventList, behavFilterVecs(:,iCond), baselineDur, respDur, myData, ...
+        [baselineData, respData] = extract_event_volumes(behavEventList, behavFilterVecs(:,iCond), baselineDur, respDur, myData, ...
             'offsetAlign', offsetAlign);                    % --> [y, x, plane, volume, event]
         
         baselineDffAvg = mean(mean(baselineData, 5), 4);                            % --> [y, x, plane]
@@ -800,11 +802,11 @@ for iFoldOut = 1
     disp(odorCondSummary)
                     
     % Calculate absolute max dF/F value across all planes and stim types
-    currConds = [5 6];
+    currConds = [1];
     sigma = [0.6];   
-    rangeType = 'stdDev';
-    rangeScalar = 3;
-    makeVid = 1;
+    rangeType = 'max';
+    rangeScalar = 0.4;
+    makeVid = 0;
     saveDir = [];
     fileName = 'Odor_Interaction_Heatmaps';
 
@@ -829,20 +831,21 @@ for iFoldOut = 1
     eventList = odorEventList;
     odorFilter      = [0 0 0];
     odorWindow      = [1 1];
-    ballStopFilter  = [-1 -1 -1];
+    ballStopFilter  = [0 0 0];
     ballStopWindow  = eventExclusionWindow;
-    behavFilter     = [-1 -1 -1];
+    behavFilter     = [0 0 0];
     behavWindow     = eventExclusionWindow;
     
 for iFold = 1
     filterEventVols = cat(3, odorVols, ballStoppingVols, behavVols);
     filterEventWindows = [odorWindow; ballStopWindow; behavWindow];
     filterDirections = [odorFilter; ballStopFilter; behavFilter];
+    analysisWindow = [2 1];
     
-    filterVec = filter_event_data(eventList, filterEventVols, filterEventWindows, filterDirections);
+    filterVec = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate);
     
-    [onsetBaselineData, onsetRespData] = extract_event_volumes(eventList, filterVec, baselineDur, respDur, myData, 'overshoot', overshoot);                     % --> [y, x, plane, volume, event]
-    [offsetBaselineData, offsetRespData] = extract_event_volumes(eventList, filterVec, baselineDur, respDur, myData, 'offsetAlign', 1, 'overshoot', overshoot); % --> [y, x, plane, volume, event]
+    [onsetBaselineData, onsetRespData] = extract_event_volumes(eventList, filterVec, baselineDur, respDur, myData);                     % --> [y, x, plane, volume, event]
+    [offsetBaselineData, offsetRespData] = extract_event_volumes(eventList, filterVec, baselineDur, respDur, myData, 'offsetAlign', 1); % --> [y, x, plane, volume, event]
     
     odorOnsetDff = calc_dFF(onsetRespData, onsetBaselineData, 5);                               % --> [y, x, plane, volume]
     onsetBaselineDffAvg = mean(mean(onsetBaselineData, 5), 4);                                  % --> [y, x, plane]
@@ -862,16 +865,16 @@ for iFold = 1
 
     % Get dF/F averages for individual odors as well
     eventList = odorAEventList;
-    filterVec = filter_event_data(eventList, filterEventVols, filterEventWindows, filterDirections);
-    [onsetBaselineData_A, onsetRespData_A] = extract_event_volumes(eventList, filterVec, baselineDur, respDur, myData, 'overshoot', overshoot);                     % --> [y, x, plane, volume, event]
-    [offsetBaselineData_A, offsetRespData_A] = extract_event_volumes(eventList, filterVec, baselineDur, respDur, myData, 'offsetAlign', 1, 'overshoot', overshoot); % --> [y, x, plane, volume, event]
+    filterVec = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate);
+    [onsetBaselineData_A, onsetRespData_A] = extract_event_volumes(eventList, filterVec, baselineDur, respDur, myData);                     % --> [y, x, plane, volume, event]
+    [offsetBaselineData_A, offsetRespData_A] = extract_event_volumes(eventList, filterVec, baselineDur, respDur, myData, 'offsetAlign', 1); % --> [y, x, plane, volume, event]
     odorOnsetDffAvg_A = calc_dFF(onsetRespData_A, onsetBaselineData_A, [4 5]);      % --> [y, x, plane]
     odorOffsetDffAvg_A = calc_dFF(offsetRespData_A, offsetBaselineData_A, [4 5]);   % --> [y, x, plane]
     
     eventList = odorBEventList;
-    filterVec = filter_event_data(eventList, filterEventVols, filterEventWindows, filterDirections);
-    [onsetBaselineData_B, onsetRespData_B] = extract_event_volumes(eventList, filterVec, baselineDur, respDur, myData, 'overshoot', overshoot);                     % --> [y, x, plane, volume, event]
-    [offsetBaselineData_B, offsetRespData_B] = extract_event_volumes(eventList, filterVec, baselineDur, respDur, myData, 'offsetAlign', 1, 'overshoot', overshoot); % --> [y, x, plane, volume, event]
+    filterVec = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate);
+    [onsetBaselineData_B, onsetRespData_B] = extract_event_volumes(eventList, filterVec, baselineDur, respDur, myData);                     % --> [y, x, plane, volume, event]
+    [offsetBaselineData_B, offsetRespData_B] = extract_event_volumes(eventList, filterVec, baselineDur, respDur, myData, 'offsetAlign', 1); % --> [y, x, plane, volume, event]
     odorOnsetDffAvg_B = calc_dFF(onsetRespData_B, onsetBaselineData_B, [4 5]);      % --> [y, x, plane]
     odorOffsetDffAvg_B = calc_dFF(offsetRespData_B, offsetBaselineData_B, [4 5]);   % --> [y, x, plane]
 end
@@ -956,16 +959,16 @@ for iFold = 1
     %% CALCULATE AND PLOT OVERALL MEAN dF/F ACROSS BEHAVIORAL STATES
 
     locomotionLabel = 2; noActionLabel = 0; groomingLabel = 3; isoMovementLabel = 4;
-    actionLabel = [2];
+    actionLabel = [2 4];
     baselineLabel = [0];
 
     smoothingSigma = [0.6]; 
     rangeType = 'max';
-    rangeScalar = 0.03;
+    rangeScalar = 0.1;
     makeVid = 0;
     saveDir = [];
-    fileName = 'GroomingVsLocomotion_Plane_Heatmaps';
-    titleStr = {'dF/F - Grooming vs. Locomotion'};
+    fileName = 'Movement_Plane_Heatmaps';
+    titleStr = {'dF/F - Movement vs. Quiescence'};
     
 for iFoldIn = 1
     % Identify behavioral state during each volume
@@ -1183,17 +1186,17 @@ end%iFold
     disp(behavCondSummary)
                     
     % Calculate absolute max dF/F value across all planes and stim types
-    currConds = [1 7];
+    currConds = [1 2 8];
     sigma = [0.6]; 
     rangeType = 'max';
-    rangeScalar = 0.008;
-    makeVid = 0;
+    rangeScalar = 0.015;
+    makeVid = 1;
     saveDir = [];
     fileName = 'Behavior_Interaction_Heatmaps';
 
     plotTitles = [];
     for iCond = currConds
-        nSize = sum(behavFilterVecs(:,iCond)) - behavCondOvershootCount(iCond);
+        nSize = sum(behavFilterVecs(:,iCond));
         plotTitles{iCond} = [behavCondNames{iCond}, '  (n = ', num2str(behavCondSummary{iCond, 1}), ')'];
     end
    
@@ -1418,13 +1421,13 @@ end
     disp(bStopCondSummary)
     
     % Calculate absolute max dF/F value across all planes and stim types
-    currConds = [1 2 4 5];
+    currConds = [1 2 3 4];
     sigma = [0.6]; 
     rangeType = 'max';
     rangeScalar = .002;
-    makeVid = 0;
+    makeVid = 1;
     saveDir = [];
-    fileName = 'Ball_Stopping_Interaction_Heatmaps';
+    fileName = 'Ball_Stopping_Interaction_Heatmaps_No_Filter';
 
     plotTitles = [];
     for iCond = currConds
@@ -1611,7 +1614,7 @@ windTrials = myData.wholeSession(:,:,:,:,~logical(myData.stimSepTrials.windTrial
 
 
 % Pull out data for one plane
-planeNum = 7;
+planeNum = 8;
 planeData = squeeze(windTrials(:,:,planeNum,:,:)); % --> [y, x, volume, trial]
 [w,x,y,z] = size(planeData);
 planeDataRS = reshape(planeData, [w, x, y*z]); % --> [y, x, volume]

@@ -102,7 +102,7 @@ else
         
         % Check frame counts for behavior video
         parentDir = fullfile('D:\Dropbox (HMS)\2P Data\Behavior Vids', imgData.expDate, '_Movies')
-        [annotData.goodTrials, ~, ~, ~] = frame_count_check(parentDir, imgData.sid, 25, sum(imgData.trialDuration));
+        [annotData.goodTrials, ~, ~, ~] = frame_count_check(parentDir, imgData.sid, frameRate, trialDuration);
     else
         disp(['Loading ' annotDataFile, '...'])
         annotData = load([annotDataPath, annotDataFile]);
@@ -195,7 +195,7 @@ else
         end
         outputData.volFrames = volFrames;
     else
-        outputData.volFrames = 1:nVolumes;
+        outputData.volFrames = [];
     end
     
     % Prompt user for a reference images file

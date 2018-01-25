@@ -35,14 +35,14 @@ options_rigid = NoRMCorreSetParms('d1', size(concatSession, 1), 'd2', size(conca
 % Rigid registration
 tic; [M, ~, ~, ~] = normcorre(concatSession, options_rigid); toc
 regProduct = reshape(M, size(wholeSession));
-savefast(fullfile(parentDir, ['rigid_', fileName]), 'regProduct', 'trialType', 'origFileNames', 'expDate', 'scanImageInfo');
+savefast(fullfile(parentDir, ['rigid_', fileName]), 'regProduct', 'trialType', 'origFileNames', 'expDate', 'scanimageInfo');
 
 % Create and save reference images from registered data
 refImages = [];
 for iPlane = 1:size(regProduct, 3)
     refImages{iPlane} = squeeze(mean(mean( regProduct(:,:,iPlane,:,:), 4), 5)); % --> [y, x]
 end
-save(fullfile(sessionDir, ['refImages_', fileName]), 'refImages');
+ save(fullfile(parentDir, ['refImages_', fileName]), 'refImages');
 
 
 end

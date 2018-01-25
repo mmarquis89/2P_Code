@@ -173,7 +173,7 @@ roiSubtabGroup.Units = 'normalized';
             currcolor = cm(mod(indexROI,size(cm,1))+1,:); % indexROI starts at 1 when gui initializes
             
             % Prompt user to create a polygon ROI
-            [myData.ROIs.masks(:,:,indexROI), xi, yi] = roipoly; % --> [y, x, ROInum]
+            [myData.ROIs.masks(:,:,indexROI), xi, yi] = roipoly; % --> [ROInum, y, x]
             currAxes = gca;
             
             % Save other useful information about the ROI

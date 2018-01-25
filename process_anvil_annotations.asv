@@ -30,7 +30,7 @@ function trialAnnotations = process_anvil_annotations(sid, parentDir, saveDir, a
 %                          field of the trialAnnotations tables (0 = first entry in behaviorLabels, etc.) Note hardcoded
 %                          values for this variable below. Also saves ballStopLabels if there are two annotation tracks.
 %
-%       goodTrials       = a 1 x n logical array (where n is the number of trials in the session) indicating which trials 
+%       goodTrials =       a 1 x n logical array (where n is the number of trials in the session) indicating which trials 
 %                          are missing one or more video frames.
 %                           
 %==========================================================================================================================
@@ -63,7 +63,18 @@ if nTracks == 2
 end
 
 % Check frame counts for each trial
-[goodTrials, frameCounts, allTrialsFrameCount, ~] = frame_count_check(parentDir, sid, frameRate, trialDuration);
+[goodTrials, frameCounts, allTrialsFrameCount, ~] = frame_count_check(parentDir, );
+
+
+% % Import video frame count data 
+% individualVidFrameCounts = load(fullfile(parentDir, ['sid_', num2str(sid), '_frameCountLog.mat']));
+% nTrials = length(individualVidFrameCounts.frameCounts);
+% frameCounts = [individualVidFrameCounts.frameCounts.nFrames];
+concatenatedFrameCounts = load(fullfile(parentDir, ['sid_', num2str(sid), '_AllTrials_frameCountLog.mat']));
+allTrialsFrameCount = concatenatedFrameCounts.frameCount;
+% 
+% % Check for trials with expected number of frames
+% goodTrials = (frameCounts == frameRate * trialDuration);
 
 % Calculate frame times in seconds for good trials
 frameTimes = (1:frameRate*trialDuration) * (1/frameRate);

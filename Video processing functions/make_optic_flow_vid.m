@@ -1,4 +1,4 @@
-function make_optic_flow_vid(sid, parentDir, FRAME_RATE)
+function make_optic_flow_vid(sid, parentDir, FRAME_RATE, vidFile)
 
 
 
@@ -7,7 +7,11 @@ function make_optic_flow_vid(sid, parentDir, FRAME_RATE)
 
 
 % Load ROI data file
-roiDataFile = uigetfile([parentDir, '\*.mat'], 'Select an ROI data file');
+if isempty(vidFile)
+    roiDataFile = uigetfile([parentDir, '\*.mat'], 'Select an ROI data file');
+else
+    roiDataFile = vidFile;
+end
 load(fullfile(parentDir, roiDataFile));
 
 % Load frame count log

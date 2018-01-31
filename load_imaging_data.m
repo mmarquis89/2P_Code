@@ -195,7 +195,7 @@ else
         end
         outputData.volFrames = volFrames;
     else
-        outputData.volFrames = 1:nVolumes;
+        outputData.volFrames = 1:outputData.nVolumes;
     end
     
     % Prompt user for a reference images file

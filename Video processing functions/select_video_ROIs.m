@@ -1,10 +1,16 @@
 function select_video_ROIs(parentDir, sid)
-
-
-
-
-
-
+%===================================================================================================
+% DEFINE ROIs IN BEHAVIOR VIDEO FOR FLY AND WASHER MOVEMENT
+%
+% Prompts the user to draw 2 ROIs on a frame of the behavior video for the purposes of analyzing 
+% optic flow. The first ROI should be drawn around the area where fly movement is occuring, and the 
+% second around an area where the washer is moving during a ball-stopping event.
+%
+% INPUTS:
+%   parentDir = the directory containing the behavior videos for the experiment you want to analyze
+%
+%   sid       = the session ID that you want to define an ROI for
+%===================================================================================================
 
 % Load and plot 100th frame acquired during the first trial (number choice is arbitrary)
 myFolders = dir(fullfile(parentDir, ['*sid_', num2str(sid), '*tid*']));

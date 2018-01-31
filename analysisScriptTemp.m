@@ -62,13 +62,16 @@ for iFold = 1
     myData.ROIdata = [];
     myData.MAX_INTENSITY = 2000; MAX_INTENSITY = myData.MAX_INTENSITY; % To control brightness of ref image plots
     myData.FRAME_RATE = 25; FRAME_RATE = 25; % This is the frame rate of the behavior video, not the GCaMP imaging
+    if isempty(nFrames)
+        nFrames = sum(trialDuration) * FRAME_RATE;
+    end
     volTimes = (1:nVolumes)' ./ volumeRate;
     frameTimes = (1:nFrames)' ./ FRAME_RATE;
     
 end%iFold
 
 %% INITIAL DATA PROCESSING STEPS
-  
+
 
 %----------- Create array of annotation/event data ----------------------------------------------------------------------
 
@@ -107,7 +110,7 @@ end
 annotArrVol = [];
 for iType = 1:size(annotArr, 3)
     for iTrial = 1:nTrials
-        annotArrVol(iTrial, :, iType) = annotArr(iTrial, volFrames, iType);
+        annotArrVol(iTrial, :, iType) = annotArr(iTrial, volFrames', iType);
     end
 end
 
@@ -893,13 +896,13 @@ end
     range = calc_range(dffCurrConds, rangeScalar, rangeType);
     plot_heatmaps(plotData, myData, range, plotTitles, sigma, 'makeVid', makeVid, 'fileName', fileName);
     
-            %% COMPARE ODOR A vs B ONSET/OFFSET RESPONSES
+    %% COMPARE ODOR A vs B ONSET/OFFSET RESPONSES
     
     rangeType = 'stdDev';
     rangeScalar = 4;
     sigma = 0.6;
     plotTitles = {'Odor A onset dF/F', 'Odor B onset dF/F', 'Odor A stim offset dF/F', 'Odor B stim offset dF/F'};
-    makeVid = 1;
+    makeVid = 0;
     fileName = ['Odor_Only_AvsB_Heatmaps_', num2str(baselineDur), '_', num2str(respDur)];
     
     plotData = cat(4, odorOnsetDffAvg_A, odorOnsetDffAvg_B, odorOffsetDffAvg_A, odorOffsetDffAvg_B);

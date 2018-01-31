@@ -40,9 +40,7 @@ if totalFrameCount > 1
     % Check against each trial
     goodTrials = (frameCounts == nFramesTarget);
 else
-    frameCounts = 0;
-    nFramesTarget = 0;
-    goodTrials = [];
+    goodTrials = 
 end
 
 

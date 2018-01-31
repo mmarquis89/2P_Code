@@ -68,7 +68,7 @@ for iSession = mySessions
 %             croppedFile = workingFile(yrange,xrange,:,:);
 
             % Discard flyback frames
-            workingFile(:,:,1:4,:) = [];  % --> [y, x, plane, volume]            
+            workingFile(:,:,1:4,:) = [];                         % --> [y, x, plane, volume]            
             chanData(:,:,:,:,iChannel) = workingFile(:,:,:,:,1); % --> [y, x, plane, volume, channel]
         end
         
@@ -144,16 +144,16 @@ for iSession = mySessions
         % Save each channel as a separate file
         disp('Saving channel 1...')
         wholeSession = wholeSession_1; % --> [y, x , plane, volume, trial])
-        savefast(fullfile(sessionDir, sprintf('sid_%.0f_Chan_1_sessionFile.mat',iSession)),'wholeSession','trialType','origFileNames', 'expDate');
+        savefast(fullfile(sessionDir, sprintf('sid_%.0f_Chan_1_sessionFile.mat',iSession)),'wholeSession','trialType','origFileNames', 'expDate', 'scanimageInfo');
         
         disp('Saving channel 2...')
         wholeSession = wholeSession_2; % --> [y, x , plane, volume, trial])
-        savefast(fullfile(sessionDir, sprintf('sid_%.0f_Chan_2_sessionFile.mat',iSession)),'wholeSession','trialType','origFileNames', 'expDate');
+        savefast(fullfile(sessionDir, sprintf('sid_%.0f_Chan_2_sessionFile.mat',iSession)),'wholeSession','trialType','origFileNames', 'expDate', 'scanimageInfo');
         
         % Make and save another array for ratiometric analysis if necessary
         disp('Saving ratio channel...')
         wholeSession = wholeSession_1 ./ wholeSession_2; % --> [y, x, plane, volume, trial])
-        savefast(fullfile(sessionDir, sprintf('sid_%.0f_ChanRatio_sessionFile.mat',iSession)),'wholeSession','trialType','origFileNames', 'expDate');     
+        savefast(fullfile(sessionDir, sprintf('sid_%.0f_ChanRatio_sessionFile.mat',iSession)),'wholeSession','trialType','origFileNames', 'expDate', 'scanimageInfo');     
         
     else
         

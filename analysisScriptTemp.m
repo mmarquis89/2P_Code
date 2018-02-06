@@ -78,140 +78,206 @@ end%iFold
 
 %% INITIAL DATA PROCESSING STEPS
 
-skipTrials = []; myData.skipTrials = [];
+skipTrials = []; 
+myData.skipTrials = [];
 nSkippedTrials = length(skipTrials); myData.nSkippedTrials = nSkippedTrials;
 
-%----------- Create array of annotation/event data ----------------------------------------------------------------------
+%============== Create array of annotation/event data ==============================================
 
 %   annotArr: (row = trial, col = frame, Z-dim = event type)
 %   Event types are: [odor stim, behavior, ball stopping]
-nTypes = 3; 
-annotArr = zeros(nTrials, nFrames, nTypes);
+
+
+
+% ----------------------------------------------------------------------------------------------
+% Odor stim
+% ----------------------------------------------------------------------------------------------
 
 % Add odor stim frames
+odorAnnotArr = zeros(nTrials, nFrames);
 if odorStim
     for iStim = 1:nOdorStims
         odorFrames = floor((odorStartTimes(iStim) * FRAME_RATE)):floor((odorEndTimes(iStim) * FRAME_RATE));
         goodOdorTrials = logical(myData.stimSepTrials.odorTrials .* goodTrials);
-        annotArr(goodOdorTrials, odorFrames, 1) = 4; %--> [trial, frame, eventType]
+        odorAnnotArr(goodOdorTrials, odorFrames) = 4; %--> [trial, frame]
     end
 end
+
+% All odor events
+odorAnnotations = annotationType(myData, odorAnnotArr, skipTrials);
+odorAnnotations = get_event_vols(odorAnnotations, '04', '40');
+
+% Odor A events
+annotArr_OdorA = odorAnnotArr;
+annotArr_OdorA(~myData.stimSepTrials.OdorA, :) = 0;
+odorAnnotations_A = annotationType(myData, annotArr_OdorA, skipTrials);
+odorAnnotations_A = get_event_vols(odorAnnotations_A, '04', '40');
+
+% Odor B events
+annotArr_OdorB = odorAnnotArr;
+annotArr_OdorB(~myData.stimSepTrials.OdorB, :) = 0;
+odorAnnotations_B = annotationType(myData, annotArr_OdorB, skipTrials);
+odorAnnotations_B = get_event_vols(odorAnnotations_B, '04', '40');
+
+
+% ----------------------------------------------------------------------------------------------
+% Behavior
+% ----------------------------------------------------------------------------------------------
+
+% Add behavior annotations
+behaviorAnnotArr = zeros(nTrials, nFrames);
 if ~isempty(myData.trialAnnotations)
-    
-    % Add behavior annotations
     annotTrials = 1:nTrials;
     for iTrial = annotTrials(goodTrials) % Skip any trials with dropped frames
-        annotArr(iTrial, :, 2) = myData.trialAnnotations{iTrial}.actionNums; %--> [trial, frame, eventType]
+        behaviorAnnotArr(iTrial, :) = myData.trialAnnotations{iTrial}.actionNums;           %--> [trial, frame]
     end
-  
-    % Add ball stop annotations
+end
+
+% Locomotion events
+locomotionAnnotations = annotationType(myData, behaviorAnnotArr, skipTrials);
+locomotionAnnotations = get_event_vols(locomotionAnnotations, '[034]2', '2[034]'); 
+
+% Isolated movement events
+isoMoveAnnotations = annotationType(myData, behaviorAnnotArr, skipTrials);
+isoMoveAnnotations = get_event_vols(isoMoveAnnotations, '[023]4', '4[023]'); 
+
+% Grooming events
+groomingAnnotations = annotationType(myData, behaviorAnnotArr, skipTrials);
+groomingAnnotations = get_event_vols(groomingAnnotations, '[024]3', '3[024]');
+
+% All behavior events
+onsetRegExpStr = '[034]2|[023]4|[024]3';
+offsetRegExpStr = '2[034]|4[023]|3[024]';
+behaviorAnnotations = annotationType(myData, behaviorAnnotArr, skipTrials);
+behaviorAnnotations = get_event_vols(behaviorAnnotations, onsetRegExpStr, offsetRegExpStr);
+
+
+% ----------------------------------------------------------------------------------------------
+% Ball stopping
+% ----------------------------------------------------------------------------------------------
+
+% Add ball stop annotations
+bStopAnnotArr = zeros(nTrials, nFrames);
+if ~isempty(myData.trialAnnotations)
     if ballStop
         annotTrials = 1:nTrials;
         for iTrial = annotTrials(goodTrials) % Skip any trials with dropped frames
-            annotArr(iTrial, :, 3) = myData.trialAnnotations{iTrial}.ballStopNums * 2; %--> [trial, frame, eventType]
+            bStopAnnotArr(iTrial, :) = myData.trialAnnotations{iTrial}.ballStopNums * 2; %--> [trial, frame]
         end
     end
-   
 end
 
-% Clear annotations for any skipped trials
-if ~isempty(skipTrials)
-   annotArr(skipTrials,:,:) = 0; 
-end
+% Ball stopping events
+bStopAnnotArr = annotArr(:,:,3);
+bStopAnnotations = annotationType(myData, bStopAnnotArr, skipTrials);
+bStopAnnotations = get_event_vols(bStopAnnotations, '04', '40');
 
-% Convert annotation array from frames to volumes
-annotArrVol = [];
-for iType = 1:size(annotArr, 3)
-    for iTrial = 1:nTrials
-        annotArrVol(iTrial, :, iType) = annotArr(iTrial, volFrames', iType);
-    end
-end
+% ==================================================================================================
 
-annotArr(:,[1, size(annotArr,2)], :) = 0; % To prevent errors later
-myData.annotArr = annotArr; % --> [trial, frame, eventType]
-annotArrVol(:,[1, size(annotArrVol,2)], :) = 0; % To prevent errors later
-myData.annotArrVol = annotArrVol;
 
-% Linearize annotation arrays
-odorLin = annot2lin(annotArrVol(:,:,1));
-behavLin = annot2lin(annotArrVol(:,:,2));
-bStopLin = annot2lin(annotArrVol(:,:,3));
 
-% Convert to strings for easier searching
-odorLinStr = num2str(odorLin); odorLinStr = odorLinStr(~isspace(odorLinStr));
-behavLinStr = num2str(behavLin); behavLinStr = behavLinStr(~isspace(behavLinStr));
-bStopLinStr = num2str(bStopLin); bStopLinStr = bStopLinStr(~isspace(bStopLinStr));
- 
-% Determine onset and offset frames (linearized) for all events and convert to logical vectors
-odorOnsetVolsLin = zeros(size(odorLin)); odorOnsetVolsLin(regexp(odorLinStr, '04') + 1) = 1;
-odorOffsetVolsLin = zeros(size(odorLin)); odorOffsetVolsLin(regexp(odorLinStr, '40') + 1) = 1;
-ballStopVolsLin = zeros(size(bStopLin)); ballStopVolsLin(regexp(bStopLinStr, '04') + 1) = 1;
-ballReleaseVolsLin = zeros(size(bStopLin)); ballReleaseVolsLin(regexp(bStopLinStr, '40') + 1) = 1;
-locOnsetVolsLin = zeros(size(behavLin)); locOnsetVolsLin(regexp(behavLinStr, '[034]2') + 1) = 1;
-locOffsetVolsLin = zeros(size(behavLin)); locOffsetVolsLin(regexp(behavLinStr, '2[034]') + 1) = 1;
-groomOnsetVolsLin = zeros(size(behavLin)); groomOnsetVolsLin(regexp(behavLinStr, '[024]3') + 1) = 1;
-groomOffsetVolsLin = zeros(size(behavLin)); groomOffsetVolsLin(regexp(behavLinStr, '3[024]') + 1) = 1;
-isoMoveOnsetVolsLin = zeros(size(behavLin)); isoMoveOnsetVolsLin(regexp(behavLinStr, '[023]4') + 1) = 1;
-isoMoveOffsetVolsLin = zeros(size(behavLin)); isoMoveOffsetVolsLin(regexp(behavLinStr, '4[023]') + 1) = 1;
-behavOnsetVolsLin = zeros(size(behavLin)); behavOnsetVolsLin(regexp(behavLinStr, '0[234]')+ 1) = 1;
-behavOffsetVolsLin = zeros(size(behavLin)); behavOffsetVolsLin(regexp(behavLinStr, '[234]0') + 1) = 1;
 
-% Create additional logical arrays with the vols during each event filled in (from onset to offset)
-odorVolsLin = zeros(size(odorLin)); 
-odorVolsLin(cell2mat(arrayfun(@(x, y) {x+1:y}, regexp(odorLinStr, '04'), regexp(odorLinStr, '40')))) = 1;
-ballStoppingVolsLin = zeros(size(bStopLin)); 
-ballStoppingVolsLin(cell2mat(arrayfun(@(x,y) {x+1:y}, regexp(bStopLinStr, '04'), regexp(bStopLinStr, '40')))) = 1;
-locVolsLin = zeros(size(behavLin)); 
-locVolsLin(cell2mat(arrayfun(@(x, y) {x+1:y}, regexp(behavLinStr, '[034]2'), regexp(behavLinStr, '2[034]')))) = 1;
-groomVolsLin = zeros(size(behavLin)); 
-groomVolsLin(cell2mat(arrayfun(@(x, y) {x+1:y}, regexp(behavLinStr, '[024]3'), regexp(behavLinStr, '3[024]')))) = 1;
-isoMoveVolsLin = zeros(size(behavLin)); 
-isoMoveVolsLin(cell2mat(arrayfun(@(x, y) {x+1:y}, regexp(behavLinStr, '[023]4'), regexp(behavLinStr, '4[023]')))) = 1;
 
-% Convert logical vectors back into 2D arrays
-arrSize = size(annotArrVol(:,:,1));
-odorOnsetVols = logical(lin2annot(odorOnsetVolsLin, arrSize));
-odorOffsetVols = logical(lin2annot(odorOffsetVolsLin, arrSize));
-ballStopVols = logical(lin2annot(ballStopVolsLin, arrSize));
-ballReleaseVols = logical(lin2annot(ballReleaseVolsLin, arrSize));
-locOnsetVols = logical(lin2annot(locOnsetVolsLin, arrSize));
-locOffsetVols = logical(lin2annot(locOffsetVolsLin, arrSize));
-groomOnsetVols = logical(lin2annot(groomOnsetVolsLin, arrSize));
-groomOffsetVols = logical(lin2annot(groomOffsetVolsLin, arrSize));
-isoMoveOnsetVols = logical(lin2annot(isoMoveOnsetVolsLin, arrSize));
-isoMoveOffsetVols = logical(lin2annot(isoMoveOffsetVolsLin, arrSize));
-behavOnsetVols = logical(lin2annot(behavOnsetVolsLin, arrSize));
-behavOffsetVols = logical(lin2annot(behavOffsetVolsLin, arrSize));
-
-odorVols = (annotArrVol(:,:,1) > 0);
-ballStoppingVols = (annotArrVol(:,:,3) > 0);
-locVols = logical(lin2annot(locVolsLin, arrSize));
-groomVols = logical(lin2annot(groomVolsLin, arrSize));
-isoMoveVols = logical(lin2annot(isoMoveVolsLin, arrSize));
-behavVols = locVols | groomVols | isoMoveVols;
-
-% Create chronological lists for each event type
-odorEventList = create_event_list(odorOnsetVols, odorOffsetVols);
-ballStoppingEventList = create_event_list(ballStopVols, ballReleaseVols);
-locEventList = create_event_list(locOnsetVols, locOffsetVols);
-groomEventList = create_event_list(groomOnsetVols, groomOffsetVols);
-isoMoveEventList = create_event_list(isoMoveOnsetVols, isoMoveOffsetVols);
-behavEventList = create_event_list(behavOnsetVols, behavOffsetVols);
-
-% Create lists for each of the two odor channels as well
-[~, odorATrials] = find(myData.stimSepTrials.OdorA);
-[~, odorBTrials] = find(myData.stimSepTrials.OdorB);
-odorAEventList = odorEventList(ismember(odorEventList(:,3), odorATrials), :);
-odorBEventList = odorEventList(ismember(odorEventList(:,3), odorBTrials), :);
-
-nOdorEvents = size(odorEventList, 1);
-nOdorAEvents = size(odorAEventList, 1);
-nOdorBEvents = size(odorBEventList, 1);
-nBallStoppingEvents = size(ballStoppingEventList, 1);
-nLocEvents = size(locEventList, 1);
-nGroomEvents = size(groomEventList, 1);
-nIsoMoveEvents = size(isoMoveEventList, 1);
-nBehavEvents = size(behavEventList, 1);
+% 
+% 
+% % Clear annotations for any skipped trials
+% if ~isempty(skipTrials)
+%    annotArr(skipTrials,:,:) = 0; 
+% end
+% 
+% % Convert annotation array from frames to volumes
+% annotArrVol = [];
+% for iType = 1:size(annotArr, 3)
+%     for iTrial = 1:nTrials
+%         annotArrVol(iTrial, :, iType) = annotArr(iTrial, volFrames', iType);
+%     end
+% end
+% 
+% annotArr(:,[1, size(annotArr,2)], :) = 0; % To prevent errors later
+% myData.annotArr = annotArr; % --> [trial, frame, eventType]
+% annotArrVol(:,[1, size(annotArrVol,2)], :) = 0; % To prevent errors later
+% myData.annotArrVol = annotArrVol;
+% 
+% % Linearize annotation arrays
+% odorLin = annot2lin(annotArrVol(:,:,1));
+% behavLin = annot2lin(annotArrVol(:,:,2));
+% bStopLin = annot2lin(annotArrVol(:,:,3));
+% 
+% % Convert to strings for easier searching
+% odorLinStr = num2str(odorLin); odorLinStr = odorLinStr(~isspace(odorLinStr));
+% behavLinStr = num2str(behavLin); behavLinStr = behavLinStr(~isspace(behavLinStr));
+% bStopLinStr = num2str(bStopLin); bStopLinStr = bStopLinStr(~isspace(bStopLinStr));
+%  
+% % Determine onset and offset frames (linearized) for all events and convert to logical vectors
+% odorOnsetVolsLin = zeros(size(odorLin)); odorOnsetVolsLin(regexp(odorLinStr, '04') + 1) = 1;
+% odorOffsetVolsLin = zeros(size(odorLin)); odorOffsetVolsLin(regexp(odorLinStr, '40') + 1) = 1;
+% ballStopVolsLin = zeros(size(bStopLin)); ballStopVolsLin(regexp(bStopLinStr, '04') + 1) = 1;
+% ballReleaseVolsLin = zeros(size(bStopLin)); ballReleaseVolsLin(regexp(bStopLinStr, '40') + 1) = 1;
+% locOnsetVolsLin = zeros(size(behavLin)); locOnsetVolsLin(regexp(behavLinStr, '[034]2') + 1) = 1;
+% locOffsetVolsLin = zeros(size(behavLin)); locOffsetVolsLin(regexp(behavLinStr, '2[034]') + 1) = 1;
+% groomOnsetVolsLin = zeros(size(behavLin)); groomOnsetVolsLin(regexp(behavLinStr, '[024]3') + 1) = 1;
+% groomOffsetVolsLin = zeros(size(behavLin)); groomOffsetVolsLin(regexp(behavLinStr, '3[024]') + 1) = 1;
+% isoMoveOnsetVolsLin = zeros(size(behavLin)); isoMoveOnsetVolsLin(regexp(behavLinStr, '[023]4') + 1) = 1;
+% isoMoveOffsetVolsLin = zeros(size(behavLin)); isoMoveOffsetVolsLin(regexp(behavLinStr, '4[023]') + 1) = 1;
+% behavOnsetVolsLin = zeros(size(behavLin)); behavOnsetVolsLin(regexp(behavLinStr, '0[234]')+ 1) = 1;
+% behavOffsetVolsLin = zeros(size(behavLin)); behavOffsetVolsLin(regexp(behavLinStr, '[234]0') + 1) = 1;
+% 
+% % Create additional logical arrays with the vols during each event filled in (from onset to offset)
+% odorVolsLin = zeros(size(odorLin)); 
+% odorVolsLin(cell2mat(arrayfun(@(x, y) {x+1:y}, regexp(odorLinStr, '04'), regexp(odorLinStr, '40')))) = 1;
+% ballStoppingVolsLin = zeros(size(bStopLin)); 
+% ballStoppingVolsLin(cell2mat(arrayfun(@(x,y) {x+1:y}, regexp(bStopLinStr, '04'), regexp(bStopLinStr, '40')))) = 1;
+% locVolsLin = zeros(size(behavLin)); 
+% locVolsLin(cell2mat(arrayfun(@(x, y) {x+1:y}, regexp(behavLinStr, '[034]2'), regexp(behavLinStr, '2[034]')))) = 1;
+% groomVolsLin = zeros(size(behavLin)); 
+% groomVolsLin(cell2mat(arrayfun(@(x, y) {x+1:y}, regexp(behavLinStr, '[024]3'), regexp(behavLinStr, '3[024]')))) = 1;
+% isoMoveVolsLin = zeros(size(behavLin)); 
+% isoMoveVolsLin(cell2mat(arrayfun(@(x, y) {x+1:y}, regexp(behavLinStr, '[023]4'), regexp(behavLinStr, '4[023]')))) = 1;
+% 
+% % Convert logical vectors back into 2D arrays
+% arrSize = size(annotArrVol(:,:,1));
+% odorOnsetVols = logical(lin2annot(odorOnsetVolsLin, arrSize));
+% odorOffsetVols = logical(lin2annot(odorOffsetVolsLin, arrSize));
+% ballStopVols = logical(lin2annot(ballStopVolsLin, arrSize));
+% ballReleaseVols = logical(lin2annot(ballReleaseVolsLin, arrSize));
+% locOnsetVols = logical(lin2annot(locOnsetVolsLin, arrSize));
+% locOffsetVols = logical(lin2annot(locOffsetVolsLin, arrSize));
+% groomOnsetVols = logical(lin2annot(groomOnsetVolsLin, arrSize));
+% groomOffsetVols = logical(lin2annot(groomOffsetVolsLin, arrSize));
+% isoMoveOnsetVols = logical(lin2annot(isoMoveOnsetVolsLin, arrSize));
+% isoMoveOffsetVols = logical(lin2annot(isoMoveOffsetVolsLin, arrSize));
+% behavOnsetVols = logical(lin2annot(behavOnsetVolsLin, arrSize));
+% behavOffsetVols = logical(lin2annot(behavOffsetVolsLin, arrSize));
+% 
+% odorVols = (annotArrVol(:,:,1) > 0);
+% ballStoppingVols = (annotArrVol(:,:,3) > 0);
+% locVols = logical(lin2annot(locVolsLin, arrSize));
+% groomVols = logical(lin2annot(groomVolsLin, arrSize));
+% isoMoveVols = logical(lin2annot(isoMoveVolsLin, arrSize));
+% behavVols = locVols | groomVols | isoMoveVols;
+% 
+% % Create chronological lists for each event type
+% odorEventList = create_event_list(odorOnsetVols, odorOffsetVols);
+% ballStoppingEventList = create_event_list(ballStopVols, ballReleaseVols);
+% locEventList = create_event_list(locOnsetVols, locOffsetVols);
+% groomEventList = create_event_list(groomOnsetVols, groomOffsetVols);
+% isoMoveEventList = create_event_list(isoMoveOnsetVols, isoMoveOffsetVols);
+% behavEventList = create_event_list(behavOnsetVols, behavOffsetVols);
+% 
+% % Create lists for each of the two odor channels as well
+% [~, odorATrials] = find(myData.stimSepTrials.OdorA);
+% [~, odorBTrials] = find(myData.stimSepTrials.OdorB);
+% odorAEventList = odorEventList(ismember(odorEventList(:,3), odorATrials), :);
+% odorBEventList = odorEventList(ismember(odorEventList(:,3), odorBTrials), :);
+% 
+% nOdorEvents = size(odorEventList, 1);
+% nOdorAEvents = size(odorAEventList, 1);
+% nOdorBEvents = size(odorBEventList, 1);
+% nBallStoppingEvents = size(ballStoppingEventList, 1);
+% nLocEvents = size(locEventList, 1);
+% nGroomEvents = size(groomEventList, 1);
+% nIsoMoveEvents = size(isoMoveEventList, 1);
+% nBehavEvents = size(behavEventList, 1);
 
 %% VIEW RAW DATA FOR A SINGLE TRIAL AND PLANE
 
@@ -500,6 +566,45 @@ bStopped =  [ 0  1  0 ];
 bRelease =  [ 1  0 -1 ];
 noBall =    [-1 -1 -1 ];
 anyBall =   [ 0  0  0 ];
+
+
+odorFilts = {withOdor, noOdor, anyOdor};
+odorFiltNames = {'WithOdor', 'NoOdor', 'AnyOdor'};
+
+behavFilts = {startMove, endMove, noMove, anyMove};
+behavFiltNames = {'StartMove', 'EndMove', 'NoMove', 'AnyMove'};
+
+bStopFilts = {bStopped, bRelease, noBall, anyBall};
+bStopFiltNames = {'BallStopped', 'BallRelease', 'NoBall', 'AnyBall'};
+
+primaryFiltNames = {'Odor', 'Move', 'bStop'};
+allFilts = {odorFilts, behavFilts, bStopFilts};
+allFiltNames = {odorFiltNames, behavFiltNames, bStopFiltNames};
+
+primaryFilt = 2; % Behavior is main alignment variable
+
+mainFilts = allFilts{primaryFilt};
+secondaryFilts = allFilts; secondaryFilts(primaryFilt) = [];
+mainFiltName = primaryFiltNames{primaryFilt};
+secondaryFiltNames = allFiltNames; secondaryFiltNames(primaryFilt) = [];
+
+for iFilt = 1:numel(secondaryFiltNames)
+    filtInds{iFilt} = 1:numel(secondaryFiltNames{iFilt});
+end
+combInds = combvec(filtInds{:})';
+
+conditionNames = [];
+for iComb = 1:size(combInds, 1)
+    currName = '';
+    for iFilt = 1:size(combInds, 2)
+       currName = [currName, '_', secondaryFiltNames{iFilt}{combInds(iComb, iFilt)}]
+    end
+    conditionNames{iComb} = [mainFiltName, currName];
+end
+conditionNames = conditionNames';
+
+
+
 
 startGroom = startMove;
 endGroom = endMove;

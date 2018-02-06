@@ -1,7 +1,7 @@
 %% LOAD REGISTERED DATA FILE AND BEHAVIORAL ANNOTATION DATA
 
   
-% Load .mat file containing trial metadata
+% Load .mat file containing trial data
 myData = load_imaging_data();
 
 badTrials = [];
@@ -10,20 +10,21 @@ for iFold = 1
     
     % Throw specifc trials out of the dataset if necessary
     if ~isempty(badTrials)
-        rmData = myData;
-        rmData.goodTrials(badTrials) = [];
-        rmData.nTrials = myData.nTrials - numel(badTrials); nTrials = rmData.nTrials;
-        rmData.origFileNames(badTrials) = [];
-        fNames = fieldnames(myData.stimSepTrials);
-        for iField = 1:numel(fNames)
-            rmData.stimSepTrials.(fNames{iField})(badTrials) = [];
-        end
-        rmData.trialAnnotations(badTrials) = [];
-        rmData.trialType(badTrials) = [];
-        rmData.wholeSession(:,:,:,:,badTrials) = [];
-        rmData.annotArr(badTrials,:,:) = [];
-        myData = rmData;
-        clear('rmData');
+        myData.goodTrials(badTrials) = 0;
+%         rmData = myData;
+%         rmData.goodTrials(badTrials) = [];
+%         rmData.nTrials = myData.nTrials - numel(badTrials); nTrials = rmData.nTrials;
+%         rmData.origFileNames(badTrials) = [];
+%         fNames = fieldnames(myData.stimSepTrials);
+%         for iField = 1:numel(fNames)
+%             rmData.stimSepTrials.(fNames{iField})(badTrials) = [];
+%         end
+%         rmData.trialAnnotations(badTrials) = [];
+%         rmData.trialType(badTrials) = [];
+%         rmData.wholeSession(:,:,:,:,badTrials) = [];
+%         rmData.annotArr(badTrials,:,:) = [];
+%         myData = rmData;
+%         clear('rmData');
     end
     
     % Copy variables for convenience
@@ -34,8 +35,13 @@ for iFold = 1
     nPlanes = myData.nPlanes;
     nVolumes = myData.nVolumes;
     refImg = myData.refImg;
-    nFrames = myData.nFrames;
+    if ~isemtpy(myData.nFrames)
+        nFrames = myData.nFrames;
+    else
+        nFrames = nVolumes; 
+    end
     nTrials = myData.nTrials;
+    nGoodTrials = sum(myData.goodTrials);
     stimTypes = myData.stimTypes;
     trialDuration = myData.trialDuration;
     volumeRate = myData.volumeRate;
@@ -72,6 +78,8 @@ end%iFold
 
 %% INITIAL DATA PROCESSING STEPS
 
+skipTrials = []; myData.skipTrials = [];
+nSkippedTrials = length(skipTrials); myData.nSkippedTrials = nSkippedTrials;
 
 %----------- Create array of annotation/event data ----------------------------------------------------------------------
 
@@ -104,6 +112,11 @@ if ~isempty(myData.trialAnnotations)
         end
     end
    
+end
+
+% Clear annotations for any skipped trials
+if ~isempty(skipTrials)
+   annotArr(skipTrials,:,:) = 0; 
 end
 
 % Convert annotation array from frames to volumes
@@ -200,53 +213,10 @@ nGroomEvents = size(groomEventList, 1);
 nIsoMoveEvents = size(isoMoveEventList, 1);
 nBehavEvents = size(behavEventList, 1);
 
-
-%%
-%------------------------------------
-eventList = odorEventList;
-baselineDur = 1;
-respDur = 1;
-
-odorFilter      = [0 0 0]; 
-odorWindow      = [1 1];
-
-ballStopFilter  = [0 0 0];
-ballStopWindow  = [1 1];
-
-behavFilter     = [0 0 0];
-behavWindow     = [1 1];
-
-%------------------------------------
-
-filterEventVols = cat(3, odorVols, ballStoppingVols, behavVols);
-filterEventWindows = [odorWindow; ballStopWindow; behavWindow];
-filterDirections = [odorFilter; ballStopFilter; behavFilter];
-
-combinedFilter = filter_event_data(eventList, filterEventVols, filterEventWindows, filterDirections);
-
-[baselineData, respData] = extract_event_volumes(eventList, combinedFilter, baselineDur, respDur, myData);
-
-%------------------------------------
-
-plotData = calc_dFF(respData, baselineData, [4 5]);
-range = calc_range(plotData, [0.75]);
-plot_heatmaps(plotData, myData, range, {'title'}, 0.5);
-
-%------------------------------------
-
-[baselineData, eventData] = extract_event_avg(eventList, combinedFilter, baselineDur, myData);
-baselineDataAvg = mean(baselineData, 4); % --> [y, x, plane]
-eventDataAvg = mean(eventData, 4);       % --> [y, x, plane]
-plotData = (eventDataAvg - baselineDataAvg) ./ baselineDataAvg; % --> [y, x, plane]
-range = calc_range(plotData, [0.75]);
-plot_heatmaps(plotData, myData, range, {'title'}, 0.5);
-
-%------------------------------------
-
 %% VIEW RAW DATA FOR A SINGLE TRIAL AND PLANE
 
-planeNum = 5;
-trialNum = 30;
+planeNum = 6;
+trialNum = 15; % Does not account for any skipped trials
 
 preview_trial_movie(myData.wholeSession, planeNum, trialNum, [], [], []);
 
@@ -265,11 +235,11 @@ myData.ROIdata = ROIdata;
 s = myData.stimSepTrials;
 
 saveFig = 0;
-fileNameSuffix = '_OdorAvsOdorBvsControl'; %'_AllTrials';%
-actionLabel = [4]; % locomotionLabel = 2; noActionLabel = 0; groomingLabel = 3; isoMovementLabel = 4;
-trialGroups = [s.OdorA + 2 * s.OdorB + 3 * s.NoOdor] .* goodTrials; %[s.odorTrials + 2 * (~s.odorTrials)]; % 
-figTitle = 'Fly movement throughout trial (red = ball stopping, green = odor)';
-plotNames = {'ACV', 'ParaffinOil', 'NoOdor'};
+fileNameSuffix = '_OdorAvsOdorB_Locomotion'; %'_AllTrials';%
+actionLabel = [2]; % locomotionLabel = 2; noActionLabel = 0; groomingLabel = 3; isoMovementLabel = 4;
+trialGroups = [[s.OdorA + 2 * s.OdorB] .* goodTrials]; % 
+figTitle = 'Locomotion throughout trial (red = ball stopping, green = odor)';
+plotNames = {'ACV', 'EmptyVial'};
 
 stimShadingColors = {'red', 'green'};
 
@@ -277,7 +247,7 @@ for iFold = 1
     
 % Get approximate actual ball stopping times
 ballStoppedSum = sum(annotArr(:,:,3) ./ 4);
-ballStoppedFrames = ballStoppedSum > (nTrials * 0.5);
+ballStoppedFrames = ballStoppedSum > (nTrials * 0.25);
 startFrames = regexp(num2str(ballStoppedFrames, '%d'), '01');
 endFrames = regexp(num2str(ballStoppedFrames, '%d'), '10');
 bStopFrames = [startFrames' endFrames'];
@@ -288,14 +258,8 @@ odorFrames = floor(odorTimes * FRAME_RATE);
 
 stimShading = {bStopFrames, odorFrames};
 
-% Create array of annotation data (row = trial, col = frame)
-annotationArr = [];
-annotTrials = 1:myData.nTrials;
-for iTrial = annotTrials(goodTrials) % Skip any trials with dropped frames
-   annotationArr(iTrial,:) = myData.trialAnnotations{iTrial}.actionNums; %--> [trial, frame]
-end
-
-behavAnnotations = annotArr(:,:,2);
+% Create array of annotation data
+behavAnnotations = annotArr(:,:,2); % --> [trial, frame]
 
 f = figure(2); clf;
 f.Position = [100 100 1600 500];
@@ -321,7 +285,7 @@ if isempty(trialGroups)
     end
 else
     annotArrSum = [];
-    for iGroup = 1:3%length(unique(trialGroups))
+    for iGroup = 1:length(unique(trialGroups))
         
         % Plot summed movement data
         f.Position = [100 50 1000 950];
@@ -382,12 +346,12 @@ end%iFold
 
 %% PLOT 2-D SUMMARY OF BEHAVIOR DATA ANNOTATIONS
 
-saveFig = 0;
-plotTypes = [3 1 2]; % 1 = behavior annotations, 2 = ball stopping, 3 = odor stims
+saveFig = 1;
+plotTypes = [2 1]; % 1 = odor stims, 2 = behavior, 3 = ball stopping
 s = myData.stimSepTrials;
-trialGroups = [];%[s.OdorA + 2 * s.OdorB + 3 * s.NoOdor] .* goodTrials; %[s.odorTrials + 2 * (~s.odorTrials)]; % 
-plotTitleSuffix = ''%' (ACV vs PO vs Control)';
-fileNameSuffix = ''%'_OdorAvsOdorBvsControl';
+trialGroups = [[s.OdorA + 2 * s.OdorB] .* goodTrials];%[s.OdorA + 2 * s.OdorB + 3 * s.NoOdor] .* goodTrials; %[s.odorTrials + 2 * (~s.odorTrials)]; % 
+plotTitleSuffix = '(ACV vs Control)';
+fileNameSuffix = '_OdorAvsOdorB'%;AllTrials
 
 for iFold = 1
 
@@ -397,16 +361,16 @@ titleStrings = [];
 plotNames = [];
 for iPlot = 1:nPlots
     if plotTypes(iPlot) == 1
-        % Behavior
-        plotNames{iPlot} = 'Behavior Annotation';
-        titleStrings{iPlot} = [regexprep(expDate, '_', '\\_'), '    ', [plotNames{iPlot}, ' Summary ', plotTitleSuffix]]; % regex to add escape characters
-    elseif plotTypes(iPlot) == 2
-        % Ball stopping
-        plotNames{iPlot} = 'Ball Stopping';
-        titleStrings{iPlot} = [regexprep(expDate, '_', '\\_'), '    ', [plotNames{iPlot}, ' Summary ', plotTitleSuffix]]; % regex to add escape characters
-    elseif plotTypes(iPlot) == 3
         % Odor stim
         plotNames{iPlot} = 'Odor Delivery';
+        titleStrings{iPlot} = [regexprep(expDate, '_', '\\_'), '    ', [plotNames{iPlot}, ' Summary ', plotTitleSuffix]]; % regex to add escape characters
+    elseif plotTypes(iPlot) == 2
+         % Behavior
+        plotNames{iPlot} = 'Behavior Annotation';
+        titleStrings{iPlot} = [regexprep(expDate, '_', '\\_'), '    ', [plotNames{iPlot}, ' Summary ', plotTitleSuffix]]; % regex to add escape characters
+    elseif plotTypes(iPlot) == 3
+        % Ball stopping
+        plotNames{iPlot} = 'Ball Stopping';
         titleStrings{iPlot} = [regexprep(expDate, '_', '\\_'), '    ', [plotNames{iPlot}, ' Summary ', plotTitleSuffix]]; % regex to add escape characters
     end%if
 end%for
@@ -434,7 +398,7 @@ for iPlot = 1:nPlots
             'PaddingTop', 0.03 ...
             );
     ax = gca;
-    [~, ax, ~] = plot_behavior_summary_2D(myData, annotArr(:,:,iPlot), ax, titleStrings{iPlot}, trialGroups);
+    [~, ax, ~] = plot_behavior_summary_2D(myData, annotArr(:,:,plotTypes(iPlot)), ax, titleStrings{iPlot}, trialGroups);
     ax.FontSize = 11;
     ax.Title.FontSize = 11;
     ax.XLabel.FontSize = 13;
@@ -487,7 +451,7 @@ bStopAnalysisWindow = [ 1.5 1.5 ];
 bStopFilterWindow =   [  2   2  ];
 bStopOvershoot = 0;
 
-odorAnalysisWindow =  [  2   1  ];
+odorAnalysisWindow =  [  1   1  ];
 odorFilterWindow =    [  1   1  ];
 odorOvershoot = 0;
 
@@ -495,7 +459,7 @@ groomAnalysisWindow = [  1   1  ];
 groomFilterWindow =   [  1   1  ];
 groomOvershoot = 0;
 
-behavAnalysisWindow = [  1   2  ];
+behavAnalysisWindow = [  1   1  ];
 behavFilterWindow =   [  1   1  ];
 behavOvershoot = 0;
 
@@ -597,6 +561,9 @@ odorOffset = filter_event_data(eventList, filterEventVols, analysisWindow, filte
 filterDirections = [anyOdor; anyBall; startMove; anyGroom];
 odorOnsetStartMove = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', odorOvershoot);
 
+filterDirections = [anyOdor; anyBall; noMove; anyGroom];
+odorOffsetNoMove = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', odorOvershoot, 'offsetAlign', 1);
+
 filterDirections = [anyOdor; anyBall; startMove; anyGroom];
 odorOffsetStartMove = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', odorOvershoot, 'offsetAlign', 1);
 
@@ -631,7 +598,7 @@ behavOnsetOdor = filter_event_data(eventList, filterEventVols, analysisWindow, f
 filterDirections = [noOdor; anyBall; anyMove; anyGroom];
 behavOnsetNoOdor = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', behavOvershoot);
 
-filterDirections = [odorFilter; bStopped; anyMove; anyGroom];
+filterDirections = [noOdor; bStopped; anyMove; anyGroom];
 behavOnsetBallStopNoOdor = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', behavOvershoot);
 
 filterDirections = [noOdor; noBall; anyMove; anyGroom];
@@ -653,9 +620,9 @@ bStopFilterVecs = [bStop, bRelease, bStopNoMove, bStopStartMove, bReleaseNoMove,
 bStopOffsetAlign = [0 1 0 0 1 1 0 0 0 0];
 bStopCondNames = {'bStop', 'bRelease', 'bStopNoMove', 'bStopStartMove', 'bReleaseNoMove', 'bReleaseStartMove', 'bStopNoMoveWithOdor', 'bStopNoMoveNoOdor', 'bStopStartMoveWithOdor', 'bStopStartMoveNoOdor'};
 
-odorFilterVecs = [odorOnset, odorOffset, odorOnsetStartMove, odorOffsetStartMove, odorOnsetStartMoveNoBall, odorOnsetStartMoveWithBall, odorOnsetNoMoveNoBall, odorOnsetNoMoveWithBall];
-odorOffsetAlign = [0 1 0 1 0 0 0 0];
-odorCondNames = {'odorOnset', 'odorOffset', 'odorOnsetStartMove', 'odorOffsetStartMove', 'odorOnsetStartMoveNoBall', 'odorOnsetStartMoveWithBall', 'odorOnsetNoMoveNoBall', 'odorOnsetNoMoveWithBall'};
+odorFilterVecs = [odorOnset, odorOffset, odorOnsetStartMove, odorOffsetStartMove, odorOffsetNoMove, odorOnsetStartMoveNoBall, odorOnsetStartMoveWithBall, odorOnsetNoMoveNoBall, odorOnsetNoMoveWithBall];
+odorOffsetAlign = [0 1 0 1 1 0 0 0 0];
+odorCondNames = {'odorOnset', 'odorOffset', 'odorOnsetStartMove', 'odorOffsetStartMove', 'odorOffsetNoMove', 'odorOnsetStartMoveNoBall', 'odorOnsetStartMoveWithBall', 'odorOnsetNoMoveNoBall', 'odorOnsetNoMoveWithBall'};
 
 behavFilterVecs = [behavOnset, behavOnsetOdor, behavOnsetNoOdor, behavOnsetBallStopNoOdor, behavOnsetNoBallNoOdor, behavOnsetNoBallWithOdor, behavOnsetNoBall, behavOnsetWithBall];
 behavOffsetAlign = [0 0 0 0 0 0 0 0 0];
@@ -805,10 +772,10 @@ for iFoldOut = 1
     disp(odorCondSummary)
                     
     % Calculate absolute max dF/F value across all planes and stim types
-    currConds = [1];
+    currConds = [8];
     sigma = [0.6];   
     rangeType = 'max';
-    rangeScalar = 0.4;
+    rangeScalar = 0.8;
     makeVid = 0;
     saveDir = [];
     fileName = 'Odor_Interaction_Heatmaps';
@@ -825,7 +792,7 @@ for iFoldOut = 1
     
     %% CALCULATE dF/F FOR ODOR STIM ONSET AND OFFSET 
     
-    baselineDur = 2;
+    baselineDur = 1;
     respDur = 1;
     eventExclusionWindow = [1 1];
     overshoot = 1;
@@ -836,7 +803,7 @@ for iFoldOut = 1
     odorWindow      = [1 1];
     ballStopFilter  = [0 0 0];
     ballStopWindow  = eventExclusionWindow;
-    behavFilter     = [0 0 0];
+    behavFilter     = [-1 -1 -1];
     behavWindow     = eventExclusionWindow;
     
 for iFold = 1
@@ -886,7 +853,7 @@ end
 %% PLOT ODOR ONSET AND OFFSET dF/F HEATMAPS
     
     rangeType = 'max';
-    rangeScalar = 0.6;
+    rangeScalar = 1;
     sigma = 0.6;
     plotTitles = {'Odor stim onset dF/F', 'Odor stim offset dF/F'};
     makeVid = 0;
@@ -898,14 +865,14 @@ end
     
     %% COMPARE ODOR A vs B ONSET/OFFSET RESPONSES
     
-    rangeType = 'stdDev';
-    rangeScalar = 4;
+    rangeType = 'max';
+    rangeScalar = 0.5;
     sigma = 0.6;
     plotTitles = {'Odor A onset dF/F', 'Odor B onset dF/F', 'Odor A stim offset dF/F', 'Odor B stim offset dF/F'};
     makeVid = 0;
     fileName = ['Odor_Only_AvsB_Heatmaps_', num2str(baselineDur), '_', num2str(respDur)];
     
-    plotData = cat(4, odorOnsetDffAvg_A, odorOnsetDffAvg_B, odorOffsetDffAvg_A, odorOffsetDffAvg_B);
+    plotData = cat(4, odorOnsetDffAvg_A, odorOffsetDffAvg_A, odorOnsetDffAvg_B, odorOffsetDffAvg_B);
     range = calc_range(dffCurrConds, rangeScalar, rangeType);
     plot_heatmaps(plotData, myData, range, plotTitles, sigma, 'makeVid', makeVid, 'fileName', fileName);
     
@@ -962,12 +929,12 @@ for iFold = 1
     %% CALCULATE AND PLOT OVERALL MEAN dF/F ACROSS BEHAVIORAL STATES
 
     locomotionLabel = 2; noActionLabel = 0; groomingLabel = 3; isoMovementLabel = 4;
-    actionLabel = [2 4];
+    actionLabel = [2];
     baselineLabel = [0];
 
     smoothingSigma = [0.6]; 
     rangeType = 'max';
-    rangeScalar = 0.1;
+    rangeScalar = 0.2;
     makeVid = 0;
     saveDir = [];
     fileName = 'Movement_Plane_Heatmaps';
@@ -1042,7 +1009,7 @@ end%iFoldIn
                     
     sigma = 0.6;  
     rangeType = 'max';
-    rangeScalar = 1;
+    rangeScalar = 0.8;
     baselineDur = 1;
     eventExclusionWindow = [1 1];
     makeVid = 0;
@@ -1054,7 +1021,7 @@ end%iFoldIn
     eventList = behavEventList;
     odorFilter      = [-1 -1 -1];
     odorWindow      = eventExclusionWindow;
-    ballStopFilter  = [-1 -1 -1];
+    ballStopFilter  = [0 0 0];
     ballStopWindow  = eventExclusionWindow;
     behavFilter     = [0 0 0];
     behavWindow     = eventExclusionWindow;
@@ -1064,7 +1031,7 @@ for iFold = 1
     filterEventWindows = [odorWindow; ballStopWindow; behavWindow];
     filterDirections = [odorFilter; ballStopFilter; behavFilter];
     
-    filterVec = filter_event_data(eventList, filterEventVols, filterEventWindows, filterDirections);
+    filterVec = filter_event_data(eventList, filterEventVols, eventExclusionWindow, filterEventWindows, filterDirections, volumeRate);
     
     % Append number of events to plot titles
     titleStr = ['nTrials = ', num2str(sum(filterVec))];
@@ -1089,9 +1056,9 @@ end%iFold
     
     % Filter events
     eventList = behavEventList;
-    odorFilter      = [-1 -1 -1];
+    odorFilter      = [0 0 0];
     odorWindow      = eventExclusionWindow;
-    ballStopFilter  = [-1 -1 -1];
+    ballStopFilter  = [0 0 0];
     ballStopWindow  = eventExclusionWindow;
     behavFilter     = [-1 0 0];
     behavWindow     = eventExclusionWindow;
@@ -1102,10 +1069,10 @@ for iFold = 1
     filterEventWindows = [odorWindow; ballStopWindow; behavWindow];
     filterDirections = [odorFilter; ballStopFilter; behavFilter];
     
-    filterVec = filter_event_data(eventList, filterEventVols, filterEventWindows, filterDirections);
+    filterVec = filter_event_data(eventList, filterEventVols, eventExclusionWindow, filterEventWindows, filterDirections, volumeRate);
     
-    [onsetBaselineData, onsetRespData] = extract_event_volumes(eventList, filterVec, baselineDur, respDur, myData, 'overshoot', overshoot);                     % --> [y, x, plane, volume, event]
-    [offsetBaselineData, offsetRespData] = extract_event_volumes(eventList, filterVec, baselineDur, respDur, myData, 'offsetAlign', 1, 'overshoot', overshoot); % --> [y, x, plane, volume, event]
+    [onsetBaselineData, onsetRespData] = extract_event_volumes(eventList, filterVec, baselineDur, respDur, myData);                     % --> [y, x, plane, volume, event]
+    [offsetBaselineData, offsetRespData] = extract_event_volumes(eventList, filterVec, baselineDur, respDur, myData, 'offsetAlign', 1); % --> [y, x, plane, volume, event]
     
     behavOnsetDff = calc_dFF(onsetRespData, onsetBaselineData, 5);                              % --> [y, x, plane, volume]
     onsetBaselineDffAvg = mean(mean(onsetBaselineData, 5), 4);                                  % --> [y, x, plane]
@@ -1189,11 +1156,11 @@ end%iFold
     disp(behavCondSummary)
                     
     % Calculate absolute max dF/F value across all planes and stim types
-    currConds = [1 2 8];
+    currConds = [5 6];
     sigma = [0.6]; 
-    rangeType = 'max';
-    rangeScalar = 0.015;
-    makeVid = 1;
+    rangeType = 'Max';
+    rangeScalar = 1;
+    makeVid = 0;
     saveDir = [];
     fileName = 'Behavior_Interaction_Heatmaps';
 
@@ -1453,7 +1420,7 @@ for iFold = 1
 
 %++++++++++ Calculate whole-trial dF/F using overall mean as baseline ++++++++++
 
-allWindTrials = myData.wholeSession(:,:,:,:,myData.stimSepTrials.windTrials);   % --> [y, x, plane, volume, trial]   
+allWindTrials = myData.wholeSession;%(:,:,:,:,myData.stimSepTrials.windTrials);   % --> [y, x, plane, volume, trial]   
 
 % Calculate dF/F using whole trial average as baseline
 baseline = mean(mean(allWindTrials, 5), 4);                           % --> [y, x, plane]
@@ -1613,11 +1580,12 @@ make_heatmap_vid(trialAvg, myData, range, fileName, titleStrings, savePath, [], 
 windTrials = myData.wholeSession(:,:,:,:,~logical(myData.stimSepTrials.windTrials));   % --> [y, x, plane, volume, trial]
 
 
+
 %% PCA PLOTTING
 
 
 % Pull out data for one plane
-planeNum = 8;
+planeNum = 13;
 planeData = squeeze(windTrials(:,:,planeNum,:,:)); % --> [y, x, volume, trial]
 [w,x,y,z] = size(planeData);
 planeDataRS = reshape(planeData, [w, x, y*z]); % --> [y, x, volume]

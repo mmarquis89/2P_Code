@@ -4,11 +4,13 @@ function [plotHandle, plotAxes, plotFig] = plot_behavior_summary_2D(infoStruct, 
 % 
 % Uses imagesc() to visualize annotated behavior data from an entire experiment. By default will plot
 % trials in chronological order, but they can be optionally split into groups. Can create new figure 
-% for the plot or plot in a specific axes object.
+% for the plot or plot in a specific axes object. If the infoStruct that was provided contains a non-
+% empty value in the "skipTrials" field, the specified trials will be ignored for the plotting.
 %
 % INPUTS:
 %       infoStruct    = the main imaging data structure containing metadata for the experiment. 
-%                         Specifically, must contain the fields "nFrames", "expDate", and "trialDuration".                         
+%                         Specifically, must contain the fields "nFrames", "expDate", and "trialDuration".
+%                         Should also contain "skipTrials", but this field may = [].
 %       annotationArr = array of behavioral annotation data to be plotted (row = trial, col = frame)
 %       plotAxes      = <OPTIONAL> the handle to the axes you want the figure to be plotted in. Pass 
 %                          [] to create a new figure and axes for the plot.
@@ -23,6 +25,14 @@ function [plotHandle, plotAxes, plotFig] = plot_behavior_summary_2D(infoStruct, 
 %       plotAxes    = the axes that the figure was plotted in
 %       plotfig     = handle to the new figure, if one was created (otherwise returns [])
 %========================================================================================================
+
+% Remove trials from annotation array if necessary
+if ~isempty(myData.skipTrials)
+   annotationArr(myData.skipTrials, :) = []; 
+   if ~isempty(trialGroups)
+      trialGroups(myData.skipTrials) = []; 
+   end
+end
 
 % Create or select figure and axes depending on whether an axes handle was provided
 if isempty(plotAxes)

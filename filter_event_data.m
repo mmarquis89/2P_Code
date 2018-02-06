@@ -1,4 +1,4 @@
-function [filtOutput] = filter_event_data(eventList, filterEventData, analysisWindow, filterEventWindows, filterDirections, ...
+function [filtOutput] = filter_event_data(eventList, filterEventData, analysisWindowIn, filterEventWindows, filterDirections, ...
                                         volumeRate, varargin)
 %========================================================================================================================
 % 
@@ -16,7 +16,7 @@ function [filtOutput] = filter_event_data(eventList, filterEventData, analysisWi
 %                             event that you want to use to filter the target events in eventList. The 
 %                             dimensions of the array should be: [trial, volume, eventType]
 %
-%       analyisWindows      = a 1 x 2 array specifying the length (in seconds) of the [baseline, response] 
+%       analyisWindowIn     = a 1 x 2 array specifying the length (in seconds) of the [baseline, response] 
 %                             periods you will use in your analysis of the target event. The filter windows will 
 %                             be applied starting at either side of this window.
 % 
@@ -106,7 +106,7 @@ nEvents = size(eventList, 1);
 nFilters = size(filterEventData, 3);
 
 % Convert from seconds to volumes
-analysisWindow = floor(analysisWindow .* volumeRate);
+analysisWindow = floor(analysisWindowIn .* volumeRate);
 filterEventWindows = floor(filterEventWindows .* volumeRate);
 
 % Fill in a logical array for each event and filter
@@ -123,7 +123,12 @@ for iFilt = 1:nFilters
         else
             alignVol = eventStart;
         end
-        
+
+% %TEMP
+% if trial > 25
+%    skipArr(iEvent,:) = 1; 
+% end
+  
         % Calculate the starting and ending volumes of the filtering window
         startVol = alignVol - analysisWindow(1) - filtWin(1);
         endVol = alignVol + analysisWindow(2) + filtWin(2);

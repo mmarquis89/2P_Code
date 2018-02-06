@@ -35,10 +35,10 @@ end
 
 % -------------------------------------------------------------------------------------------------
 
-expDates = {'2018_01_27_exp_1' ...
+expDates = {'2018_01_17_exp_2' ...
             }
 
-sids = [ 0 ...
+sids = [ 1 ...
     ];
 for iExp = 1:length(expDates)
     
@@ -195,7 +195,7 @@ end
 %% % MAKE OPTIC FLOW COMBINED VIDS------------------------------------------------------------------
 %==================================================================================================
 
-expDates = {'2018_01_27_exp_2' ...
+expDates = {'2018_01_27_exp_3' ...
             }
 
 sids = [ 0 ...
@@ -263,8 +263,8 @@ system7zip(parentDir, archiveName, '7z', ['*sid_', num2str(sid), '_t*'], 1);
 
 FRAME_RATE = 25;
 trialDuration = 20;
-expDate = '2017_11_29_exp_2';
-sid = 0;
+expDate = '2018_01_26_exp_2';
+sid = 3;
 
 parentDir = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate, '\_Movies'];
 saveDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)];

@@ -18,6 +18,7 @@ load(fullfile(parentDir, roiDataFile));
 individualVidFrameCounts = load(fullfile(parentDir, ['sid_', num2str(sid), '_frameCountLog.mat']));
 frameCounts = [individualVidFrameCounts.frameCounts.nFrames];
 
+
 % Calculate optic flow for each movie frame
 disp('Calculating optic flow for behavior video...')
 vidFile = fullfile(parentDir, ['sid_', num2str(sid), '_AllTrials.mp4']);

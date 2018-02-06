@@ -91,18 +91,20 @@ else
     end    
     
     % Prompt user for annotation data file
-    [annotDataFile, annotDataPath, ~] = uigetfile('*.mat', 'Select a behavioral annotation data file if desired', metaDataPath);
+    [annotDataFile, annotDataPath, ~] = uigetfile('*.mat', 'Select a behavioral annotation data file if desired', sessionDataPath);
     if annotDataFile == 0
         disp('No behavioral annotation data selected')
         annotDataPath = metaDataPath;
         annotData.behaviorLabels = [];
         annotData.ballStopLabels = [];
-        annotData.goodTrials = [];
         annotData.trialAnnotations = [];
-        
-        % Check frame counts for behavior video
-        parentDir = fullfile('D:\Dropbox (HMS)\2P Data\Behavior Vids', imgData.expDate, '_Movies')
-        [annotData.goodTrials, ~, ~, ~] = frame_count_check(parentDir, imgData.sid, 25, sum(imgData.trialDuration));
+        if exist(fullfile(annotDataPath, ['sid_', num2str(imgData.sid), '_frameCountLog.mat']), 'file')
+            % Check frame counts for behavior video
+            parentDir = fullfile('D:\Dropbox (HMS)\2P Data\Behavior Vids', imgData.expDate, '_Movies')
+            [annotData.goodTrials, ~, ~, ~] = frame_count_check(parentDir, imgData.sid, 25, sum(imgData.trialDuration));
+        else
+            annotData.goodTrials = [];
+        end
     else
         disp(['Loading ' annotDataFile, '...'])
         annotData = load([annotDataPath, annotDataFile]);
@@ -185,7 +187,8 @@ else
     end
     outputData.stimSepTrials.odorTrials = logical(odorTrials);
     
-    % Match frame times to volumes if annotation data was provided
+    % Match frame times to volumes if annotation data was provided (contains the video frame that 
+    % most closely matches the time of the volume for each volume in the trial)
     if ~isempty(outputData.trialAnnotations)
         volTimes = (1:outputData.nVolumes)' ./ outputData.volumeRate;
         frameTimes = outputData.trialAnnotations{find(outputData.goodTrials, 1)}.frameTime;

@@ -63,6 +63,11 @@ for iEvent = 1:size(filteredList, 1)
         
 end
 
+alignVols(blStartVols == 0) = alignVols(blStartVols == 0) + 1;
+respEndVols(blStartVols == 0) = respEndVols(blStartVols == 0) + 1;
+blStartVols(blStartVols == 0) = 1;
+
+
 % Loop through and pull out data
 baselineData = zeros([sessionSize(1:3), baselineDurVols + 1, size(filteredList, 1)]);
 respData = zeros([sessionSize(1:3), respDurVols + 1, size(filteredList, 1)]);

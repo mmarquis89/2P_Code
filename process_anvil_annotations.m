@@ -18,8 +18,8 @@ function trialAnnotations = process_anvil_annotations(sid, parentDir, saveDir, a
 %       trial Duration = duration of each trial in seconds (must be the same for all trials).
 %
 % OUTPUTS:
-%       trialAnnotations = a 1xn cell array (where n is the number of trials in the session), with each cell containing an 
-%                          mx3 table (where m is the number of video frames for that trial) with the following column 
+%       trialAnnotations = a 1 x n cell array (where n is the number of trials in the session), with each cell containing an 
+%                          m x 3 table (where m is the number of video frames for that trial) with the following column 
 %                          names: [frameNum, actionNums, frameTime]. [actions] contains a behavioral code for each frame, 
 %                          corresponding to an entry in the "behaviorLabels" array. [frameTime] is the trial time in 
 %                          seconds corresponding to each frame. If there are two tracks in the annotation data, this table
@@ -73,6 +73,7 @@ assert(sum(frameCounts) == allTrialsFrameCount, 'Error: sum of individual frame 
 assert(allTrialsFrameCount == length(frameNum), 'Error: frame number mismatch between annotation data and video file data');
 
 % Separate annotation data into individual trials
+nTrials = numel(goodTrials);
 trialAnnotations = cell(1,nTrials);
 currFrame = 1;
 for iTrial = 1:nTrials

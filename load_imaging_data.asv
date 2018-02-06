@@ -91,18 +91,19 @@ else
     end    
     
     % Prompt user for annotation data file
-    [annotDataFile, annotDataPath, ~] = uigetfile('*.mat', 'Select a behavioral annotation data file if desired', metaDataPath);
+    [annotDataFile, annotDataPath, ~] = uigetfile('*.mat', 'Select a behavioral annotation data file if desired', sessionDataPath);
     if annotDataFile == 0
         disp('No behavioral annotation data selected')
         annotDataPath = metaDataPath;
         annotData.behaviorLabels = [];
         annotData.ballStopLabels = [];
-        annotData.goodTrials = [];
         annotData.trialAnnotations = [];
+        if exist(fullFile
+        
         
         % Check frame counts for behavior video
         parentDir = fullfile('D:\Dropbox (HMS)\2P Data\Behavior Vids', imgData.expDate, '_Movies')
-        [annotData.goodTrials, ~, ~, ~] = frame_count_check(parentDir, imgData.sid, frameRate, trialDuration);
+        [annotData.goodTrials, ~, ~, ~] = frame_count_check(parentDir, imgData.sid, 25, sum(imgData.trialDuration));
     else
         disp(['Loading ' annotDataFile, '...'])
         annotData = load([annotDataPath, annotDataFile]);
@@ -195,7 +196,7 @@ else
         end
         outputData.volFrames = volFrames;
     else
-        outputData.volFrames = [];
+        outputData.volFrames = 1:outputData.nVolumes;
     end
     
     % Prompt user for a reference images file

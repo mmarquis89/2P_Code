@@ -63,7 +63,7 @@ function [filtOutput] = filter_event_data(eventList, filterEventData, analysisWi
 %       <--------fW(1)--------><----aW(1)---->[alignVol]<----aW(2)----><----fW(2)---->
 %       [------------------fD(1)-----------------][-------fD(2)-------][----fD(3)----]
 % 
-% Based on the filter directions provided here the filter would select all target events that are 1) preceded by 
+% Based on the filter directions provided here the filter would identify all target events that are 1) preceded by 
 % at least 3 seconds with no instances of the filter event, 2) have the filter event occurring at some 
 % point within the response period, and 3) have the filter event continuing throughout the end of the 
 % filter window.

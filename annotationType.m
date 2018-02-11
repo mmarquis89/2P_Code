@@ -6,6 +6,7 @@ classdef annotationType
         volAnnotArr
         linAnnotArr
         linAnnotArrStr
+        name
         
         % From methods
         onsetVolsLin
@@ -20,8 +21,9 @@ classdef annotationType
     end
     methods
         % Constructor function
-        function obj = annotationType(infoStruct, annotArr, skipTrials)
+        function obj = annotationType(infoStruct, annotArr, skipTrials, name)
             if nargin > 0
+                obj.name = name;
                 obj.skipTrials = skipTrials;
                 obj.frameAnnotArr = annotArr;
                     obj.frameAnnotArr(skipTrials, :) = 0;

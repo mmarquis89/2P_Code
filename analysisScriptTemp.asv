@@ -35,7 +35,7 @@ for iFold = 1
     nPlanes = myData.nPlanes;
     nVolumes = myData.nVolumes;
     refImg = myData.refImg;
-    if ~isemtpy(myData.nFrames)
+    if ~isempty(myData.nFrames)
         nFrames = myData.nFrames;
     else
         nFrames = nVolumes; 
@@ -87,7 +87,7 @@ nSkippedTrials = length(skipTrials); myData.nSkippedTrials = nSkippedTrials;
 %   annotArr: (row = trial, col = frame, Z-dim = event type)
 %   Event types are: [odor stim, behavior, ball stopping]
 
-
+annotationTypes = [];
 
 % ----------------------------------------------------------------------------------------------
 % Odor stim
@@ -104,21 +104,23 @@ if odorStim
 end
 
 % All odor events
-odorAnnotations = annotationType(myData, odorAnnotArr, skipTrials);
+odorAnnotations = annotationType(myData, odorAnnotArr, skipTrials, 'odor');
 odorAnnotations = get_event_vols(odorAnnotations, '04', '40');
+annotationTypes{end + 1} = odorAnnotations;
 
 % Odor A events
 annotArr_OdorA = odorAnnotArr;
 annotArr_OdorA(~myData.stimSepTrials.OdorA, :) = 0;
-odorAnnotations_A = annotationType(myData, annotArr_OdorA, skipTrials);
+odorAnnotations_A = annotationType(myData, annotArr_OdorA, skipTrials, 'odor_A');
 odorAnnotations_A = get_event_vols(odorAnnotations_A, '04', '40');
+annotationTypes{end + 1} = odorAnnotations_A;
 
 % Odor B events
 annotArr_OdorB = odorAnnotArr;
 annotArr_OdorB(~myData.stimSepTrials.OdorB, :) = 0;
-odorAnnotations_B = annotationType(myData, annotArr_OdorB, skipTrials);
+odorAnnotations_B = annotationType(myData, annotArr_OdorB, skipTrials, 'odor_B');
 odorAnnotations_B = get_event_vols(odorAnnotations_B, '04', '40');
-
+annotationTypes{end + 1} = odorAnnotations_B;
 
 % ----------------------------------------------------------------------------------------------
 % Behavior
@@ -134,23 +136,26 @@ if ~isempty(myData.trialAnnotations)
 end
 
 % Locomotion events
-locomotionAnnotations = annotationType(myData, behaviorAnnotArr, skipTrials);
+locomotionAnnotations = annotationType(myData, behaviorAnnotArr, skipTrials, 'locomotion');
 locomotionAnnotations = get_event_vols(locomotionAnnotations, '[034]2', '2[034]'); 
+annotationTypes{end + 1} = locomotionAnnotations;
 
 % Isolated movement events
-isoMoveAnnotations = annotationType(myData, behaviorAnnotArr, skipTrials);
+isoMoveAnnotations = annotationType(myData, behaviorAnnotArr, skipTrials, 'isoMove');
 isoMoveAnnotations = get_event_vols(isoMoveAnnotations, '[023]4', '4[023]'); 
+annotationTypes{end + 1} = isoMoveAnnotations;
 
 % Grooming events
-groomingAnnotations = annotationType(myData, behaviorAnnotArr, skipTrials);
+groomingAnnotations = annotationType(myData, behaviorAnnotArr, skipTrials, 'groom');
 groomingAnnotations = get_event_vols(groomingAnnotations, '[024]3', '3[024]');
+annotationTypes{end + 1} = groomingAnnotations;
 
 % All behavior events
 onsetRegExpStr = '[034]2|[023]4|[024]3';
 offsetRegExpStr = '2[034]|4[023]|3[024]';
-behaviorAnnotations = annotationType(myData, behaviorAnnotArr, skipTrials);
+behaviorAnnotations = annotationType(myData, behaviorAnnotArr, skipTrials, 'move');
 behaviorAnnotations = get_event_vols(behaviorAnnotations, onsetRegExpStr, offsetRegExpStr);
-
+annotationTypes{end + 1} = behaviorAnnotations;
 
 % ----------------------------------------------------------------------------------------------
 % Ball stopping
@@ -168,116 +173,18 @@ if ~isempty(myData.trialAnnotations)
 end
 
 % Ball stopping events
-bStopAnnotArr = annotArr(:,:,3);
-bStopAnnotations = annotationType(myData, bStopAnnotArr, skipTrials);
+bStopAnnotations = annotationType(myData, bStopAnnotArr, skipTrials, 'bStop');
 bStopAnnotations = get_event_vols(bStopAnnotations, '04', '40');
+annotationTypes{end + 1} = bStopAnnotations;
 
 % ==================================================================================================
 
+% Make list of all annotation type names
+for iType = 1:numel(annotationTypes)
+    annotationTypeNames{iType} = annotationTypes{iType}.name;
+end
+annotationTypeSummary = table([1:numel(annotationTypeNames)]', annotationTypeNames', 'VariableNames', {'Index', 'AnnotationType'});
 
-
-
-
-% 
-% 
-% % Clear annotations for any skipped trials
-% if ~isempty(skipTrials)
-%    annotArr(skipTrials,:,:) = 0; 
-% end
-% 
-% % Convert annotation array from frames to volumes
-% annotArrVol = [];
-% for iType = 1:size(annotArr, 3)
-%     for iTrial = 1:nTrials
-%         annotArrVol(iTrial, :, iType) = annotArr(iTrial, volFrames', iType);
-%     end
-% end
-% 
-% annotArr(:,[1, size(annotArr,2)], :) = 0; % To prevent errors later
-% myData.annotArr = annotArr; % --> [trial, frame, eventType]
-% annotArrVol(:,[1, size(annotArrVol,2)], :) = 0; % To prevent errors later
-% myData.annotArrVol = annotArrVol;
-% 
-% % Linearize annotation arrays
-% odorLin = annot2lin(annotArrVol(:,:,1));
-% behavLin = annot2lin(annotArrVol(:,:,2));
-% bStopLin = annot2lin(annotArrVol(:,:,3));
-% 
-% % Convert to strings for easier searching
-% odorLinStr = num2str(odorLin); odorLinStr = odorLinStr(~isspace(odorLinStr));
-% behavLinStr = num2str(behavLin); behavLinStr = behavLinStr(~isspace(behavLinStr));
-% bStopLinStr = num2str(bStopLin); bStopLinStr = bStopLinStr(~isspace(bStopLinStr));
-%  
-% % Determine onset and offset frames (linearized) for all events and convert to logical vectors
-% odorOnsetVolsLin = zeros(size(odorLin)); odorOnsetVolsLin(regexp(odorLinStr, '04') + 1) = 1;
-% odorOffsetVolsLin = zeros(size(odorLin)); odorOffsetVolsLin(regexp(odorLinStr, '40') + 1) = 1;
-% ballStopVolsLin = zeros(size(bStopLin)); ballStopVolsLin(regexp(bStopLinStr, '04') + 1) = 1;
-% ballReleaseVolsLin = zeros(size(bStopLin)); ballReleaseVolsLin(regexp(bStopLinStr, '40') + 1) = 1;
-% locOnsetVolsLin = zeros(size(behavLin)); locOnsetVolsLin(regexp(behavLinStr, '[034]2') + 1) = 1;
-% locOffsetVolsLin = zeros(size(behavLin)); locOffsetVolsLin(regexp(behavLinStr, '2[034]') + 1) = 1;
-% groomOnsetVolsLin = zeros(size(behavLin)); groomOnsetVolsLin(regexp(behavLinStr, '[024]3') + 1) = 1;
-% groomOffsetVolsLin = zeros(size(behavLin)); groomOffsetVolsLin(regexp(behavLinStr, '3[024]') + 1) = 1;
-% isoMoveOnsetVolsLin = zeros(size(behavLin)); isoMoveOnsetVolsLin(regexp(behavLinStr, '[023]4') + 1) = 1;
-% isoMoveOffsetVolsLin = zeros(size(behavLin)); isoMoveOffsetVolsLin(regexp(behavLinStr, '4[023]') + 1) = 1;
-% behavOnsetVolsLin = zeros(size(behavLin)); behavOnsetVolsLin(regexp(behavLinStr, '0[234]')+ 1) = 1;
-% behavOffsetVolsLin = zeros(size(behavLin)); behavOffsetVolsLin(regexp(behavLinStr, '[234]0') + 1) = 1;
-% 
-% % Create additional logical arrays with the vols during each event filled in (from onset to offset)
-% odorVolsLin = zeros(size(odorLin)); 
-% odorVolsLin(cell2mat(arrayfun(@(x, y) {x+1:y}, regexp(odorLinStr, '04'), regexp(odorLinStr, '40')))) = 1;
-% ballStoppingVolsLin = zeros(size(bStopLin)); 
-% ballStoppingVolsLin(cell2mat(arrayfun(@(x,y) {x+1:y}, regexp(bStopLinStr, '04'), regexp(bStopLinStr, '40')))) = 1;
-% locVolsLin = zeros(size(behavLin)); 
-% locVolsLin(cell2mat(arrayfun(@(x, y) {x+1:y}, regexp(behavLinStr, '[034]2'), regexp(behavLinStr, '2[034]')))) = 1;
-% groomVolsLin = zeros(size(behavLin)); 
-% groomVolsLin(cell2mat(arrayfun(@(x, y) {x+1:y}, regexp(behavLinStr, '[024]3'), regexp(behavLinStr, '3[024]')))) = 1;
-% isoMoveVolsLin = zeros(size(behavLin)); 
-% isoMoveVolsLin(cell2mat(arrayfun(@(x, y) {x+1:y}, regexp(behavLinStr, '[023]4'), regexp(behavLinStr, '4[023]')))) = 1;
-% 
-% % Convert logical vectors back into 2D arrays
-% arrSize = size(annotArrVol(:,:,1));
-% odorOnsetVols = logical(lin2annot(odorOnsetVolsLin, arrSize));
-% odorOffsetVols = logical(lin2annot(odorOffsetVolsLin, arrSize));
-% ballStopVols = logical(lin2annot(ballStopVolsLin, arrSize));
-% ballReleaseVols = logical(lin2annot(ballReleaseVolsLin, arrSize));
-% locOnsetVols = logical(lin2annot(locOnsetVolsLin, arrSize));
-% locOffsetVols = logical(lin2annot(locOffsetVolsLin, arrSize));
-% groomOnsetVols = logical(lin2annot(groomOnsetVolsLin, arrSize));
-% groomOffsetVols = logical(lin2annot(groomOffsetVolsLin, arrSize));
-% isoMoveOnsetVols = logical(lin2annot(isoMoveOnsetVolsLin, arrSize));
-% isoMoveOffsetVols = logical(lin2annot(isoMoveOffsetVolsLin, arrSize));
-% behavOnsetVols = logical(lin2annot(behavOnsetVolsLin, arrSize));
-% behavOffsetVols = logical(lin2annot(behavOffsetVolsLin, arrSize));
-% 
-% odorVols = (annotArrVol(:,:,1) > 0);
-% ballStoppingVols = (annotArrVol(:,:,3) > 0);
-% locVols = logical(lin2annot(locVolsLin, arrSize));
-% groomVols = logical(lin2annot(groomVolsLin, arrSize));
-% isoMoveVols = logical(lin2annot(isoMoveVolsLin, arrSize));
-% behavVols = locVols | groomVols | isoMoveVols;
-% 
-% % Create chronological lists for each event type
-% odorEventList = create_event_list(odorOnsetVols, odorOffsetVols);
-% ballStoppingEventList = create_event_list(ballStopVols, ballReleaseVols);
-% locEventList = create_event_list(locOnsetVols, locOffsetVols);
-% groomEventList = create_event_list(groomOnsetVols, groomOffsetVols);
-% isoMoveEventList = create_event_list(isoMoveOnsetVols, isoMoveOffsetVols);
-% behavEventList = create_event_list(behavOnsetVols, behavOffsetVols);
-% 
-% % Create lists for each of the two odor channels as well
-% [~, odorATrials] = find(myData.stimSepTrials.OdorA);
-% [~, odorBTrials] = find(myData.stimSepTrials.OdorB);
-% odorAEventList = odorEventList(ismember(odorEventList(:,3), odorATrials), :);
-% odorBEventList = odorEventList(ismember(odorEventList(:,3), odorBTrials), :);
-% 
-% nOdorEvents = size(odorEventList, 1);
-% nOdorAEvents = size(odorAEventList, 1);
-% nOdorBEvents = size(odorBEventList, 1);
-% nBallStoppingEvents = size(ballStoppingEventList, 1);
-% nLocEvents = size(locEventList, 1);
-% nGroomEvents = size(groomEventList, 1);
-% nIsoMoveEvents = size(isoMoveEventList, 1);
-% nBehavEvents = size(behavEventList, 1);
 
 %% VIEW RAW DATA FOR A SINGLE TRIAL AND PLANE
 
@@ -511,23 +418,27 @@ end%if
 end%iFold
 
 %% SEPARATE TRIALS BASED ON EVENT INTERACTIONS
+analysisWindows = []; overshoots = [];
 
 
-bStopAnalysisWindow = [ 1.5 1.5 ];
-bStopFilterWindow =   [  2   2  ];
-bStopOvershoot = 0;
+% Display available annotation event types
 
-odorAnalysisWindow =  [  1   1  ];
-odorFilterWindow =    [  1   1  ];
-odorOvershoot = 0;
+disp(annotationTypeSummary)
 
-groomAnalysisWindow = [  1   1  ];
-groomFilterWindow =   [  1   1  ];
-groomOvershoot = 0;
+activeEventTypes = [1 7 8];
+disp(annotationTypeSummary(activeEventTypes, 2))
 
-behavAnalysisWindow = [  1   1  ];
-behavFilterWindow =   [  1   1  ];
-behavOvershoot = 0;
+% Odor
+analysisWindows(end+1,:) = [  1   1  ];
+overshoots(end+1)        = 0;
+
+% All behavior
+analysisWindows(end+1,:) = [  1   1  ];
+overshoots(end+1)        = 0;
+
+% Ball stopping
+analysisWindows(end+1,:) = [ 1.5 1.5 ];
+overshoots(end+1)        = 0;
 
 for iFold = 1
     
@@ -540,298 +451,277 @@ for iFold = 1
 %===================================================================================================
 
 
-% Select events from these options:
-%   odorVols
-%   ballStoppingVols
-%   behavVols
-%   locVols
-%   isoMoveVols
-%   groomVols
+% Display active filter types
+activeFilterTypes = [1 7 8];
+disp(annotationTypeSummary(activeFilterTypes, 2))
 
+% Create filters for different condition components
+allFilts = []; allFiltNames = []; filtWindows = [];
 
-filterEventVols = cat(3, odorVols, ballStoppingVols, behavVols, groomVols);
-filterEventWindows = [odorFilterWindow; bStopFilterWindow; behavFilterWindow; groomFilterWindow];
-
-% Create filters for different condition components 
+% Odor
 withOdor =  [ 0  1  0 ];
 noOdor =    [-1 -1  0 ];
 anyOdor =   [ 0  0  0 ];
+filtWindows(end+1,:)     = [  1   1  ];
+allFilts{end+1} = [withOdor; noOdor; anyOdor];
+allFiltNames{end+1} = {'WithOdor', 'NoOdor', 'AnyOdor'};
 
+% All behavior
 startMove = [-1  1  0 ];
 endMove =   [ 1  0 -1 ];
 noMove =    [-1 -1 -1 ];
 anyMove =   [ 0  0  0 ];
+filtWindows(end+1,:)     = [  1   1  ];
+allFilts{end+1} = [startMove; endMove; noMove; anyMove];
+allFiltNames{end+1} = {'StartMove', 'EndMove', 'NoMove', 'AnyMove'};
 
+% Ball stopping
 bStopped =  [ 0  1  0 ];
 bRelease =  [ 1  0 -1 ];
 noBall =    [-1 -1 -1 ];
 anyBall =   [ 0  0  0 ];
+filtWindows(end+1,:)     = [  2   2  ];
+allFilts{end+1} = [bStopped; bRelease; noBall; anyBall];
+allFiltNames{end+1} = {'BallStopped', 'BallRelease', 'NoBall', 'AnyBall'};
 
-
-odorFilts = {withOdor, noOdor, anyOdor};
-odorFiltNames = {'WithOdor', 'NoOdor', 'AnyOdor'};
-
-behavFilts = {startMove, endMove, noMove, anyMove};
-behavFiltNames = {'StartMove', 'EndMove', 'NoMove', 'AnyMove'};
-
-bStopFilts = {bStopped, bRelease, noBall, anyBall};
-bStopFiltNames = {'BallStopped', 'BallRelease', 'noBall', 'anyBall'};
-
-primaryFiltNames = {'Odor', 'Move', 'bStop'};
-allFilts = {odorFilts, behavFilts, bStopFilts};
-allFiltNames = {odorFiltNames, behavFiltNames, bStopFiltNames};
-
-primaryFilt = 2; % Behavior is main alignment variable
-
-mainFilts = allFilts{primaryFilt};
-secondaryFilts = allFilts; secondaryFilts(primaryFilt) = [];
-mainFiltName = primaryFiltNames{primaryFilt};
-secondaryFiltNames = allFiltNames; secondaryFiltNames(primaryFilt) = [];
-
-for iFilt = 1:numel(secondaryFiltNames)
-    filtInds{iFilt} = 1:numel(secondaryFiltNames{iFilt});
+% Get event vols for each filter type
+filterEventVols = [];
+for iType = 1:numel(annotationTypes)
+    filterEventVols(:,:,iType) = annotationTypes{iType}.eventVols;    
 end
-combInds = combvec(filtInds{:})';
 
-conditionNames = [];
-for iComb = 1:size(combInds, 1)
-    currName = '';
-    for iFilt = 1:size(combInds, 2)
-       currName = [currName, secondaryFiltNames{iFilt}{combInds(iComb, iFilt)}]
+% Compile annotation info for active events
+for iType = 1:numel(activeEventTypes)
+    currType = activeEventTypes(iType);
+    eventLists{iType} = annotationTypes{currType}.eventList;
+    primaryEventNames{iType} = annotationTypes{currType}.name;
+end
+
+
+nEventTypes = numel(primaryEventNames);
+allCondFilters = []; allCondNames = []; activeFilterEventVols = []; onsetFilterVecs = []; offsetFilterVecs = [];
+for iType = 1:nEventTypes
+    
+    
+    % Identify any identical primary-secondary filter pairs
+    matchedFilterTypes = (activeFilterTypes == activeEventTypes(iType)); 
+    
+    % Eliminate identical primary-secondary filter pairs
+    currFilts = allFilts(~matchedFilterTypes);
+    currFiltNames = allFiltNames(~matchedFilterTypes);
+    
+    % Combine primary events and filter types into all filter conditions
+    [allCondFilters{iType}, allCondNames{iType}] =  create_filter_conditions(primaryEventNames{iType}, currFilts, currFiltNames);
+    
+    % Select the correct eventVols for each primary event type
+    activeFilterEventVols = filterEventVols(:,:,activeFilterTypes(~matchedFilterTypes));    
+    
+    % Get onset filter vecs for each condition
+    for iCond = 1:numel(allCondNames{iType})
+        onsetFilterVecs{iType}(:, iCond) = filter_event_data(eventLists{iType}, activeFilterEventVols, analysisWindows(iType, :), ...
+            filtWindows(~matchedFilterTypes, :), allCondFilters{iType}{iCond}, volumeRate, 'overshoot', overshoots(iType));
     end
-    conditionNames{iComb} = [mainFiltName, currName];
+    
+    % Get offset filter vecs for each condition
+    for iCond = 1:numel(allCondNames{iType})
+        offsetFilterVecs{iType}(:, iCond) = filter_event_data(eventLists{iType}, activeFilterEventVols, analysisWindows(iType, :), ...
+            filtWindows(~matchedFilterTypes, :), allCondFilters{iType}{iCond}, volumeRate, 'overshoot', overshoots(iType), 'offsetAlign', 1);
+    end
+    
 end
-conditionNames = conditionNames';
 
-
-
-
-startGroom = startMove;
-endGroom = endMove;
-noGroom = noMove;
-anyGroom = anyMove;
-
-
-
-
-% ----------------------------------------------------------------------------------------------
-% Ball stopping
-% ----------------------------------------------------------------------------------------------
-
-eventList = ballStoppingEventList;
-analysisWindow = bStopAnalysisWindow;
-
-filterDirections = [anyOdor; anyBall; anyMove; anyGroom];
-bStop = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', bStopOvershoot);
-
-filterDirections = [anyOdor; anyBall; anyMove; anyGroom];
-bRelease = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', bStopOvershoot, 'offsetAlign', 1);
-
-filterDirections = [anyOdor; anyBall; noMove; anyGroom];
-bStopNoMove = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', bStopOvershoot);
-
-filterDirections = [anyOdor; anyBall; startMove; anyGroom];
-bStopStartMove = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', bStopOvershoot);
-
-filterDirections = [anyOdor; anyBall; noMove; anyGroom];
-bReleaseNoMove = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', bStopOvershoot, 'offsetAlign', 1);
-
-filterDirections = [anyOdor; anyBall; startMove; anyGroom];
-bReleaseStartMove = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', bStopOvershoot, 'offsetAlign', 1);
-
-filterDirections = [withOdor; anyBall; noMove; anyGroom];
-bStopNoMoveWithOdor = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', bStopOvershoot);
-
-filterDirections = [noOdor; anyBall; noMove; anyGroom];
-bStopNoMoveNoOdor = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', bStopOvershoot);
-
-filterDirections = [withOdor; anyBall; startMove; anyGroom];
-bStopStartMoveWithOdor = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', bStopOvershoot);
-
-filterDirections = [noOdor; anyBall; startMove; anyGroom];
-bStopStartMoveNoOdor = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', bStopOvershoot);
-
-% ----------------------------------------------------------------------------------------------
-% Odor stim
-% ----------------------------------------------------------------------------------------------
-eventList = odorEventList;
-analysisWindow = odorAnalysisWindow;
-
-filterDirections = [anyOdor; anyBall; anyMove; anyGroom];
-odorOnset = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', odorOvershoot);
-
-filterDirections = [anyOdor; anyBall; anyMove; anyGroom];
-odorOffset = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', odorOvershoot, 'offsetAlign', 1);
-
-filterDirections = [anyOdor; anyBall; startMove; anyGroom];
-odorOnsetStartMove = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', odorOvershoot);
-
-filterDirections = [anyOdor; anyBall; noMove; anyGroom];
-odorOffsetNoMove = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', odorOvershoot, 'offsetAlign', 1);
-
-filterDirections = [anyOdor; anyBall; startMove; anyGroom];
-odorOffsetStartMove = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', odorOvershoot, 'offsetAlign', 1);
-
-filterDirections = [anyOdor; noBall; startMove; anyGroom];
-odorOnsetStartMoveNoBall = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', odorOvershoot);
-
-filterDirections = [anyOdor; bStopped; startMove; anyGroom];
-odorOnsetStartMoveWithBall = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', odorOvershoot);
-
-filterDirections = [anyOdor; noBall; noMove; anyGroom];
-odorOnsetNoMoveNoBall = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', odorOvershoot);
-
-filterDirections = [anyOdor; bStopped; noMove; anyGroom];
-odorOnsetNoMoveWithBall = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', odorOvershoot);
-
-% ----------------------------------------------------------------------------------------------
-% Behavior
-% ----------------------------------------------------------------------------------------------
-eventList = behavEventList;
-analysisWindow = behavAnalysisWindow;
-
-
-% Grooming
-% eventList = groomEventList;
-
-filterDirections = [anyOdor; anyBall; anyMove; anyGroom];
-behavOnset = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', behavOvershoot);
-
-filterDirections = [withOdor; anyBall; anyMove; anyGroom];
-behavOnsetOdor = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', behavOvershoot);
-
-filterDirections = [noOdor; anyBall; anyMove; anyGroom];
-behavOnsetNoOdor = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', behavOvershoot);
-
-filterDirections = [noOdor; bStopped; anyMove; anyGroom];
-behavOnsetBallStopNoOdor = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', behavOvershoot);
-
-filterDirections = [noOdor; noBall; anyMove; anyGroom];
-behavOnsetNoBallNoOdor = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', behavOvershoot);
-
-filterDirections = [noOdor; noBall; anyMove; anyGroom];
-behavOnsetNoBallWithOdor = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', behavOvershoot);
-
-filterDirections = [anyOdor; noBall; anyMove; anyGroom];
-behavOnsetNoBall = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', behavOvershoot);
-
-filterDirections = [anyOdor; bStopped; anyMove; anyGroom];
-behavOnsetWithBall = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', behavOvershoot);
-
-% ----------------------------------------------------------------------------------------------
-% Display summary
-% ----------------------------------------------------------------------------------------------
-bStopFilterVecs = [bStop, bRelease, bStopNoMove, bStopStartMove, bReleaseNoMove, bReleaseStartMove, bStopNoMoveWithOdor, bStopNoMoveNoOdor, bStopStartMoveWithOdor, bStopStartMoveNoOdor];
-bStopOffsetAlign = [0 1 0 0 1 1 0 0 0 0];
-bStopCondNames = {'bStop', 'bRelease', 'bStopNoMove', 'bStopStartMove', 'bReleaseNoMove', 'bReleaseStartMove', 'bStopNoMoveWithOdor', 'bStopNoMoveNoOdor', 'bStopStartMoveWithOdor', 'bStopStartMoveNoOdor'};
-
-odorFilterVecs = [odorOnset, odorOffset, odorOnsetStartMove, odorOffsetStartMove, odorOffsetNoMove, odorOnsetStartMoveNoBall, odorOnsetStartMoveWithBall, odorOnsetNoMoveNoBall, odorOnsetNoMoveWithBall];
-odorOffsetAlign = [0 1 0 1 1 0 0 0 0];
-odorCondNames = {'odorOnset', 'odorOffset', 'odorOnsetStartMove', 'odorOffsetStartMove', 'odorOffsetNoMove', 'odorOnsetStartMoveNoBall', 'odorOnsetStartMoveWithBall', 'odorOnsetNoMoveNoBall', 'odorOnsetNoMoveWithBall'};
-
-behavFilterVecs = [behavOnset, behavOnsetOdor, behavOnsetNoOdor, behavOnsetBallStopNoOdor, behavOnsetNoBallNoOdor, behavOnsetNoBallWithOdor, behavOnsetNoBall, behavOnsetWithBall];
-behavOffsetAlign = [0 0 0 0 0 0 0 0 0];
-behavCondNames = {'behavOnset', 'behavOnsetOdor', 'behavOnsetNoOdor', 'behavOnsetBallStopNoOdor', 'behavOnsetNoBallNoOdor', 'behavOnsetNoBallWithOdor', 'behavOnsetNoBall', 'behavOnsetWithBall'};
+% 
+% % ----------------------------------------------------------------------------------------------
+% % Ball stopping
+% % ----------------------------------------------------------------------------------------------
+% 
+% filterDirections = [anyOdor; anyBall; anyMove; anyGroom];
+% bRelease = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', bStopOvershoot, 'offsetAlign', 1);
+% 
+% filterDirections = [anyOdor; anyBall; noMove; anyGroom];
+% bReleaseNoMove = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', bStopOvershoot, 'offsetAlign', 1);
+% 
+% filterDirections = [anyOdor; anyBall; startMove; anyGroom];
+% bReleaseStartMove = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', bStopOvershoot, 'offsetAlign', 1);
+% 
+% % ----------------------------------------------------------------------------------------------
+% % Odor stim
+% % ----------------------------------------------------------------------------------------------
+% 
+% filterDirections = [anyOdor; anyBall; anyMove; anyGroom];
+% odorOffset = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', odorOvershoot, 'offsetAlign', 1);
+% 
+% filterDirections = [anyOdor; anyBall; noMove; anyGroom];
+% odorOffsetNoMove = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', odorOvershoot, 'offsetAlign', 1);
+% 
+% filterDirections = [anyOdor; anyBall; startMove; anyGroom];
+% odorOffsetStartMove = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', odorOvershoot, 'offsetAlign', 1);
+% 
+% % ----------------------------------------------------------------------------------------------
+% % Display summary
+% % ----------------------------------------------------------------------------------------------
+% bStopFilterVecs = [bStop, bRelease, bStopNoMove, bStopStartMove, bReleaseNoMove, bReleaseStartMove, bStopNoMoveWithOdor, bStopNoMoveNoOdor, bStopStartMoveWithOdor, bStopStartMoveNoOdor];
+% bStopOffsetAlign = [0 1 0 0 1 1 0 0 0 0];
+% 
+% odorFilterVecs = [odorOnset, odorOffset, odorOnsetStartMove, odorOffsetStartMove, odorOffsetNoMove, odorOnsetStartMoveNoBall, odorOnsetStartMoveWithBall, odorOnsetNoMoveNoBall, odorOnsetNoMoveWithBall];
+% odorOffsetAlign = [0 1 0 1 1 0 0 0 0];
+% 
+% behavFilterVecs = [behavOnset, behavOnsetOdor, behavOnsetNoOdor, behavOnsetBallStopNoOdor, behavOnsetNoBallNoOdor, behavOnsetNoBallWithOdor, behavOnsetNoBall, behavOnsetWithBall];
+% behavOffsetAlign = [0 0 0 0 0 0 0 0 0];
 
 % ----------------------------------------------------------------------------------------------
 % Calculate dF/F
 % ----------------------------------------------------------------------------------------------
 
-% Ball stopping
-disp('Calculating ball stopping dF/F...')
-baselineDur = bStopAnalysisWindow(1);
-respDur = bStopAnalysisWindow(2);
-overshoot = bStopOvershoot;
+onsetDffAvg = []; offsetDffAvg = []; onsetDff = []; offsetDff = [];
+for iType = 1:nEventTypes
+    
+    primaryFiltName = primaryEventNames{iType};
+    analysisWindow = analysisWindows(iType, :);
+    nConds = numel(allCondNames{iType});
+    eventList = eventLists{iType};
+    
+    baselineDur = analysisWindow(1);
+    respDur = analysisWindow(2);
+    onsetDff{iType} = zeros([sessionSize(1:3), (sec2vols(respDur, volumeRate) + sec2vols(baselineDur, volumeRate) + 2), nConds]);
+    offsetDff{iType} = onsetDff{iType};
+    onsetDffAvg{iType} = zeros([sessionSize(1:3), nConds]);
+    offsetDffAvg{iType} = onsetDffAvg{iType};
+    
+    disp(['Calculating ', primaryFiltName, ' dF/F...'])
+    for iCond = 1:nConds
+        
+        % Calculate dF/F for event onsets
+        if sum(onsetFilterVecs{iType}(:,iCond)) > 0
 
-nConds = numel(bStopCondNames);
-bStopCondDff = zeros([sessionSize(1:3), (sec2vols(respDur, volumeRate) + sec2vols(baselineDur, volumeRate) + 2), nConds]);
-bStopCondDffAvg = zeros([sessionSize(1:3), nConds]);
-for iCond = 1:nConds
-    if sum(bStopFilterVecs(:,iCond)) > 0
-        if bStopOffsetAlign(iCond)
-            offsetAlign = 1;
-        else
-            offsetAlign = 0;
+            [baselineData, respData] = extract_event_volumes(eventList, onsetFilterVecs{iType}(:,iCond), baselineDur, respDur, myData, ...
+                'offsetAlign', 0); % --> [y, x, plane, volume, event]
+            
+            baselineDffAvg = mean(mean(baselineData, 5), 4);                            % --> [y, x, plane]
+            baselineDffRep = repmat(baselineDffAvg, 1, 1, 1, size(baselineData, 4));    % --> [y, x, plane, volume]
+            baselineDff = calc_dFF(baselineData, baselineDffRep, 5);                    % --> [y, x, plane, volume]
+            
+            currDff = calc_dFF(respData, baselineData, 5);                              % --> [y, x, plane, volume]
+            combinedVolsDff = cat(4, baselineDff, currDff);                             % --> [y, x, plane, volume]
+            currDffAvg = calc_dFF(respData, baselineData, [4 5]);                       % --> [y, x, plane]
+            
+            onsetDff{iType}(:,:,:,:, iCond) = combinedVolsDff;                          % --> {eventType}[y, x, plane, volume, condition]
+            onsetDffAvg{iType}(:,:,:, iCond) = currDffAvg;                              % --> {eventType}[y, x, plane, condition]
+            
         end
-        [baselineData, respData] = extract_event_volumes(ballStoppingEventList, bStopFilterVecs(:,iCond), baselineDur, respDur, myData, ...
-            'offsetAlign', offsetAlign); % --> [y, x, plane, volume, event]
         
-        baselineDffAvg = mean(mean(baselineData, 5), 4);                            % --> [y, x, plane]
-        baselineDffRep = repmat(baselineDffAvg, 1, 1, 1, size(baselineData, 4));    % --> [y, x, plane, volume]
-        baselineDff = calc_dFF(baselineData, baselineDffRep, 5);                    % --> [y, x, plane, volume]
-        
-        currDff = calc_dFF(respData, baselineData, 5);                              % --> [y, x, plane, volume]
-        combinedVolsDff = cat(4, baselineDff, currDff);                             % --> [y, x, plane, volume]
-        currDffAvg = calc_dFF(respData, baselineData, [4 5]);                       % --> [y, x, plane]
-        
-        bStopCondDff(:,:,:,:, iCond) = combinedVolsDff;                             % --> [y, x, plane, volume, condition]
-        bStopCondDffAvg(:,:,:, iCond) = currDffAvg;                                 % --> [y, x, plane, condition]
-    end
-end
-
-% Odor stim
-disp('Calculating odor stim dF/F...')
-baselineDur = odorAnalysisWindow(1);
-respDur = odorAnalysisWindow(2);
-overshoot = odorOvershoot;
-
-nConds = numel(odorCondNames);
-odorCondDff = zeros([sessionSize(1:3), (sec2vols(respDur, volumeRate) + sec2vols(baselineDur, volumeRate) + 2), nConds]);
-odorCondDffAvg = zeros([sessionSize(1:3), nConds]);
-for iCond = 1:nConds
-    if sum(odorFilterVecs(:,iCond)) > 0
-        if odorOffsetAlign(iCond)
-            offsetAlign = 1;
-        else
-            offsetAlign = 0;
+        % Calculate dF/F for event offsets
+        if sum(offsetFilterVecs{iType}(:,iCond)) > 0
+            
+            [baselineData, respData] = extract_event_volumes(eventList, offsetFilterVecs{iType}(:,iCond), baselineDur, respDur, myData, ...
+                'offsetAlign', 1); % --> [y, x, plane, volume, event]
+            
+            baselineDffAvg = mean(mean(baselineData, 5), 4);                            % --> [y, x, plane]
+            baselineDffRep = repmat(baselineDffAvg, 1, 1, 1, size(baselineData, 4));    % --> [y, x, plane, volume]
+            baselineDff = calc_dFF(baselineData, baselineDffRep, 5);                    % --> [y, x, plane, volume]
+            
+            currDff = calc_dFF(respData, baselineData, 5);                              % --> [y, x, plane, volume]
+            combinedVolsDff = cat(4, baselineDff, currDff);                             % --> [y, x, plane, volume]
+            currDffAvg = calc_dFF(respData, baselineData, [4 5]);                       % --> [y, x, plane]
+            
+            offsetDff{iType}(:,:,:,:, iCond) = combinedVolsDff;                         % --> {eventType}[y, x, plane, volume, condition]
+            offsetDffAvg{iType}(:,:,:, iCond) = currDffAvg;                             % --> {eventType}[y, x, plane, condition]
         end
-        [baselineData, respData] = extract_event_volumes(odorEventList, odorFilterVecs(:,iCond), baselineDur, respDur, myData, ...
-            'offsetAlign', offsetAlign);                    % --> [y, x, plane, volume, event]
-        
-        baselineDffAvg = mean(mean(baselineData, 5), 4);                            % --> [y, x, plane]
-        baselineDffRep = repmat(baselineDffAvg, 1, 1, 1, size(baselineData, 4));    % --> [y, x, plane, volume]
-        baselineDff = calc_dFF(baselineData, baselineDffRep, 5);                    % --> [y, x, plane, volume]
-        
-        currDff = calc_dFF(respData, baselineData, 5);                              % --> [y, x, plane, volume]
-        combinedVolsDff = cat(4, baselineDff, currDff);                             % --> [y, x, plane, volume]
-        currDffAvg = calc_dFF(respData, baselineData, [4 5]);                       % --> [y, x, plane]
-        
-        odorCondDff(:,:,:,:, iCond) = combinedVolsDff;                              % --> [y, x, plane, volume, condition]
-        odorCondDffAvg(:,:,:, iCond) = currDffAvg;                                  % --> [y, x, plane, condition]
-    end
-end
+    end% iCond
+end% iType
 
-% Behavior
-disp('Calculating behavior dF/F...')
-baselineDur = behavAnalysisWindow(1);
-respDur = behavAnalysisWindow(2);
-overshoot = behavOvershoot;
 
-nConds = numel(behavCondNames);
-behavCondDff = zeros([sessionSize(1:3), (sec2vols(respDur, volumeRate) + sec2vols(baselineDur, volumeRate) + 2), nConds]);
-behavCondDffAvg = zeros([sessionSize(1:3), nConds]);
-for iCond = 1:nConds
-    if sum(behavFilterVecs(:,iCond)) > 0
-        if behavOffsetAlign(iCond)
-            offsetAlign = 1;
-        else
-            offsetAlign = 0;
-        end
-        [baselineData, respData] = extract_event_volumes(behavEventList, behavFilterVecs(:,iCond), baselineDur, respDur, myData, ...
-            'offsetAlign', offsetAlign);                    % --> [y, x, plane, volume, event]
-        
-        baselineDffAvg = mean(mean(baselineData, 5), 4);                            % --> [y, x, plane]
-        baselineDffRep = repmat(baselineDffAvg, 1, 1, 1, size(baselineData, 4));    % --> [y, x, plane, volume]
-        baselineDff = calc_dFF(baselineData, baselineDffRep, 5);                    % --> [y, x, plane, volume]
-        
-        currDff = calc_dFF(respData, baselineData, 5);                              % --> [y, x, plane, volume]
-        combinedVolsDff = cat(4, baselineDff, currDff);                             % --> [y, x, plane, volume]
-        currDffAvg = calc_dFF(respData, baselineData, [4 5]);                       % --> [y, x, plane]
-        
-        behavCondDff(:,:,:,:, iCond) = combinedVolsDff;                              % --> [y, x, plane, volume, condition]
-        behavCondDffAvg(:,:,:, iCond) = currDffAvg;                                  % --> [y, x, plane, condition]
-    end
-end
+
+
+
+% 
+% 
+% for iCond = 1:nConds
+%     if sum(bStopFilterVecs(:,iCond)) > 0
+%         if bStopOffsetAlign(iCond)
+%             offsetAlign = 1;
+%         else
+%             offsetAlign = 0;
+%         end
+%         [baselineData, respData] = extract_event_volumes(ballStoppingEventList, bStopFilterVecs(:,iCond), baselineDur, respDur, myData, ...
+%             'offsetAlign', offsetAlign); % --> [y, x, plane, volume, event]
+%         
+%         baselineDffAvg = mean(mean(baselineData, 5), 4);                            % --> [y, x, plane]
+%         baselineDffRep = repmat(baselineDffAvg, 1, 1, 1, size(baselineData, 4));    % --> [y, x, plane, volume]
+%         baselineDff = calc_dFF(baselineData, baselineDffRep, 5);                    % --> [y, x, plane, volume]
+%         
+%         currDff = calc_dFF(respData, baselineData, 5);                              % --> [y, x, plane, volume]
+%         combinedVolsDff = cat(4, baselineDff, currDff);                             % --> [y, x, plane, volume]
+%         currDffAvg = calc_dFF(respData, baselineData, [4 5]);                       % --> [y, x, plane]
+%         
+%         bStopCondDff(:,:,:,:, iCond) = combinedVolsDff;                             % --> [y, x, plane, volume, condition]
+%         bStopCondDffAvg(:,:,:, iCond) = currDffAvg;                                 % --> [y, x, plane, condition]
+%     end
+% end
+% 
+% % Odor stim
+% disp('Calculating odor stim dF/F...')
+% baselineDur = odorAnalysisWindow(1);
+% respDur = odorAnalysisWindow(2);
+% overshoot = odorOvershoot;
+% 
+% nConds = numel(odorCondNames);
+% odorCondDff = zeros([sessionSize(1:3), (sec2vols(respDur, volumeRate) + sec2vols(baselineDur, volumeRate) + 2), nConds]);
+% odorCondDffAvg = zeros([sessionSize(1:3), nConds]);
+% for iCond = 1:nConds
+%     if sum(odorFilterVecs(:,iCond)) > 0
+%         if odorOffsetAlign(iCond)
+%             offsetAlign = 1;
+%         else
+%             offsetAlign = 0;
+%         end
+%         [baselineData, respData] = extract_event_volumes(odorEventList, odorFilterVecs(:,iCond), baselineDur, respDur, myData, ...
+%             'offsetAlign', offsetAlign);                    % --> [y, x, plane, volume, event]
+%         
+%         baselineDffAvg = mean(mean(baselineData, 5), 4);                            % --> [y, x, plane]
+%         baselineDffRep = repmat(baselineDffAvg, 1, 1, 1, size(baselineData, 4));    % --> [y, x, plane, volume]
+%         baselineDff = calc_dFF(baselineData, baselineDffRep, 5);                    % --> [y, x, plane, volume]
+%         
+%         currDff = calc_dFF(respData, baselineData, 5);                              % --> [y, x, plane, volume]
+%         combinedVolsDff = cat(4, baselineDff, currDff);                             % --> [y, x, plane, volume]
+%         currDffAvg = calc_dFF(respData, baselineData, [4 5]);                       % --> [y, x, plane]
+%         
+%         odorCondDff(:,:,:,:, iCond) = combinedVolsDff;                              % --> [y, x, plane, volume, condition]
+%         odorCondDffAvg(:,:,:, iCond) = currDffAvg;                                  % --> [y, x, plane, condition]
+%     end
+% end
+% 
+% % Behavior
+% disp('Calculating behavior dF/F...')
+% baselineDur = behavAnalysisWindow(1);
+% respDur = behavAnalysisWindow(2);
+% overshoot = behavOvershoot;
+% 
+% nConds = numel(behavCondNames);
+% behavCondDff = zeros([sessionSize(1:3), (sec2vols(respDur, volumeRate) + sec2vols(baselineDur, volumeRate) + 2), nConds]);
+% behavCondDffAvg = zeros([sessionSize(1:3), nConds]);
+% for iCond = 1:nConds
+%     if sum(behavFilterVecs(:,iCond)) > 0
+%         if behavOffsetAlign(iCond)
+%             offsetAlign = 1;
+%         else
+%             offsetAlign = 0;
+%         end
+%         [baselineData, respData] = extract_event_volumes(behavEventList, behavFilterVecs(:,iCond), baselineDur, respDur, myData, ...
+%             'offsetAlign', offsetAlign);                    % --> [y, x, plane, volume, event]
+%         
+%         baselineDffAvg = mean(mean(baselineData, 5), 4);                            % --> [y, x, plane]
+%         baselineDffRep = repmat(baselineDffAvg, 1, 1, 1, size(baselineData, 4));    % --> [y, x, plane, volume]
+%         baselineDff = calc_dFF(baselineData, baselineDffRep, 5);                    % --> [y, x, plane, volume]
+%         
+%         currDff = calc_dFF(respData, baselineData, 5);                              % --> [y, x, plane, volume]
+%         combinedVolsDff = cat(4, baselineDff, currDff);                             % --> [y, x, plane, volume]
+%         currDffAvg = calc_dFF(respData, baselineData, [4 5]);                       % --> [y, x, plane]
+%         
+%         behavCondDff(:,:,:,:, iCond) = combinedVolsDff;                              % --> [y, x, plane, volume, condition]
+%         behavCondDffAvg(:,:,:, iCond) = currDffAvg;                                  % --> [y, x, plane, condition]
+%     end
+% end
 
 % Create tables to show a summary of the filtering results in an easy-to-read format
 nConds = length(bStopCondNames);

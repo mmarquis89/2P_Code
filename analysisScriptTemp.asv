@@ -76,10 +76,17 @@ for iFold = 1
     
 end%iFold
 
+%% VIEW RAW DATA FOR A SINGLE TRIAL AND PLANE
+
+planeNum = 10;
+trialNum = 2; % Does not account for any skipped trials
+
+preview_trial_movie(myData.wholeSession, planeNum, trialNum, [], [], []);
+
 %% INITIAL DATA PROCESSING STEPS
 
-skipTrials = []; 
-myData.skipTrials = [];
+skipTrials = [28 52]; 
+myData.skipTrials = skipTrials;
 nSkippedTrials = length(skipTrials); myData.nSkippedTrials = nSkippedTrials;
 
 %============== Create array of annotation/event data ==============================================
@@ -186,13 +193,6 @@ end
 annotationTypeSummary = table([1:numel(annotationTypeNames)]', annotationTypeNames', 'VariableNames', {'Index', 'AnnotationType'});
 
 
-%% VIEW RAW DATA FOR A SINGLE TRIAL AND PLANE
-
-planeNum = 6;
-trialNum = 15; % Does not account for any skipped trials
-
-preview_trial_movie(myData.wholeSession, planeNum, trialNum, [], [], []);
-
 %% LOAD ROI DATA
 
 parentDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', myData.sid, '\Analysis'];
@@ -202,16 +202,120 @@ load(fullfile(parentDir, fileName));
 myData.ROIdata = ROIdata;
 
 
+%% PLOT 2-D SUMMARY OF BEHAVIOR DATA ANNOTATIONS
+
+saveFig = 0;
+plotTypes = [2 1]; % 1 = odor stims, 2 = behavior, 3 = ball stopping
+s = myData.stimSepTrials;
+trialGroups = [[s.OdorA + 2 * s.OdorB] .* goodTrials];%[s.OdorA + 2 * s.OdorB + 3 * s.NoOdor] .* goodTrials; %[s.odorTrials + 2 * (~s.odorTrials)]; % 
+plotTitleSuffix = ''%'(ACV vs Control)';
+fileNameSuffix = '_AllTrials';%'_OdorAvsOdorB';%
+
+for iFold = 1
+
+% Create plot titles
+nPlots = length(plotTypes);
+titleStrings = [];
+plotNames = [];
+annotArr = [];
+for iPlot = 1:nPlots
+    if plotTypes(iPlot) == 1
+        % Odor stim
+        plotNames{iPlot} = 'Odor Delivery';
+        titleStrings{iPlot} = [regexprep(expDate, '_', '\\_'), '    ', [plotNames{iPlot}, ' Summary ', plotTitleSuffix]]; % regex to add escape characters
+        annotArr{iPlot} = odorAnnotArr;
+    elseif plotTypes(iPlot) == 2
+         % Behavior
+        plotNames{iPlot} = 'Behavior Annotation';
+        titleStrings{iPlot} = [regexprep(expDate, '_', '\\_'), '    ', [plotNames{iPlot}, ' Summary ', plotTitleSuffix]]; % regex to add escape characters
+        annotArr{iPlot} = behaviorAnnotArr;
+    elseif plotTypes(iPlot) == 3
+        % Ball stopping
+        plotNames{iPlot} = 'Ball Stopping';
+        titleStrings{iPlot} = [regexprep(expDate, '_', '\\_'), '    ', [plotNames{iPlot}, ' Summary ', plotTitleSuffix]]; % regex to add escape characters
+        annotArr{iPlot} = bStopAnnotArr;
+    end%if
+end%for
+
+% Create figure
+f = figure(7);clf
+if nPlots == 1
+    f.Position = [200 45 1020 950];
+elseif nPlots == 2
+    f.Position = [200 45 900 950];
+elseif nPlots == 3
+    f.Position = [200 45 700 950];
+end
+f.Color = [1 1 1];
+
+% Plot and format each figure
+for iPlot = 1:nPlots
+    
+    subaxis(nPlots, 1, iPlot, ...
+            'MarginTop', 0, ...
+            'MarginBottom', 0.055, ...
+            'MarginRight', 0.015, ...
+            'MarginLeft', 0.065, ...
+            'Spacing', 0, ...
+            'PaddingTop', 0.03 ...
+            );
+    ax = gca;
+    [~, ax, ~] = plot_behavior_summary_2D(myData, annotArr{iPlot}, ax, titleStrings{iPlot}, trialGroups);
+    ax.FontSize = 11;
+    ax.Title.FontSize = 11;
+    ax.XLabel.FontSize = 13;
+    if iPlot ~= nPlots
+        ax.XLabel = [];
+        ax.XTickLabels = [];
+    end 
+    
+end
+
+if saveFig
+    % Create analysis directory if necessary
+    saveDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), '\Analysis'];
+    if ~isdir(saveDir)
+        mkdir(saveDir);
+    end
+    
+    % Create filename
+    fileName = expDate;
+    for iPlot = 1:nPlots
+        fileName = [fileName, '_', regexprep(plotNames{iPlot}, ' ', '')];
+    end
+    fileName = [fileName, '_Summary ', fileNameSuffix];
+    
+    % Warn user and offer to cancel save if this will overwrite existing files
+    overwrite = 1;
+    if exist(fullfile(saveDir, [fileName, '.fig']), 'file') ~= 0 || ...
+            exist(fullfile(saveDir, [fileName, '.png']), 'file') ~= 0 
+        dlgAns = questdlg('Saving this figure will overwrite one or more existing files in this directory...are you sure you want to do this?', 'Warning', 'Yes', 'No', 'No');
+        if strcmp(dlgAns, 'No')
+            overwrite = 0;
+            disp('Saving cancelled')
+        end
+    end
+    
+    % Save figure files
+    if overwrite
+        savefig(f, fullfile(saveDir, fileName));
+        export_fig(fullfile(saveDir, fileName), '-png', f);
+
+    end
+end%if
+
+end%iFold
+
 %% PLOT 1-D VISUALIZATION OF BEHAVIOR DATA ANNOTATIONS
 
 %----- Plot 1D trial-averaged movement data -----
 s = myData.stimSepTrials;
 
-saveFig = 0;
-fileNameSuffix = '_OdorAvsOdorB_Locomotion'; %'_AllTrials';%
-actionLabel = [2]; % locomotionLabel = 2; noActionLabel = 0; groomingLabel = 3; isoMovementLabel = 4;
-trialGroups = [[s.OdorA + 2 * s.OdorB] .* goodTrials]; % 
-figTitle = 'Locomotion throughout trial (red = ball stopping, green = odor)';
+saveFig = 1;
+fileNameSuffix = '_AllTrials_anyMove';%'_OdorAvsOdorB_anyMove'; %
+actionLabel = [ 2 4 ]; % locomotionLabel = 2; noActionLabel = 0; groomingLabel = 3; isoMovementLabel = 4;
+trialGroups = []%[[s.OdorA + 2 * s.OdorB] .* goodTrials]; % 
+figTitle = 'Fly movement throughout trial (green = odor)';
 plotNames = {'ACV', 'EmptyVial'};
 
 stimShadingColors = {'red', 'green'};
@@ -219,7 +323,7 @@ stimShadingColors = {'red', 'green'};
 for iFold = 1
     
 % Get approximate actual ball stopping times
-ballStoppedSum = sum(annotArr(:,:,3) ./ 4);
+ballStoppedSum = sum(bStopAnnotArr ./ 4);
 ballStoppedFrames = ballStoppedSum > (nTrials * 0.25);
 startFrames = regexp(num2str(ballStoppedFrames, '%d'), '01');
 endFrames = regexp(num2str(ballStoppedFrames, '%d'), '10');
@@ -232,7 +336,7 @@ odorFrames = floor(odorTimes * FRAME_RATE);
 stimShading = {bStopFrames, odorFrames};
 
 % Create array of annotation data
-behavAnnotations = annotArr(:,:,2); % --> [trial, frame]
+behavAnnotations = behaviorAnnotArr; % --> [trial, frame]
 
 f = figure(2); clf;
 f.Position = [100 100 1600 500];
@@ -258,7 +362,7 @@ if isempty(trialGroups)
     end
 else
     annotArrSum = [];
-    for iGroup = 1:length(unique(trialGroups))
+    for iGroup = 1:length(unique(trialGroups(trialGroups ~= 0)))
         
         % Plot summed movement data
         f.Position = [100 50 1000 950];
@@ -317,106 +421,6 @@ end%if
 
 end%iFold
 
-%% PLOT 2-D SUMMARY OF BEHAVIOR DATA ANNOTATIONS
-
-saveFig = 1;
-plotTypes = [2 1]; % 1 = odor stims, 2 = behavior, 3 = ball stopping
-s = myData.stimSepTrials;
-trialGroups = [[s.OdorA + 2 * s.OdorB] .* goodTrials];%[s.OdorA + 2 * s.OdorB + 3 * s.NoOdor] .* goodTrials; %[s.odorTrials + 2 * (~s.odorTrials)]; % 
-plotTitleSuffix = '(ACV vs Control)';
-fileNameSuffix = '_OdorAvsOdorB'%;AllTrials
-
-for iFold = 1
-
-% Create plot titles
-nPlots = length(plotTypes);
-titleStrings = [];
-plotNames = [];
-for iPlot = 1:nPlots
-    if plotTypes(iPlot) == 1
-        % Odor stim
-        plotNames{iPlot} = 'Odor Delivery';
-        titleStrings{iPlot} = [regexprep(expDate, '_', '\\_'), '    ', [plotNames{iPlot}, ' Summary ', plotTitleSuffix]]; % regex to add escape characters
-    elseif plotTypes(iPlot) == 2
-         % Behavior
-        plotNames{iPlot} = 'Behavior Annotation';
-        titleStrings{iPlot} = [regexprep(expDate, '_', '\\_'), '    ', [plotNames{iPlot}, ' Summary ', plotTitleSuffix]]; % regex to add escape characters
-    elseif plotTypes(iPlot) == 3
-        % Ball stopping
-        plotNames{iPlot} = 'Ball Stopping';
-        titleStrings{iPlot} = [regexprep(expDate, '_', '\\_'), '    ', [plotNames{iPlot}, ' Summary ', plotTitleSuffix]]; % regex to add escape characters
-    end%if
-end%for
-
-% Create figure
-f = figure(7);clf
-if nPlots == 1
-    f.Position = [200 45 1020 950];
-elseif nPlots == 2
-    f.Position = [200 45 900 950];
-elseif nPlots == 3
-    f.Position = [200 45 700 950];
-end
-f.Color = [1 1 1];
-
-% Plot and format each figure
-for iPlot = 1:nPlots
-    
-    subaxis(nPlots, 1, iPlot, ...
-            'MarginTop', 0, ...
-            'MarginBottom', 0.055, ...
-            'MarginRight', 0.015, ...
-            'MarginLeft', 0.065, ...
-            'Spacing', 0, ...
-            'PaddingTop', 0.03 ...
-            );
-    ax = gca;
-    [~, ax, ~] = plot_behavior_summary_2D(myData, annotArr(:,:,plotTypes(iPlot)), ax, titleStrings{iPlot}, trialGroups);
-    ax.FontSize = 11;
-    ax.Title.FontSize = 11;
-    ax.XLabel.FontSize = 13;
-    if iPlot ~= nPlots
-        ax.XLabel = [];
-        ax.XTickLabels = [];
-    end 
-    
-end
-
-if saveFig
-    % Create analysis directory if necessary
-    saveDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), '\Analysis'];
-    if ~isdir(saveDir)
-        mkdir(saveDir);
-    end
-    
-    % Create filename
-    fileName = expDate;
-    for iPlot = 1:nPlots
-        fileName = [fileName, '_', regexprep(plotNames{iPlot}, ' ', '')];
-    end
-    fileName = [fileName, '_Summary ', fileNameSuffix];
-    
-    % Warn user and offer to cancel save if this will overwrite existing files
-    overwrite = 1;
-    if exist(fullfile(saveDir, [fileName, '.fig']), 'file') ~= 0 || ...
-            exist(fullfile(saveDir, [fileName, '.png']), 'file') ~= 0 
-        dlgAns = questdlg('Saving this figure will overwrite one or more existing files in this directory...are you sure you want to do this?', 'Warning', 'Yes', 'No', 'No');
-        if strcmp(dlgAns, 'No')
-            overwrite = 0;
-            disp('Saving cancelled')
-        end
-    end
-    
-    % Save figure files
-    if overwrite
-        savefig(f, fullfile(saveDir, fileName));
-        export_fig(fullfile(saveDir, fileName), '-png', f);
-
-    end
-end%if
-
-end%iFold
-
 %% SEPARATE TRIALS BASED ON EVENT INTERACTIONS
 analysisWindows = []; overshoots = [];
 
@@ -425,34 +429,23 @@ analysisWindows = []; overshoots = [];
 
 disp(annotationTypeSummary)
 
-activeEventTypes = [1 7 8];
+activeEventTypes = [1 7];
 disp(annotationTypeSummary(activeEventTypes, 2))
 
 % Odor
-analysisWindows(end+1,:) = [  1   1  ];
+analysisWindows(end+1,:) = [ 1  1 ];
 overshoots(end+1)        = 0;
 
 % All behavior
-analysisWindows(end+1,:) = [  1   1  ];
-overshoots(end+1)        = 0;
+analysisWindows(end+1,:) = [ 1  1 ];
+overshoots(end+1)        = 1;
 
-% Ball stopping
-analysisWindows(end+1,:) = [ 1.5 1.5 ];
-overshoots(end+1)        = 0;
-
-for iFold = 1
-    
-%===================================================================================================
-%
-%                                                 |------------event------------|          
-%       <--------fW(1)--------><----aW(1)---->[alignVol]<----aW(2)----><----fW(2)---->
-%       [------------------fD(1)-----------------][-------fD(2)-------][----fD(3)----]
-%
-%===================================================================================================
-
+% % Ball stopping
+% analysisWindows(end+1,:) = [ 1.5 1.5 ];
+% overshoots(end+1)        = 0;
 
 % Display active filter types
-activeFilterTypes = [1 7 8];
+activeFilterTypes = [1 7];
 disp(annotationTypeSummary(activeFilterTypes, 2))
 
 % Create filters for different condition components
@@ -469,21 +462,32 @@ allFiltNames{end+1} = {'WithOdor', 'NoOdor', 'AnyOdor'};
 % All behavior
 startMove = [-1  1  0 ];
 endMove =   [ 1  0 -1 ];
+contMove =  [ 1  1  0 ];
 noMove =    [-1 -1 -1 ];
 anyMove =   [ 0  0  0 ];
 filtWindows(end+1,:)     = [  1   1  ];
-allFilts{end+1} = [startMove; endMove; noMove; anyMove];
-allFiltNames{end+1} = {'StartMove', 'EndMove', 'NoMove', 'AnyMove'};
+allFilts{end+1} = [startMove; endMove; contMove; noMove; anyMove];
+allFiltNames{end+1} = {'StartMove', 'EndMove', 'contMove', 'NoMove', 'AnyMove'};
 
-% Ball stopping
-bStopped =  [ 0  1  0 ];
-bRelease =  [ 1  0 -1 ];
-noBall =    [-1 -1 -1 ];
-anyBall =   [ 0  0  0 ];
-filtWindows(end+1,:)     = [  2   2  ];
-allFilts{end+1} = [bStopped; bRelease; noBall; anyBall];
-allFiltNames{end+1} = {'BallStopped', 'BallRelease', 'NoBall', 'AnyBall'};
+% % Ball stopping
+% bStopped =  [ 0  1  0 ];
+% bRelease =  [ 1  0 -1 ];
+% noBall =    [-1 -1 -1 ];
+% anyBall =   [ 0  0  0 ];
+% filtWindows(end+1,:)     = [  2   2  ];
+% allFilts{end+1} = [bStopped; bRelease; noBall; anyBall];
+% allFiltNames{end+1} = {'BallStopped', 'BallRelease', 'NoBall', 'AnyBall'};
 
+for iFold = 1
+
+%===================================================================================================
+%
+%                                                 |------------event------------|          
+%       <--------fW(1)--------><----aW(1)---->[alignVol]<----aW(2)----><----fW(2)---->
+%       [------------------fD(1)-----------------][-------fD(2)-------][----fD(3)----]
+%
+%===================================================================================================
+    
 % Get event vols for each filter type
 filterEventVols = [];
 for iType = 1:numel(annotationTypes)
@@ -491,12 +495,12 @@ for iType = 1:numel(annotationTypes)
 end
 
 % Compile annotation info for active events
+primaryEventNames = [];
 for iType = 1:numel(activeEventTypes)
     currType = activeEventTypes(iType);
     eventLists{iType} = annotationTypes{currType}.eventList;
     primaryEventNames{iType} = annotationTypes{currType}.name;
 end
-
 
 nEventTypes = numel(primaryEventNames);
 allCondFilters = []; allCondNames = []; activeFilterEventVols = []; onsetFilterVecs = []; offsetFilterVecs = [];
@@ -530,50 +534,12 @@ for iType = 1:nEventTypes
     
 end
 
-% 
-% % ----------------------------------------------------------------------------------------------
-% % Ball stopping
-% % ----------------------------------------------------------------------------------------------
-% 
-% filterDirections = [anyOdor; anyBall; anyMove; anyGroom];
-% bRelease = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', bStopOvershoot, 'offsetAlign', 1);
-% 
-% filterDirections = [anyOdor; anyBall; noMove; anyGroom];
-% bReleaseNoMove = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', bStopOvershoot, 'offsetAlign', 1);
-% 
-% filterDirections = [anyOdor; anyBall; startMove; anyGroom];
-% bReleaseStartMove = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', bStopOvershoot, 'offsetAlign', 1);
-% 
-% % ----------------------------------------------------------------------------------------------
-% % Odor stim
-% % ----------------------------------------------------------------------------------------------
-% 
-% filterDirections = [anyOdor; anyBall; anyMove; anyGroom];
-% odorOffset = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', odorOvershoot, 'offsetAlign', 1);
-% 
-% filterDirections = [anyOdor; anyBall; noMove; anyGroom];
-% odorOffsetNoMove = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', odorOvershoot, 'offsetAlign', 1);
-% 
-% filterDirections = [anyOdor; anyBall; startMove; anyGroom];
-% odorOffsetStartMove = filter_event_data(eventList, filterEventVols, analysisWindow, filterEventWindows, filterDirections, volumeRate, 'overshoot', odorOvershoot, 'offsetAlign', 1);
-% 
-% % ----------------------------------------------------------------------------------------------
-% % Display summary
-% % ----------------------------------------------------------------------------------------------
-% bStopFilterVecs = [bStop, bRelease, bStopNoMove, bStopStartMove, bReleaseNoMove, bReleaseStartMove, bStopNoMoveWithOdor, bStopNoMoveNoOdor, bStopStartMoveWithOdor, bStopStartMoveNoOdor];
-% bStopOffsetAlign = [0 1 0 0 1 1 0 0 0 0];
-% 
-% odorFilterVecs = [odorOnset, odorOffset, odorOnsetStartMove, odorOffsetStartMove, odorOffsetNoMove, odorOnsetStartMoveNoBall, odorOnsetStartMoveWithBall, odorOnsetNoMoveNoBall, odorOnsetNoMoveWithBall];
-% odorOffsetAlign = [0 1 0 1 1 0 0 0 0];
-% 
-% behavFilterVecs = [behavOnset, behavOnsetOdor, behavOnsetNoOdor, behavOnsetBallStopNoOdor, behavOnsetNoBallNoOdor, behavOnsetNoBallWithOdor, behavOnsetNoBall, behavOnsetWithBall];
-% behavOffsetAlign = [0 0 0 0 0 0 0 0 0];
-
 % ----------------------------------------------------------------------------------------------
 % Calculate dF/F
 % ----------------------------------------------------------------------------------------------
 
-onsetDffAvg = []; offsetDffAvg = []; onsetDff = []; offsetDff = [];
+onsetDffAvg = []; offsetDffAvg = []; onsetDff = []; offsetDff = []; combinedDff = []; combinedDffAvg =[];
+onsetCondSummaries = []; offsetCondSummaries = []; allCondSummaries = [];
 for iType = 1:nEventTypes
     
     primaryFiltName = primaryEventNames{iType};
@@ -588,8 +554,9 @@ for iType = 1:nEventTypes
     onsetDffAvg{iType} = zeros([sessionSize(1:3), nConds]);
     offsetDffAvg{iType} = onsetDffAvg{iType};
     
-    disp(['Calculating ', primaryFiltName, ' dF/F...'])
     for iCond = 1:nConds
+        
+        disp(['Calculating dF/F for ', primaryFiltName, ' cond #', num2str(iCond), ' of ', num2str(nConds), '...'])
         
         % Calculate dF/F for event onsets
         if sum(onsetFilterVecs{iType}(:,iCond)) > 0
@@ -628,133 +595,38 @@ for iType = 1:nEventTypes
             offsetDffAvg{iType}(:,:,:, iCond) = currDffAvg;                             % --> {eventType}[y, x, plane, condition]
         end
     end% iCond
+    
+    combinedDff{iType} = cat(5, onsetDff{iType}, offsetDff{iType});
+    combinedDffAvg{iType} = cat(4, onsetDffAvg{iType}, offsetDffAvg{iType});
+    
+    % Create summary table for onset conditions
+    condCountCol = (sum(onsetFilterVecs{iType})');
+    alignCol = repmat({'onset'}, nConds, 1);
+    baselineCol = repmat(sprintf('%g', analysisWindow(1)), nConds, 1);
+    respCol = repmat(sprintf('%g', analysisWindow(2)), nConds, 1);
+    exWinCol = repmat(filtWindows(iType, :), nConds, 1);
+    rowNames = cellfun(@num2str, num2cell(1:nConds), 'uniformOutput', 0);
+    varNames = {'Count', 'CondName', 'Align', 'Base', 'Resp', 'ExcludeWin'};
+    onsetCondSummaries{iType} = table(condCountCol, allCondNames{iType}, alignCol, baselineCol, respCol, exWinCol, 'RowNames', rowNames, 'VariableNames', varNames);
+    
+    % Create summary table for offset conditions
+    condCountCol = (sum(offsetFilterVecs{iType})');
+    alignCol = repmat({'offset'}, nConds, 1);
+    baselineCol = repmat(sprintf('%g', analysisWindow(1)), nConds, 1);
+    respCol = repmat(sprintf('%g', analysisWindow(2)), nConds, 1);
+    exWinCol = repmat(filtWindows(iType, :), nConds, 1);
+    rowNames = cellfun(@num2str, num2cell((1:nConds) + nConds), 'uniformOutput', 0);
+    varNames = {'Count', 'CondName', 'Align', 'Base', 'Resp', 'ExcludeWin'};
+    offsetCondSummaries{iType} = table(condCountCol, allCondNames{iType}, alignCol, baselineCol, respCol, exWinCol, 'RowNames', rowNames, 'VariableNames', varNames);
+    
+    % Concatenate onset and offset summary tables
+    allCondSummaries{iType} = vertcat(onsetCondSummaries{iType}, offsetCondSummaries{iType});
+    disp(allCondSummaries{iType})
 end% iType
-
-
-
-
-
-% 
-% 
-% for iCond = 1:nConds
-%     if sum(bStopFilterVecs(:,iCond)) > 0
-%         if bStopOffsetAlign(iCond)
-%             offsetAlign = 1;
-%         else
-%             offsetAlign = 0;
-%         end
-%         [baselineData, respData] = extract_event_volumes(ballStoppingEventList, bStopFilterVecs(:,iCond), baselineDur, respDur, myData, ...
-%             'offsetAlign', offsetAlign); % --> [y, x, plane, volume, event]
-%         
-%         baselineDffAvg = mean(mean(baselineData, 5), 4);                            % --> [y, x, plane]
-%         baselineDffRep = repmat(baselineDffAvg, 1, 1, 1, size(baselineData, 4));    % --> [y, x, plane, volume]
-%         baselineDff = calc_dFF(baselineData, baselineDffRep, 5);                    % --> [y, x, plane, volume]
-%         
-%         currDff = calc_dFF(respData, baselineData, 5);                              % --> [y, x, plane, volume]
-%         combinedVolsDff = cat(4, baselineDff, currDff);                             % --> [y, x, plane, volume]
-%         currDffAvg = calc_dFF(respData, baselineData, [4 5]);                       % --> [y, x, plane]
-%         
-%         bStopCondDff(:,:,:,:, iCond) = combinedVolsDff;                             % --> [y, x, plane, volume, condition]
-%         bStopCondDffAvg(:,:,:, iCond) = currDffAvg;                                 % --> [y, x, plane, condition]
-%     end
-% end
-% 
-% % Odor stim
-% disp('Calculating odor stim dF/F...')
-% baselineDur = odorAnalysisWindow(1);
-% respDur = odorAnalysisWindow(2);
-% overshoot = odorOvershoot;
-% 
-% nConds = numel(odorCondNames);
-% odorCondDff = zeros([sessionSize(1:3), (sec2vols(respDur, volumeRate) + sec2vols(baselineDur, volumeRate) + 2), nConds]);
-% odorCondDffAvg = zeros([sessionSize(1:3), nConds]);
-% for iCond = 1:nConds
-%     if sum(odorFilterVecs(:,iCond)) > 0
-%         if odorOffsetAlign(iCond)
-%             offsetAlign = 1;
-%         else
-%             offsetAlign = 0;
-%         end
-%         [baselineData, respData] = extract_event_volumes(odorEventList, odorFilterVecs(:,iCond), baselineDur, respDur, myData, ...
-%             'offsetAlign', offsetAlign);                    % --> [y, x, plane, volume, event]
-%         
-%         baselineDffAvg = mean(mean(baselineData, 5), 4);                            % --> [y, x, plane]
-%         baselineDffRep = repmat(baselineDffAvg, 1, 1, 1, size(baselineData, 4));    % --> [y, x, plane, volume]
-%         baselineDff = calc_dFF(baselineData, baselineDffRep, 5);                    % --> [y, x, plane, volume]
-%         
-%         currDff = calc_dFF(respData, baselineData, 5);                              % --> [y, x, plane, volume]
-%         combinedVolsDff = cat(4, baselineDff, currDff);                             % --> [y, x, plane, volume]
-%         currDffAvg = calc_dFF(respData, baselineData, [4 5]);                       % --> [y, x, plane]
-%         
-%         odorCondDff(:,:,:,:, iCond) = combinedVolsDff;                              % --> [y, x, plane, volume, condition]
-%         odorCondDffAvg(:,:,:, iCond) = currDffAvg;                                  % --> [y, x, plane, condition]
-%     end
-% end
-% 
-% % Behavior
-% disp('Calculating behavior dF/F...')
-% baselineDur = behavAnalysisWindow(1);
-% respDur = behavAnalysisWindow(2);
-% overshoot = behavOvershoot;
-% 
-% nConds = numel(behavCondNames);
-% behavCondDff = zeros([sessionSize(1:3), (sec2vols(respDur, volumeRate) + sec2vols(baselineDur, volumeRate) + 2), nConds]);
-% behavCondDffAvg = zeros([sessionSize(1:3), nConds]);
-% for iCond = 1:nConds
-%     if sum(behavFilterVecs(:,iCond)) > 0
-%         if behavOffsetAlign(iCond)
-%             offsetAlign = 1;
-%         else
-%             offsetAlign = 0;
-%         end
-%         [baselineData, respData] = extract_event_volumes(behavEventList, behavFilterVecs(:,iCond), baselineDur, respDur, myData, ...
-%             'offsetAlign', offsetAlign);                    % --> [y, x, plane, volume, event]
-%         
-%         baselineDffAvg = mean(mean(baselineData, 5), 4);                            % --> [y, x, plane]
-%         baselineDffRep = repmat(baselineDffAvg, 1, 1, 1, size(baselineData, 4));    % --> [y, x, plane, volume]
-%         baselineDff = calc_dFF(baselineData, baselineDffRep, 5);                    % --> [y, x, plane, volume]
-%         
-%         currDff = calc_dFF(respData, baselineData, 5);                              % --> [y, x, plane, volume]
-%         combinedVolsDff = cat(4, baselineDff, currDff);                             % --> [y, x, plane, volume]
-%         currDffAvg = calc_dFF(respData, baselineData, [4 5]);                       % --> [y, x, plane]
-%         
-%         behavCondDff(:,:,:,:, iCond) = combinedVolsDff;                              % --> [y, x, plane, volume, condition]
-%         behavCondDffAvg(:,:,:, iCond) = currDffAvg;                                  % --> [y, x, plane, condition]
-%     end
-% end
-
-% Create tables to show a summary of the filtering results in an easy-to-read format
-nConds = length(bStopCondNames);
-condCountCol = (sum(bStopFilterVecs)'); 
-baselineCol = repmat(sprintf('%g', bStopAnalysisWindow(1)), nConds, 1);
-respCol = repmat(sprintf('%g', bStopAnalysisWindow(2)), nConds, 1);
-exWinCol = repmat(bStopFilterWindow, nConds, 1);
-rowNames = cellfun(@num2str, num2cell(1:nConds), 'uniformOutput', 0);
-varNames = {'Count', 'CondName', 'Base', 'Resp', 'ExcludeWin'};
-bStopCondSummary = table(condCountCol, bStopCondNames', baselineCol, respCol, exWinCol, 'RowNames', rowNames, 'VariableNames', varNames);
-disp(bStopCondSummary);
-
-nConds = length(odorCondNames);
-condCountCol = (sum(odorFilterVecs)'); 
-baselineCol = repmat(sprintf('%g', odorAnalysisWindow(1)), nConds, 1);
-respCol = repmat(sprintf('%g', odorAnalysisWindow(2)), nConds, 1);
-exWinCol = repmat(odorFilterWindow, nConds, 1);
-rowNames = cellfun(@num2str, num2cell(1:nConds), 'uniformOutput', 0);
-varNames = {'Count', 'CondName', 'Base', 'Resp', 'ExcludeWin'};
-odorCondSummary = table(condCountCol, odorCondNames', baselineCol, respCol, exWinCol, 'RowNames', rowNames, 'VariableNames', varNames);
-disp(odorCondSummary);
-
-nConds = length(behavCondNames); 
-condCountCol = (sum(behavFilterVecs)'); 
-baselineCol = repmat(sprintf('%g', behavAnalysisWindow(1)), nConds, 1);
-respCol = repmat(sprintf('%g', behavAnalysisWindow(2)), nConds, 1);
-exWinCol = repmat(behavFilterWindow, nConds, 1);
-rowNames = cellfun(@num2str, num2cell(1:nConds), 'uniformOutput', 0);
-varNames = {'Count', 'CondName', 'Base', 'Resp', 'ExcludeWin'};
-behavCondSummary = table(condCountCol, behavCondNames', baselineCol, respCol, exWinCol, 'RowNames', rowNames, 'VariableNames', varNames);
-disp(behavCondSummary)
+disp('dF/F calculation complete')
 
 end%iFold
+
 
 %% =================================================================================================
 %            ODOR STIM ANALYSES                                   
@@ -764,24 +636,28 @@ for iFoldOut = 1
        %% PLOT ODOR ONSET/OFFSET HEATMAPS FOR SOME TRIAL CONDITIONS
     
     % Show summary again
-    disp(odorCondSummary)
-                    
+    eventInd = ~cellfun(@isempty, strfind(primaryEventNames, 'odor'));
+    currSummary = allCondSummaries{eventInd};
+    disp(currSummary)
+    
+    condNames = repmat(allCondNames{eventInd}, 2, 1);
+    
     % Calculate absolute max dF/F value across all planes and stim types
-    currConds = [8];
+    currConds = [3 4 5];
     sigma = [0.6];   
     rangeType = 'max';
-    rangeScalar = 0.8;
+    rangeScalar = 0.75;
     makeVid = 0;
     saveDir = [];
-    fileName = 'Odor_Interaction_Heatmaps';
+    fileName = 'Odor_Onset_vs_Offset_Heatmaps';
 
     plotTitles = [];
     for iCond = currConds
-        plotTitles{iCond} = [odorCondNames{iCond}, '  (n = ', num2str(odorCondSummary{iCond, 1}), ')'];
+        plotTitles{iCond} = [regexprep(condNames{iCond}, '_', '\\_'), ' ', currSummary{iCond, 3}{:}, '  (n = ', num2str(currSummary{iCond, 1}), ')'];
     end
    
     % Plot figures
-    dffCurrConds = odorCondDffAvg(:,:,:, currConds);
+    dffCurrConds = combinedDffAvg{eventInd}(:,:,:, currConds);
     range = calc_range(dffCurrConds, rangeScalar, rangeType);
     [~, ~] = plot_heatmaps(dffCurrConds, myData, range, plotTitles(currConds), sigma, 'fileName', fileName, 'makeVid', makeVid, 'saveDir', saveDir); 
     
@@ -924,16 +800,16 @@ for iFold = 1
     %% CALCULATE AND PLOT OVERALL MEAN dF/F ACROSS BEHAVIORAL STATES
 
     locomotionLabel = 2; noActionLabel = 0; groomingLabel = 3; isoMovementLabel = 4;
-    actionLabel = [2];
+    actionLabel = [2 4];
     baselineLabel = [0];
 
     smoothingSigma = [0.6]; 
     rangeType = 'max';
-    rangeScalar = 0.2;
+    rangeScalar = 1;
     makeVid = 0;
     saveDir = [];
-    fileName = 'Movement_Plane_Heatmaps';
-    titleStr = {'dF/F - Movement vs. Quiescence'};
+    fileName = 'Locomotion_Plane_Heatmaps';
+    titleStr = {'dF/F - Locomotion vs. Quiescence'};
     
 for iFoldIn = 1
     % Identify behavioral state during each volume
@@ -1000,47 +876,35 @@ for iFoldIn = 1
 
 end%iFoldIn
 
-    %% PLOT FILTERED BEHAVIORAL STATE HEATMAPS FOR EACH PLANE
-                    
-    sigma = 0.6;  
-    rangeType = 'max';
-    rangeScalar = 0.8;
-    baselineDur = 1;
-    eventExclusionWindow = [1 1];
+    %% PLOT INTERACTION HEATMAPS FOR SOME TRIAL CONDITIONS
+    
+    
+    % Show summary again
+    eventInd = ~cellfun(@isempty, strfind(primaryEventNames, 'move'));
+    currSummary = allCondSummaries{eventInd};
+    disp(currSummary)
+                 
+    condNames = repmat(allCondNames{eventInd}, 2, 1);
+    
+    % Calculate absolute max dF/F value across all planes and stim types
+    currConds = [2 3 5];
+    sigma = [0.6]; 
+    rangeType = 'Max';
+    rangeScalar = 1;
     makeVid = 0;
-    plotTitles = {'Combined behavior dF/F'};
-    fileName = 'Combined_Behavior_Plane_Heatmaps_No_Odor_NoBallStop';
     saveDir = [];
-    
-    % Select behavior events
-    eventList = behavEventList;
-    odorFilter      = [-1 -1 -1];
-    odorWindow      = eventExclusionWindow;
-    ballStopFilter  = [0 0 0];
-    ballStopWindow  = eventExclusionWindow;
-    behavFilter     = [0 0 0];
-    behavWindow     = eventExclusionWindow;
+    fileName = 'Behavior_Interaction_Heatmaps';
 
-for iFold = 1
-    filterEventVols = cat(3, odorVols, ballStoppingVols, behavVols);
-    filterEventWindows = [odorWindow; ballStopWindow; behavWindow];
-    filterDirections = [odorFilter; ballStopFilter; behavFilter];
+    plotTitles = [];
+    for iCond = currConds
+        plotTitles{iCond} = [regexprep(condNames{iCond}, '_', '\\_'), ' ', currSummary{iCond, 3}{:}, '  (n = ', num2str(currSummary{iCond, 1}), ')'];
+    end
+   
+    % Plot figures
+    dffCurrConds = combinedDffAvg{eventInd}(:,:,:, currConds);
+    range = calc_range(dffCurrConds, rangeScalar, rangeType);
+    [~, ~] = plot_heatmaps(dffCurrConds, myData, range, plotTitles(currConds), sigma, 'fileName', fileName, 'makeVid', makeVid, 'saveDir', saveDir); 
     
-    filterVec = filter_event_data(eventList, filterEventVols, eventExclusionWindow, filterEventWindows, filterDirections, volumeRate);
-    
-    % Append number of events to plot titles
-    titleStr = ['nTrials = ', num2str(sum(filterVec))];
-    disp(titleStr)
-    plotTitles = {[plotTitles{:}, ' (', titleStr, ')']};
-    
-    [baselineData, eventData] = extract_event_avg(eventList, filterVec, baselineDur, myData);
-    baselineDataAvg = mean(baselineData, 4); % --> [y, x, plane]
-    eventDataAvg = mean(eventData, 4);       % --> [y, x, plane]
-    plotData = (eventDataAvg - baselineDataAvg) ./ baselineDataAvg; % --> [y, x, plane]
-    range = calc_range(plotData, rangeScalar, rangeType);
-    plot_heatmaps(plotData, myData, range, plotTitles, sigma, 'fileName', fileName, 'makeVid', makeVid, 'saveDir', saveDir);
-
-end%iFold
 
 %% CALCULATE MEAN dF/F AROUND BEHAVIOR ONSET
 
@@ -1144,32 +1008,6 @@ for iFold = 1
             savePath = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), '\Analysis'];
             make_heatmap_vid(combinedVolsDff, myData, range, fileName, titleStrings, savePath, [], [], [], sigma);  
 end%iFold            
-
-    %% PLOT INTERACTION HEATMAPS FOR SOME TRIAL CONDITIONS
-    
-    % Show summary again
-    disp(behavCondSummary)
-                    
-    % Calculate absolute max dF/F value across all planes and stim types
-    currConds = [5 6];
-    sigma = [0.6]; 
-    rangeType = 'Max';
-    rangeScalar = 1;
-    makeVid = 0;
-    saveDir = [];
-    fileName = 'Behavior_Interaction_Heatmaps';
-
-    plotTitles = [];
-    for iCond = currConds
-        nSize = sum(behavFilterVecs(:,iCond));
-        plotTitles{iCond} = [behavCondNames{iCond}, '  (n = ', num2str(behavCondSummary{iCond, 1}), ')'];
-    end
-   
-    % Plot figures
-    dffCurrConds = behavCondDffAvg(:,:,:, currConds);
-    range = calc_range(dffCurrConds, rangeScalar, rangeType);
-    [~, ~] = plot_heatmaps(dffCurrConds, myData, range, plotTitles(currConds), sigma, 'fileName', fileName, 'makeVid', makeVid, 'saveDir', saveDir); 
-
 
     %% CREATE COMBINED PLOTTING VIDEO OF dF/F FOR ALL INDIVIDUAL MOVEMENT BOUT ONSETS
 
@@ -1578,9 +1416,8 @@ windTrials = myData.wholeSession(:,:,:,:,~logical(myData.stimSepTrials.windTrial
 
 %% PCA PLOTTING
 
-
 % Pull out data for one plane
-planeNum = 13;
+planeNum = 6;
 planeData = squeeze(windTrials(:,:,planeNum,:,:)); % --> [y, x, volume, trial]
 [w,x,y,z] = size(planeData);
 planeDataRS = reshape(planeData, [w, x, y*z]); % --> [y, x, volume]

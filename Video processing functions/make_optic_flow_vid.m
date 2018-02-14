@@ -131,7 +131,7 @@ for iFrame = 1:nFrames
     
     drawnow()
     % Write frame to video
-    h.Position
+    h.Position;
     writeFrame = getframe(h);
     writeVideo(myVidWriter, writeFrame);   
     

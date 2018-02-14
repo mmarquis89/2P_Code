@@ -12,7 +12,7 @@ function select_video_ROIs(parentDir, sid)
 %   sid       = the session ID that you want to define an ROI for
 %===================================================================================================
 
-% Load and plot 100th frame acquired during the first trial (number choice is arbitrary)
+% Load and plot 1st frame acquired during the first trial (number choice is arbitrary)
 myFolders = dir(fullfile(parentDir, ['*sid_', num2str(sid), '*tid*']));
 myFolders = myFolders([myFolders.isdir]);
 firstFolder = myFolders(1);

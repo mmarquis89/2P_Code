@@ -18,7 +18,6 @@ load(fullfile(parentDir, roiDataFile));
 individualVidFrameCounts = load(fullfile(parentDir, ['sid_', num2str(sid), '_frameCountLog.mat']));
 frameCounts = [individualVidFrameCounts.frameCounts.nFrames];
 
-
 % Calculate optic flow for each movie frame
 disp('Calculating optic flow for behavior video...')
 vidFile = fullfile(parentDir, ['sid_', num2str(sid), '_AllTrials.mp4']);
@@ -111,10 +110,11 @@ for iFrame = 1:nFrames
     % Optic flow plot
     trialBoundTimes = [];
     runningCount = 1;
-    for iTrial = 1:length(frameCounts)
+    for iTrial = 1:(length(frameCounts)-1)
         trialBoundTimes(iTrial) = frameTimes(runningCount);
         runningCount = runningCount + frameCounts(iTrial);
     end
+    trialBoundTimes(end+1) = frameTimes(end);
     
     axes('Units', 'Pixels', 'Position', [0 ax.Position(4) ax.Position(3) (h.Position(4) - ax.Position(4))]);
     hold on
@@ -132,7 +132,7 @@ for iFrame = 1:nFrames
     
     drawnow()
     % Write frame to video
-    h.Position
+    h.Position;
     writeFrame = getframe(h);
     writeVideo(myVidWriter, writeFrame);   
     

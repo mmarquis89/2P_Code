@@ -27,11 +27,17 @@ function [plotHandle, plotAxes, plotFig] = plot_behavior_summary_2D(infoStruct, 
 %========================================================================================================
 
 % Remove trials from annotation array if necessary
-if ~isempty(myData.skipTrials)
-   annotationArr(myData.skipTrials, :) = []; 
+if ~isempty(infoStruct.skipTrials)
+   annotationArr(infoStruct.skipTrials, :) = []; 
    if ~isempty(trialGroups)
-      trialGroups(myData.skipTrials) = []; 
+      trialGroups(infoStruct.skipTrials) = []; 
    end
+end
+goodTrials = infoStruct.goodTrials;
+goodTrials(infoStruct.skipTrials) = [];
+annotationArr(~goodTrials, :) = [];
+if ~isempty(trialGroups)
+    trialGroups(~goodTrials) = [];    
 end
 
 % Create or select figure and axes depending on whether an axes handle was provided

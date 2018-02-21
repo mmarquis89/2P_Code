@@ -85,7 +85,7 @@ disp('Creating videos...')
         else
             disp(['Video already exists...skipping ', trialStr]);
         end%if
-    end%for
+    end%iTrial
     
     % Save frame count log
     save(fullfile(savePath, ['sid_', num2str(sid) '_frameCountLog.mat']), 'frameCounts')    

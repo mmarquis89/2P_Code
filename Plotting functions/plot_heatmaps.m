@@ -205,7 +205,7 @@ for iPlane = 1:infoStruct.nPlanes%:-1:1 % Figure windows arranged dorsal --> ven
     % Sort axes positions to start plotting in upper left corner
     axesPosSort = sortrows(axesPos, [1, -2]);
     
-    % If there's an event number of heatmaps they look better side-by-side, so switch last two positions
+    % If there's an even number of heatmaps they look better side-by-side, so switch last two positions
     if nSubplots == 3
         axesPosSort = axesPosSort([1 2 4 3], :); 
     elseif nSubplots == 5

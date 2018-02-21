@@ -185,10 +185,6 @@ roiSubtabGroup.Units = 'normalized';
             currAxes = gca;
             
             % Save other useful information about the ROI
-            myData.ROIs(indexROI).masks =  
-            
-            
-            
             numLoc = strfind(currAxes.Tag, '#');
             myData.ROIs.planes{indexROI} = currAxes.Tag(numLoc+1:end);
             myData.ROIs.plots{indexROI} = plot(xi, yi, 'linewidth', 2, 'color', currcolor);

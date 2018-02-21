@@ -102,6 +102,7 @@ for iSession = mySessions
             trType = 'OdorB';
         elseif ~isempty(strfind(fName, 'NoOdor'))
             trType = 'NoOdor';
+            
         else
             error(['Error: "', trType, '" is not a valid trial type']);
         end

@@ -221,7 +221,7 @@ fileNames = {'Behavior_Vid_ROI_Data_sid_2.mat' ...
 
 % -------------------------------------------------------------------------------------------------
 
-expDate = '2018_02_06_exp_5';
+expDate = '2018_02_06_exp_4';
 parentDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate];
 sid = 0;
 
@@ -248,11 +248,11 @@ system7zip(parentDir, archiveName, '7z', ['*sid_', num2str(sid), '_t*'], 1);
 FRAME_RATE = 25;
 trialDuration = 20;
 expDate = '2018_02_09_exp_1';
-sid = 2;
+sid = 1;
 
 parentDir = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate, '\_Movies'];
 saveDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)];
-annotationFileName = [expDate, '_Annotation.txt'];
+annotationFileName = [expDate, '_sid_1_Annotation.txt'];
 
 tic
 test = process_anvil_annotations(sid, parentDir, saveDir, annotationFileName, FRAME_RATE, trialDuration);

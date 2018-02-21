@@ -110,10 +110,11 @@ for iFrame = 1:nFrames
     % Optic flow plot
     trialBoundTimes = [];
     runningCount = 1;
-    for iTrial = 1:length(frameCounts)
+    for iTrial = 1:(length(frameCounts)-1)
         trialBoundTimes(iTrial) = frameTimes(runningCount);
         runningCount = runningCount + frameCounts(iTrial);
     end
+    trialBoundTimes(end+1) = frameTimes(end);
     
     axes('Units', 'Pixels', 'Position', [0 ax.Position(4) ax.Position(3) (h.Position(4) - ax.Position(4))]);
     hold on

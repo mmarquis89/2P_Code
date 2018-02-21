@@ -8,6 +8,15 @@ function ROIselectionGui()
 % first click on the image you will draw it on ("SELECTED") will appear in the image's title when
 % you do this), then click the "Draw ROI" button.
 %
+% The ROI data is saved as a structure called "ROIdata" with the following fields:
+%
+%           mask   = a 2D logical array specifying the region of the reference image inside the ROI
+%           xi     = the X coordinates of each vertex of the ROI
+%           yi     = the Y coordinates of each vertex of the ROI
+%           plane  = the number of the imaging plane that the ROI is in
+%           color  = the RGB value of the color that the ROI was originally plotted in
+%           refImg = the reference image that the ROI was drawn on
+%
 %===================================================================================================
 
 
@@ -48,7 +57,8 @@ myData.ROIs = [];
 indexROI = 1;
 roiPlaneAxes = [];
 selected = 0;
-
+ROIplots = [];
+ROItext = [];
 
 %----------CONSTRUCTING COMPONENTS----------
 
@@ -176,26 +186,26 @@ roiSubtabGroup.Units = 'normalized';
         
         % ---------- Draw ROI and save relevant information about it ----------        
         if selected
-            cm = [ rgb('Blue'); rgb('Green'); rgb('Red'); rgb('Cyan'); rgb('Purple'); rgb('Brown'); ...
-                rgb('Indigo'); rgb('DarkRed') ; rgb('Magenta') ; rgb('Gold')];
+            cm = repmat([ rgb('Blue'); rgb('Green'); rgb('Red'); rgb('Cyan'); rgb('Purple'); rgb('Brown'); ...
+                rgb('Indigo'); rgb('DarkRed') ; rgb('Magenta') ; rgb('Gold')], 5, 1); % supports up to 50 ROIs
             currcolor = cm(mod(indexROI,size(cm,1))+1,:); % indexROI starts at 1 when gui initializes
             
             % Prompt user to create a polygon ROI
-            [myData.ROIs.masks(:,:,indexROI), xi, yi] = roipoly; % --> [ROInum, y, x]
+            [mask, xi, yi] = roipoly; % --> [ROInum, y, x]
+            myData.ROIs(indexROI).mask = mask;
+            myData.ROIs(indexROI).xi = xi;
+            myData.ROIs(indexROI).yi = yi;
             currAxes = gca;
             
+            % Plot ROI and a numeric identifier
+            ROIplots{indexROI} = plot(xi, yi, 'linewidth', 2, 'color', currcolor);
+            ROItext{indexROI} = text(mean(xi),mean(yi),num2str(indexROI),'Color',currcolor, 'FontSize',12);
+            
             % Save other useful information about the ROI
-            myData.ROIs(indexROI).masks =  
-            
-            
-            
             numLoc = strfind(currAxes.Tag, '#');
-            myData.ROIs.planes{indexROI} = currAxes.Tag(numLoc+1:end);
-            myData.ROIs.plots{indexROI} = plot(xi, yi, 'linewidth', 2, 'color', currcolor);
-            myData.ROIs.plotData{indexROI} = [xi, yi];
-            myData.ROIs.nums{indexROI} = text(mean(xi),mean(yi),num2str(indexROI),'Color',currcolor, ...
-                'FontSize',12);
-            myData.ROIs.color{indexROI} = currcolor;
+            myData.ROIs(indexROI).plane = str2double(currAxes.Tag(numLoc+1:end));
+            myData.ROIs(indexROI).color = currcolor;
+            myData.ROIs(indexROI).refImg = refImages{myData.ROIs(indexROI).plane};
             
             indexROI = indexROI + 1; % Track total # of ROIs that have been drawn
         else
@@ -205,9 +215,9 @@ roiSubtabGroup.Units = 'normalized';
 %---------------------------------------------------------------------------------------------------
     function clearROIButton_Callback(~, ~)
         % Clear all existing ROIs and plots
-        for iROI = 1:length(myData.ROIs.plots)
-            delete(myData.ROIs.plots{iROI})
-            delete(myData.ROIs.nums{iROI})
+        for iROI = 1:length(ROIplots)
+            delete(ROIplots{iROI})
+            delete(ROItext{iROI})
         end
         myData.ROIs = [];
         indexROI = 1; % Reset global count of total # of ROIs drawn

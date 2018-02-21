@@ -300,23 +300,28 @@ function drawROIButton_Callback(~, ~)
         end
         
         % Prompt user to create a polygon ROI
-        [ROIdata.mask{indexROI}, ROIdata.xi{indexROI}, ROIdata.yi{indexROI}] = roipoly;
+        [mask, xi, yi] = roipoly; % --> [ROInum, y, x]
+        ROIdata(indexROI).mask = mask;
+        ROIdata(indexROI).xi = xi;
+        ROIdata(indexROI).yi = yi;
         
         % Plot the ROI on top of each image in the figure
         ROIplots = [];
         currTabAxes  = findobj(currTab, 'Type', 'Axes');
         for iROI = 1:length(currTabAxes)
-            ROIplots{iROI} = plot(currTabAxes(iROI), ROIdata.xi{indexROI}, ROIdata.yi{indexROI}, 'linewidth', 2, 'color', rgb('LimeGreen'), 'tag', 'ROIplot');
+            ROIplots{iROI} = plot(currTabAxes(iROI), ROIdata(indexROI).xi, ROIdata(indexROI).yi, 'linewidth', 2, 'color', rgb('LimeGreen'), 'tag', 'ROIplot');
         end
         
         % Record other identifying info about the ROI
-        ROIdata.plane{indexROI} = tabGroup.SelectedTab.Tag;
-        ROIdata.expDate{indexROI} = infoStruct.expDate;
+        numLoc = strfind(tabGroup.SelectedTab.Tag, '#');
+        ROIdata(indexROI).plane = str2double(tabGroup.SelectedTab.Tag(numLoc+1:end));
+        ROIdata(indexROI).color = rgb('LimeGreen');
+        ROIdata(indexROI).refImg = infoStruct.refImg{iPlane};
+        
+        indexROI = indexROI + 1; % Track total # of ROIs that have been drawn
     else
         disp('Must click to select a plot before drawing an ROI')
     end%if
-    
-    indexROI = indexROI + 1; % Track total # of ROIs that have been drawn
     
 end%function
 

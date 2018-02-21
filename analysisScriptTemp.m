@@ -198,6 +198,10 @@ annotationTypeSummary = table([1:numel(annotationTypeNames)]', annotationTypeNam
 %%%=================================================================================================
 for iFold = 0
     
+%% PLOT AND SAVE NEW ROIs
+
+ROIselectionGui();
+    
 %% LOAD ROI DATA
 
 parentDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(myData.sid), '\Analysis\ROIs'];
@@ -210,13 +214,12 @@ disp('ROIs loaded')
 %% EXTRACT SESSION DATA WITHIN ROIs
 
 
-nROIs = numel(myData.ROIdata.mask);
+nROIs = numel(myData.ROIdata);
 ROIDataAvg = [];
 for iROI = 1:nROIs  
     disp(['Extracting data for ROI #', num2str(iROI), ' of ', num2str(nROIs), '...'])
-    currMask = myData.ROIdata.mask{iROI};
-    startInd = strfind(myData.ROIdata.plane{iROI}, '#') + 1;
-    currPlane = str2double(myData.ROIdata.plane{iROI}(startInd:end));
+    currMask = myData.ROIdata(iROI).mask;
+    currPlane = myData.ROIdata(iROI).plane;
     currPlaneData = squeeze(wholeSession(:,:,currPlane,:,:));                                   % --> [y, x, volume, trial]
     currPlaneData(~currMask(:,:,ones(1, nVolumes), ones(1, nTrials))) = nan;                    % --> [ y, x, volume, trial]
     
@@ -300,15 +303,14 @@ for iROI = ROIlist
     f.Color = [1 1 1];
     
     % Plot reference image and ROI outline
-    startInd = strfind(myData.ROIdata.plane{iROI}, '#') + 1;
-    currPlane = str2double(myData.ROIdata.plane{iROI}(startInd:end));
-    xData = myData.ROIdata.xi{iROI};
-    yData = myData.ROIdata.yi{iROI};
+    currPlane = myData.ROIdata(iROI).plane;
+    xData = myData.ROIdata(iROI).xi;
+    yData = myData.ROIdata(iROI).yi;
     subaxis(3, 6, [1 2 7 8], 'ML', 0.005, 'MR', 0.01, 'MT', 0.05, 'MB', 0.08, 'SH', 0)
     hold on
     imshow(myData.refImg{currPlane}, [0 MAX_INTENSITY]);
     plot(xData, yData, 'Color', 'g');
-    title(myData.ROIdata.plane{iROI})
+    title(['Plane #', num2str(myData.ROIdata(iROI).plane)])
     
     % Odor A plot
     subaxis(3, 6, [3:6])
@@ -336,90 +338,7 @@ for iROI = ROIlist
     yMax = max([yL1, yL2, yL3]);
     ylim(ax1, [yMin yMax]);
     ylim(ax2, [yMin yMax]);
-    
-     
-%     
-%     % Odor A plot ------------------------------------------------------------------------
-%    
-%     hold on
-%     ylabel('dF/F');
-%     xlabel('Time (s)')
-%     xlim([0, max(volTimes)]);
-%     
-%     currDffAvg = ROIDffAvg(:,logical(myData.stimSepTrials.OdorA), iROI); % --> [volume, trial]
-%     odorADff = mean(currDffAvg, 2);
-%     stdDev = std(currDffAvg, 0, 2);
-%     
-%     % Discard any trials that are >5 SDs from mean
-%     outliers = zeros(1, size(currDffAvg, 2));
-%     for iTrial = 1:size(currDffAvg, 2)
-%         if sum(abs(currDffAvg(:, iTrial) - odorADff) > (5 * stdDev))
-%             outliers(iTrial) = 1;
-%         end
-%     end
-%     currDffAvg(:, logical(outliers)) = [];
-%     odorADff = mean(currDffAvg, 2);
-%     stdDev = std(currDffAvg, 0, 2);
-%     
-%     % Plot individual trials in background
-%     for iTrial = 1:size(currDffAvg, 2)
-%         currData = currDffAvg(:, iTrial);
-%                 plot(volTimes, smooth(currData, 3), 'color', [0 0 1 0.25], 'LineWidth', 0.1)
-%     end
-%        
-%     % Shade one SD above and below mean
-%     upper = smooth(odorADff, 3) + stdDev;
-%     lower = smooth(odorADff, 3) - stdDev;
-%     jbfill(volTimes, upper', lower', 'b', 'b', 1, 0.2);
-%     
-%     % Plot mean response line
-%     plot(volTimes, smooth(odorADff, 3), 'LineWidth', 2, 'Color', 'b');
-%     
-%     % Plot odor stim timing
-%     yL = ylim();
-%     for iOnset = 1:numel(odorOnsetTimes)
-%         currTime = odorOnsetTimes(iOnset);
-%         fill([currTime, currTime, currTime + 1, currTime + 1], [yL(1), yL(2), yL(2), yL(1)], 'r', 'facealpha', 0.20, 'edgealpha', 0);
-%     end
-%     title('ACV (top), Empty vial (bottom)')
-%     
-%     % Odor B plot --------------------------------------------------------------------------
-%     subaxis(2, 6, [9:12])
-%     hold on
-%     ylabel('dF/F');
-%     xlim([0, max(volTimes)]);
-%     
-%     currDffAvg = ROIDffAvg(:,logical(myData.stimSepTrials.OdorB), iROI); % --> [volume, trial]
-%     stdDev = std(currDffAvg, 0, 2);
-%     odorBDff = mean(currDffAvg, 2);
-%     
-%     % Discard any trials that are >5 SDs from mean
-%     outliers = zeros(1, size(currDffAvg, 2));
-%     for iTrial = 1:size(currDffAvg, 2)
-%         if sum(abs(currDffAvg(:, iTrial)-odorBDff) > (5 * stdDev))
-%             outliers(iTrial) = 1;
-%         end
-%     end
-%     currDffAvg(:, logical(outliers)) = [];
-%     odorBDff = mean(currDffAvg, 2);
-%     stdDev = std(currDffAvg, 0, 2);
-%     
-%     % Plot individual trials in background
-%     for iTrial = 1:size(currDffAvg, 2)
-%         currData = currDffAvg(:, iTrial);
-%                 plot(volTimes, smooth(currData, 3), 'color', [0 0 1 0.25], 'LineWidth', 0.1)
-%     end
-%        
-%     % Shade one SD above and below mean
-%     upper = smooth(odorBDff, 3) + stdDev;
-%     lower = smooth(odorBDff, 3) - stdDev;
-%     jbfill(volTimes, upper', lower', 'b', 'b', 1, 0.2);
-%     
-%     % Plot mean response line
-%     odorVols = annotationTypes{1}.eventVolsLin;
-%     plot(volTimes, smooth(odorBDff, 3), 'LineWidth', 2, 'Color', 'b');
-%     plot(volTimes, odorVols, 'r', 'LineWidth', 1);
-%     
+    ylim(ax3, [yMin yMax]);
     
     % Save figure -------------------------------------------------------------------------------
     if saveDir

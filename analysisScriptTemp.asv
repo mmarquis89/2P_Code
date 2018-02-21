@@ -85,7 +85,7 @@ preview_trial_movie(myData.wholeSession, planeNum, trialNum, [], [], []);
 
 %% INITIAL DATA PROCESSING STEPS
 
-skipTrials = [7 8]; 
+skipTrials = []; 
 myData.skipTrials = skipTrials;
 nSkippedTrials = length(skipTrials); myData.nSkippedTrials = nSkippedTrials;
 
@@ -198,6 +198,10 @@ annotationTypeSummary = table([1:numel(annotationTypeNames)]', annotationTypeNam
 %%%=================================================================================================
 for iFold = 0
     
+%% PLOT AND SAVE NEW ROIs
+
+ROIselectionGui();
+    
 %% LOAD ROI DATA
 
 parentDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(myData.sid), '\Analysis\ROIs'];
@@ -304,28 +308,36 @@ for iROI = ROIlist
     currPlane = str2double(myData.ROIdata.plane{iROI}(startInd:end));
     xData = myData.ROIdata.xi{iROI};
     yData = myData.ROIdata.yi{iROI};
-    subaxis(2, 6, [1 2 7 8], 'ML', 0.005, 'MR', 0.01, 'MT', 0.05, 'MB', 0.08, 'SH', 0)
+    subaxis(3, 6, [1 2 7 8], 'ML', 0.005, 'MR', 0.01, 'MT', 0.05, 'MB', 0.08, 'SH', 0)
     hold on
     imshow(myData.refImg{currPlane}, [0 MAX_INTENSITY]);
     plot(xData, yData, 'Color', 'g');
     title(myData.ROIdata.plane{iROI})
     
     % Odor A plot
-    subaxis(2, 6, [3:6])
+    subaxis(3, 6, [3:6])
     ax1 = gca;
     plot_ROI_data(ax1, currDffAvg, myData, annotationTypes{1});
     yL1 = ylim(ax1);
+    title('ACV (top), Empty vial (middle), 50 msec empty vial pulses (bottom)');
     
     % Odor B plot
     currDffAvg = ROIDffAvg(:,logical(myData.stimSepTrials.OdorB), iROI); % --> [volume, trial]
-    subaxis(2, 6, [9:12])
+    subaxis(3, 6, [9:12])
     ax2 = gca;
     plot_ROI_data(ax2, currDffAvg, myData, annotationTypes{1});
     yL2 = ylim(ax2); 
     
+    % Odor B Pulse plot
+    currDffAvg = ROIDffAvg(:,logical(myData.stimSepTrials.OdorBPulse), iROI); % --> [volume, trial]
+    subaxis(3, 6, [15:18])
+    ax3 = gca;
+    plot_ROI_data(ax3, currDffAvg, myData, annotationTypes{1});
+    yL3 = ylim(ax3); 
+    
     % Scale y-axes to match
-    yMin = min([yL1, yL2]);
-    yMax = max([yL1, yL2]);
+    yMin = min([yL1, yL2, yL3]);
+    yMax = max([yL1, yL2, yL3]);
     ylim(ax1, [yMin yMax]);
     ylim(ax2, [yMin yMax]);
     

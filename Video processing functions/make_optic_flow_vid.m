@@ -1,16 +1,25 @@
-function make_optic_flow_vid(sid, parentDir, FRAME_RATE, vidFile)
-
-
-
-
-
-
+function make_optic_flow_vid(sid, parentDir, FRAME_RATE, roiDataFile)
+%=======================================================================================================
+% CREATE A MOVIE WITH BEHAVIOR VID COMBINED WITH OPTIC FLOW DATA
+% 
+% Uses previously defined behavior vid ROI to create a movie that combines the behavior video with a 
+% sliding plot of optic flow around the fly to make behavioral annotation in ANVIL easier. This function
+% relies on the video being named "sid_X_AllTrials.mp4".
+%
+% INPUTS:
+%       sid = the session ID of the video you want to process
+%
+%       parentDir = the directory containing the optic flow video
+%
+%       FRAME_RATE = the frame rate of the behavior video
+%       
+%       vidFile = <OPTIONAL> the path to the .mat file containing the ROI data mask. Can pass [] to have
+%                 the function prompt the user to select a file.
+%========================================================================================================
 
 % Load ROI data file
-if isempty(vidFile)
+if isempty(roiDataFile)
     roiDataFile = uigetfile([parentDir, '\*.mat'], 'Select an ROI data file');
-else
-    roiDataFile = vidFile;
 end
 load(fullfile(parentDir, roiDataFile));
 
@@ -34,21 +43,13 @@ while hasFrame(myVid)
     
     currFrame = readFrame(myVid);
     currFrame = currFrame(:,:,1);
-%     if frameCount == 1
-%         frameSize = size(currFrame);
-%         myMovie = uint8(zeros([frameSize, nFrames]));
-%     end
-%     myMovie(:,:,frameCount) = uint8(currFrame);
     
     % Calculate optic flow within each ROI
     currFrameFlowData = estimateFlow(opticFlow, currFrame);
     currFlowFly = currFrameFlowData.Magnitude;
-    currFlowFly(~roiData(:,:,1)) = nan;
-    meanFlowMag(frameCount, 1) = nanmean(nanmean(currFlowFly));
-    currFlowWasher = currFrameFlowData.Magnitude;
-    currFlowWasher(~roiData(:,:,2)) = nan;
-    meanFlowMag(frameCount, 2) = nanmean(nanmean(currFlowWasher));
-   
+    currFlowFly(~roiData) = nan;
+    meanFlowMag(frameCount) = nanmean(nanmean(currFlowFly));
+       
 end
 nFrames = frameCount;
 disp('Optic flow calculation complete')
@@ -58,10 +59,8 @@ disp('Optic flow calculation complete')
 frameTimes = (1:1:nFrames) ./ FRAME_RATE;
 
 % Normalize flow magnitudes
-flyFlow = meanFlowMag(:,1);
+flyFlow = meanFlowMag;
 flyFlowNorm = flyFlow ./ max(flyFlow(2:end)); % First frame is artificially high so don't use that
-washerFlow = meanFlowMag(:,2);
-washerFlowNorm = washerFlow ./ max(washerFlow(2:end));
 
 % Recreate vidReader
 myVid = VideoReader(vidFile); %'sid_', num2str(sid), '_AllTrials
@@ -119,7 +118,6 @@ for iFrame = 1:nFrames
     axes('Units', 'Pixels', 'Position', [0 ax.Position(4) ax.Position(3) (h.Position(4) - ax.Position(4))]);
     hold on
     plot(frameTimes(2:end), smooth(flyFlowNorm(2:end), 5), 'color', 'm');    % Plot fly movmement ROI flow
-    plot(frameTimes(2:end), smooth(washerFlowNorm(2:end), 5), 'color', 'b'); % Plot washer ROI flow
     plot([currFrameTime, currFrameTime], ylim(), 'LineWidth', 2, 'color', 'r')
     for iTrial = 1:length(trialBoundTimes)
        plot([trialBoundTimes(iTrial), trialBoundTimes(iTrial)], ylim(), 'LineWidth', 2, 'color', 'k') 
@@ -127,7 +125,7 @@ for iFrame = 1:nFrames
     set(gca, 'xticklabel', []);
     xlim(xL);
     ylabel('Optic flow (au)');
-    lgd = legend('Fly movmement', 'Washer movement');
+    lgd = legend('Fly movmement');
     lgd.LineWidth = 1;
     
     drawnow()

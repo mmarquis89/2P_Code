@@ -7,12 +7,13 @@ function plot_ROI_data(ax, ROIDffAvg, infoStruct, varargin)
 % shading. Data is slightly smoothed by default but this can be disabled.
 %
 % REQUIRED INPUTS:
-%       ax = the handle to the axes where the plot should be created
+%
+%       ax          = the handle to the axes where the plot should be created
 % 
-%       ROIDffAvg = the array of dF/F data with format [volume, trial]
+%       ROIDffAvg   = the array of dF/F data with format: [volume, trial]
 % 
-%       infoStruct = the data structure for the current experiment. Specifically, must contain the 
-%                    fields "nVolumes" and "volumeRate". 
+%       infoStruct  = the data structure for the current experiment. Specifically, must contain the 
+%                     fields "nVolumes" and "volumeRate". 
 %
 % OPTIONAL NAME-VALUE PAIR ARGUMENTS:
 %
@@ -39,6 +40,7 @@ function plot_ROI_data(ax, ROIDffAvg, infoStruct, varargin)
 
 % Parse optional arguments
 p = inputParser;
+addOptional(p, 'OptPos', []);
 addParameter(p, 'OutlierSD', 5);
 addParameter(p, 'SingleTrials', 1);
 addParameter(p, 'StdDevShading', 1);
@@ -50,19 +52,23 @@ outlierSD = p.Results.OutlierSD;
 singleTrials = p.Results.SingleTrials;
 shadeSDs = p.Results.StdDevShading;
 eventShading = p.Results.EventShading;
-annotationType = p.Results.annotationType;
+annotationType = p.Results.AnnotationType;
 smoothWin = p.Results.SmoothWinSize;
+if ~isempty(p.Results.OptPos)
+    % Assume any optional positional argument is "AnnotationType"
+    annotationType = p.Results.OptPos;
+end
 
 % Setup variables
 volTimes = [1:1:infoStruct.nVolumes] ./ infoStruct.volumeRate;
+trialAvgDff = mean(ROIDffAvg, 2);
+stdDev = std(ROIDffAvg, 0, 2);
 
+% Format axes
 hold on
 ax.YLabel.String =  'dF/F';
 ax.XLabel.String = 'Time (s)';
 xlim(ax, [0, max(volTimes)]);
-
-trialAvgDff = mean(ROIDffAvg, 2);
-stdDev = std(ROIDffAvg, 0, 2);
 
 % Discard any trials that are >5 SDs from mean
 outliers = zeros(1, size(ROIDffAvg, 2));

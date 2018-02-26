@@ -1550,7 +1550,7 @@ end%if
     function behavSummarySaveButton_Callback(~,~)
         
         % Prompt user to specify a save directory
-        saveDir = uigetdir('D:\Dropbox (HMS)\2P Data\Imaging Data\', 'Select a save directory');
+        saveDir = uigetdir('B:\Dropbox (HMS)\2P Data\Imaging Data\', 'Select a save directory');
         if saveDir == 0
             disp('Saving cancelled')
         end
@@ -1615,7 +1615,7 @@ end%if
         respDurBox = findobj(paramTabGroup, '-regexp', 'Tag', '.*respDurBox_.*');
         
         % Prompt user to specify a save directory
-        saveDir = uigetdir('D:\Dropbox (HMS)\2P Data\Imaging Data\', 'Select a save directory');
+        saveDir = uigetdir('B:\Dropbox (HMS)\2P Data\Imaging Data\', 'Select a save directory');
         if saveDir == 0
             disp('Saving cancelled')
         else
@@ -1696,7 +1696,7 @@ end%if
         end
         
         % Prompt user to specify a save directory
-        saveDir = uigetdir('D:\Dropbox (HMS)\2P Data\Imaging Data\', 'Select a save directory');
+        saveDir = uigetdir('B:\Dropbox (HMS)\2P Data\Imaging Data\', 'Select a save directory');
         if saveDir == 0
             disp('Saving cancelled')
         else

@@ -102,10 +102,7 @@ for iSession = mySessions
             trType = 'OdorB';
         elseif (~isempty(strfind(fName, 'NoOdor')) || ~isempty(strfind(fName, 'NoStim')))
             trType = 'NoStim';
-        elseif ~isempty(strfind(fName, 'CarrierStreamStop'))
-            trType = 'CarrierStreamStop';
-        elseif ~isempty(strfind(fName, 'Laser'))
-            trType = 'Laser';
+        elseif ~isempty(strFind(fName, 'Laser'))
         else
             error(['Error: "', trType, '" is not a valid trial type']);
         end
@@ -132,7 +129,7 @@ for iSession = mySessions
         
         disp(['Session ', num2str(iSession), ', Trial #', num2str(iFile), ' of ', num2str(length(currFiles))]);
         
-    end%iFile
+    end%for
     
     % Save session data
     if nChannels > 1
@@ -173,7 +170,6 @@ for iSession = mySessions
         wholeSession = wholeSession_1; % --> [y, x , plane, volume, trial])
         savefast(fullfile(sessionDir, sprintf('sid_%.0f_sessionFile.mat',iSession)),'wholeSession','trialType','origFileNames', 'expDate', 'scanimageInfo');
     end
-    disp('Saving complete')
 end%for
 
 end%function

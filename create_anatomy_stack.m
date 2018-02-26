@@ -5,7 +5,7 @@ function create_anatomy_stack(dirPath, fileStr, outputFilePrefix)
 % and save as .tif files the mean stack as well as a max Z-projection. 
 % 
 % INPUTS:
-%    dirPath = folder with stack files, e.g. 'D:\Dropbox (HMS)\2P Data\Imaging Data\2017_09_05'
+%    dirPath = folder with stack files, e.g. 'B:\Dropbox (HMS)\2P Data\Imaging Data\2017_09_05'
 %
 %    fileStr = filter string for dir() selection to get anatomy stack files, e.g. '*stack_*'. Be 
 %              careful to ensure that only the desired files will meet this specification.

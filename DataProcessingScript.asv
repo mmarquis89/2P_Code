@@ -2,12 +2,10 @@
 %%% EXTRACT SAMPLE FRAMES FROM ANATOMY STACKS -----------------------------------------------------
 %==================================================================================================
 
-expDates = {'2018_02_09_exp_1' ...
-            '2018_02_09_exp_2' ...
+expDates = {'2018_02_25' ...
             }
 
-targetPlanes = [ 130 ...
-                 125 ...
+targetPlanes = [ 200 ...
     ];
 
 fileStr = '*Stack_*.tif';
@@ -17,7 +15,7 @@ for iExp = 1:length(expDates)
     expDate = expDates{iExp}
     targetPlane = targetPlanes(iExp);
     
-    dirPath = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate];
+    dirPath = ['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate];
     tic
     disp(['Extracting sample frames from anatomy stacks...']);
     extract_sample_frames(dirPath, fileStr, targetPlane);
@@ -27,15 +25,15 @@ end
 % -------------------------------------------------------------------------------------------------
 
 %==================================================================================================
-%% % CREATE AVERAGE FLUORESCENCE VIDEOS ------------------------------------------------------------
+%%% CREATE AVERAGE FLUORESCENCE VIDEOS ------------------------------------------------------------
 %==================================================================================================
 
 % -------------------------------------------------------------------------------------------------
 
-expDates = {'2018_02_09_exp_1' ...
+expDates = {'2018_02_25' ...
             }
 
-sids = [ 1 ...
+sids = [ 2 ...
     ];
 for iExp = 1:length(expDates)
     
@@ -43,7 +41,7 @@ for iExp = 1:length(expDates)
     sid = sids(iExp);
     
     tic
-    parentDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate];
+    parentDir = ['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate];
     disp('Creating average fluorescence videos...');
     create_average_fluorescence_vid(parentDir, sid)
     writeToLog(sprintf('%s average fluorescence vids made in %s min', expDate, num2str(round(toc/60, 1))));
@@ -55,34 +53,34 @@ end
 %%% CREATE ANATOMY STACKS --------------------------------------------------------------------------
 %==================================================================================================
 
-% expDates = {'2018_02_09_exp_1' ...
-%             }
-% 
-% fileStr = '*aStack*.tif';
-% 
-% for iExp = 1:length(expDates)
-%     
-%     expDate = expDates{iExp}
-%     
-%     parentDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate];
-%     tic
-%     create_anatomy_stack(parentDir, fileStr, '_BungaroToxin_Stack');
-%     disp(['Creating the anatomy stacks took ', num2str(round(toc/60, 1)) ' min']);
-%     writeToLog(sprintf('%s anatomy stack created in %s min', expDate, num2str(round(toc/60, 1))));
-% end
-% % -------------------------------------------------------------------------------------------------
+expDates = {'2018_02_25' ...
+            }
+
+fileStr = '*Stack*.tif';
+
+for iExp = 1:length(expDates)
+    
+    expDate = expDates{iExp}
+    
+    parentDir = ['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate];
+    tic
+    create_anatomy_stack(parentDir, fileStr, '_BungaroToxin_Stack');
+    disp(['Creating the anatomy stacks took ', num2str(round(toc/60, 1)) ' min']);
+    writeToLog(sprintf('%s anatomy stack created in %s min', expDate, num2str(round(toc/60, 1))));
+end
+% -------------------------------------------------------------------------------------------------
 
 %==================================================================================================
-%%% PRE-REGISTRATION PROCESSING --------------------------------------------------------------------
+%% % PRE-REGISTRATION PROCESSING --------------------------------------------------------------------
 %==================================================================================================
 % % <3 you Michael!
 
 % -------------------------------------------------------------------------------------------------
 
-expDates = {'2018_02_09_exp_1' ...
+expDates = {'2018_02_25' ...
             }
 
-sids = [ 1 ...
+sids = [ 2 ...
     ];
 
 for iExp = 1:length(expDates)
@@ -90,7 +88,7 @@ for iExp = 1:length(expDates)
     expDate = expDates{iExp};
     sid = sids(iExp);
     
-    parentDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate];
+    parentDir = ['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate];
     tic
     preReg_routine_MM(parentDir, sid, expDate) 
     writeToLog(sprintf('%s_%s pre-processing completed in %s min', expDate, num2str(round(toc/60, 1))));
@@ -120,7 +118,7 @@ for iExp = 1:length(expDates)
     sid = sids(iExp);
     fileName = fileNames{iExp};
     
-    parentDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)];
+    parentDir = ['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)];
     
     tic; normcorre_registration(parentDir, fileName);
     writeToLog(sprintf('%s_%s NoRMCorre registration completed in %s min', expDate, fileName, num2str(round(toc/60, 1))));
@@ -153,7 +151,7 @@ for iExp = 1:length(expDates)
     sid = sids(iExp);    
     
     %%% Make vids
-    parentDir = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate];
+    parentDir = ['B:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate];
     tic
     make_vids_2P(sid, parentDir, FRAME_RATE)
     disp(['Creating behavior vids took ', num2str(round(toc/60, 1)) ' min']);
@@ -161,7 +159,7 @@ for iExp = 1:length(expDates)
     
     %%% Concatenate vids
     tic
-    parentDir = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate, '\_Movies'];
+    parentDir = ['B:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate, '\_Movies'];
     concat_vids_2P(sid, parentDir, FRAME_RATE)
     disp(['Concatenating behavior vids took ', num2str(round(toc/60, 1)) ' min']);
     writeToLog(sprintf('%s behavior vids concatenated in %s min', expDate, num2str(round(toc/60, 1))));
@@ -194,7 +192,7 @@ fileNames = {'Behavior_Vid_ROI_Data_sid_2.mat' ...
      sid = sids(iExp)
      
      %%% Define ROIs for optic flow combined vids
-     parentDir = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate];
+     parentDir = ['B:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate];
      select_video_ROIs(parentDir, sid);
      writeToLog(sprintf('%s optic flow ROIs defined', expDate));
  end
@@ -206,7 +204,7 @@ fileNames = {'Behavior_Vid_ROI_Data_sid_2.mat' ...
      fileName = fileNames{iExp};
      
      %%% Make optic flow combined vids
-     parentDir = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate, '\_Movies'];
+     parentDir = ['B:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate, '\_Movies'];
      tic
      make_optic_flow_vid(sid, parentDir, FRAME_RATE, fileName)
      disp(['Creating combined vids took ', num2str(round(toc/60, 1)) ' min']);
@@ -221,8 +219,8 @@ fileNames = {'Behavior_Vid_ROI_Data_sid_2.mat' ...
 
 % -------------------------------------------------------------------------------------------------
 
-expDate = '2018_02_06_exp_4';
-parentDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate];
+expDate = '2018_02_06_exp_5';
+parentDir = ['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate];
 sid = 0;
 
 %%% Archive raw anatomy stacks
@@ -236,7 +234,7 @@ filterString = ['*sid_', num2str(sid), '_t*'];
 system7zip(parentDir, archiveName, '7z', filterString, 1)
 
 %%% Archive raw video frames
-parentDir = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate];
+parentDir = ['B:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate];
 archiveName = ['sid_', num2str(sid), '_RawFrames'];
 system7zip(parentDir, archiveName, '7z', ['*sid_', num2str(sid), '_t*'], 1);
 
@@ -247,12 +245,12 @@ system7zip(parentDir, archiveName, '7z', ['*sid_', num2str(sid), '_t*'], 1);
 
 FRAME_RATE = 25;
 trialDuration = 20;
-expDate = '2018_02_09_exp_1';
-sid = 1;
+expDate = '2018_02_09_exp_2';
+sid = 2;
 
-parentDir = ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate, '\_Movies'];
-saveDir = ['D:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)];
-annotationFileName = [expDate, '_sid_1_Annotation.txt'];
+parentDir = ['B:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate, '\_Movies'];
+saveDir = ['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)];
+annotationFileName = [expDate, '_Annotation.txt'];
 
 tic
 test = process_anvil_annotations(sid, parentDir, saveDir, annotationFileName, FRAME_RATE, trialDuration);

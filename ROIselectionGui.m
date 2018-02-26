@@ -27,7 +27,7 @@ close all
 %++++++++++++++++++++++++ INITIALIZATION TASKS +++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 % Prompt user for ref images data file
-[dataFile, pathName, ~] = uigetfile('*.mat', 'Select reference image data file', 'D:\Dropbox (HMS)\2P Data\Imaging Data\');
+[dataFile, pathName, ~] = uigetfile('*.mat', 'Select reference image data file', 'B:\Dropbox (HMS)\2P Data\Imaging Data\');
 
 if dataFile == 0
     
@@ -230,7 +230,7 @@ roiSubtabGroup.Units = 'normalized';
         ROIdata = myData.ROIs;
         
         % Prompt user for save directory
-        saveDir = uigetdir('D:\Dropbox (HMS)\2P Data\Imaging Data\', 'Select a save directory');
+        saveDir = uigetdir('B:\Dropbox (HMS)\2P Data\Imaging Data\', 'Select a save directory');
         if saveDir == 0
             % Throw error if user canceled without choosing a directory
             disp('ERROR: you must select a save directory or provide one as an argument');

@@ -28,7 +28,7 @@ function outputData = load_imaging_data()
 %========================================================================================================================================================
 
 % Prompt user for imaging data file
-[dataFile, sessionDataPath, ~] = uigetfile('*.mat', 'Select an imaging data session file', 'D:\Dropbox (HMS)\2P Data\Imaging Data\');
+[dataFile, sessionDataPath, ~] = uigetfile('*.mat', 'Select an imaging data session file', 'B:\Dropbox (HMS)\2P Data\Imaging Data\');
 if dataFile == 0
     disp('Initialization cancelled')
     outputData = []; % Skip loading if user clicked "Cancel"
@@ -38,19 +38,19 @@ else
     disp([dataFile, ' loaded'])
     
     % Prompt user for a metadata file
-    [metadataFile, metaDataPath, ~] = uigetfile('*.mat', 'Select a metadata file', ['D:\Dropbox (HMS)\2P Data\Behavior Vids\', imgData.expDate]);
+    [metadataFile, metaDataPath, ~] = uigetfile('*.mat', 'Select a metadata file', ['B:\Dropbox (HMS)\2P Data\Behavior Vids\', imgData.expDate]);
     if metadataFile == 0
         errordlg('No metadata file selected');
         return
     end
     
     % Extract metadata
-    metadata = load([metaDataPath, metadataFile]);
+    metadata = load([metaDataPath, metadataFile]);  
     imgData.sid = metadata.metaData.sid;
     imgData.trialDuration = metadata.metaData.trialDuration;
-    imgData.preStimDur = imgData.trialDuration(1);
-    imgData.postStimDur = imgData.trialDuration(2);
-    imgData.stimPeriodDur = imgData.trialDuration(3);
+    
+    
+    
     if isfield(metadata.metaData, 'ballStop') && isfield(metadata.metaData, 'odorStim') % Backwards compatibility
         imgData.ballStop = metadata.metaData.ballStop;
         imgData.odorStim = metadata.metaData.odorStim;
@@ -90,6 +90,12 @@ else
         end
     end    
     
+    
+    
+    
+    
+    
+    
     % Prompt user for annotation data file
     [annotDataFile, annotDataPath, ~] = uigetfile('*.mat', 'Select a behavioral annotation data file if desired', sessionDataPath);
     if annotDataFile == 0
@@ -100,7 +106,7 @@ else
         annotData.trialAnnotations = [];
         if exist(fullfile(annotDataPath, ['sid_', num2str(imgData.sid), '_frameCountLog.mat']), 'file')
             % Check frame counts for behavior video
-            parentDir = fullfile('D:\Dropbox (HMS)\2P Data\Behavior Vids', imgData.expDate, '_Movies')
+            parentDir = fullfile('B:\Dropbox (HMS)\2P Data\Behavior Vids', imgData.expDate, '_Movies')
             [annotData.goodTrials, ~, ~, ~] = frame_count_check(parentDir, imgData.sid, 25, sum(imgData.trialDuration));
         else
             annotData.goodTrials = [];

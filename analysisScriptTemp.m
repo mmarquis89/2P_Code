@@ -22,30 +22,16 @@ for iFold = 1
     nTrials = myData.nTrials;
     nGoodTrials = sum(myData.goodTrials);
     stimTypes = myData.stimTypes;
+    stimOnsetTimes = myData.stimOnsetTimes;
+    stimDurs = myData.stimDurs;
     trialDuration = myData.trialDuration;
     volumeRate = myData.volumeRate;
     volFrames = myData.volFrames;
     goodTrials = myData.goodTrials;
-    
-    preStimDur = myData.preStimDur;
-    postStimDur = myData.postStimDur;
-    stimPeriodDur = myData.stimPeriodDur;
-    
-    ballStop = myData.ballStop;
-    nStops = myData.nStops;
-    stopDur = myData.stopDur;
-    interStopInterval = myData.interStopInterval;
-    
-    odorStim = myData.odorStim;
-    nOdorStims = myData.nOdorStims;
-    odorStimDur = myData.odorStimDur;
-    interOdorInterval = myData.interOdorInterval;
-    odorStartTimes = myData.odorStartTimes;
-    odorEndTimes = myData.odorEndTimes;
         
     % Create hardcoded parameters
     myData.ROIdata = [];
-    myData.MAX_INTENSITY = 1000; MAX_INTENSITY = myData.MAX_INTENSITY; % To control brightness of ref image plots
+    myData.MAX_INTENSITY = 800; MAX_INTENSITY = myData.MAX_INTENSITY; % To control brightness of ref image plots
     myData.FRAME_RATE = 25; FRAME_RATE = 25; % This is the frame rate of the behavior video, not the GCaMP imaging
     if isempty(nFrames)
         nFrames = sum(trialDuration) * FRAME_RATE;
@@ -61,6 +47,19 @@ planeNum = 6;
 trialNum = 8; % Does not account for any skipped trials
 
 preview_trial_movie(myData.wholeSession, planeNum, trialNum, [], [], []);
+
+%% MAKE AVERAGE FLUORESCENCE VIDEO FROM REGISTERED DATA
+
+% Create videoWriter
+saveDir = '';
+fileName = '';
+myVid = VideoWriter(fullfile(saveDir, fileName));
+myVid.FrameRate = 1;
+
+
+for iTrial = 1:nTrials
+    
+end
 
 %% INITIAL DATA PROCESSING STEPS
 
@@ -81,13 +80,20 @@ annotationTypes = [];
 
 % Add odor stim frames
 odorAnnotArr = zeros(nTrials, nFrames);
-if odorStim
-    for iStim = 1:nOdorStims
-        odorFrames = floor((odorStartTimes(iStim) * FRAME_RATE)):floor((odorEndTimes(iStim) * FRAME_RATE));
-        goodOdorTrials = logical(myData.stimSepTrials.odorTrials .* goodTrials);
-        odorAnnotArr(goodOdorTrials, odorFrames) = 4; %--> [trial, frame]
+odorStims = {'OdorA', 'OdorB', 'CarrierStreamStop'};
+myData.stimSepTrials.odorTrials = logical(zeros(nTrials, 1));
+for iStim = 1:numel(odorStims)
+    myData.stimSepTrials.odorTrials(myData.StimSepTrials.(odorStims{iStim})) = 1;
+end
+for iTrial = 1:nTrials
+    if myData.stimSepTrials.odorTrials(iTrial)
+        onsetFrame = round(myData.stimOnsetTimes(iTrial)) * FRAME_RATE;
+        offsetFrame = (round(myData.stimOnsetTimes(iTrial)) + round(myData.stimDurs(iTrial))) * FRAME_RATE;
+        odorAnnotArr(iTrial, onsetFrame:offsetFrame) = 4; %--> [trial, frame]
     end
 end
+goodOdorTrials = logical(myData.stimSepTrials.odorTrials .* goodTrials);
+odorAnnotArr(~goodOdorTrials, :) = 0;
 
 % All odor events
 odorAnnotations = annotationType(myData, odorAnnotArr, skipTrials, 'odor');
@@ -107,6 +113,13 @@ annotArr_OdorB(~myData.stimSepTrials.OdorB, :) = 0;
 odorAnnotations_B = annotationType(myData, annotArr_OdorB, skipTrials, 'odor_B');
 odorAnnotations_B = get_event_vols(odorAnnotations_B, '04', '40');
 annotationTypes{end + 1} = odorAnnotations_B;
+
+% Carrier stream stopping events
+annotArr_CarrierStreamStop = odorAnnotArr;
+annotArr_CarrierStreamStop(~myData.stimSepTrials.CarrierStreamStop, :) = 0;
+odorAnnotations_CarrierStreamStop = annotationType(myData, annotArr_CarrierStreamStop, skipTrials, 'carrier_stream_stop');
+odorAnnotations_CarrierStreamStop = get_event_vols(odorAnnotations_CarrierStreamStop, '04', '40');
+annotationTypes{end + 1} = odorAnnotations_CarrierStreamStop;
 
 % ----------------------------------------------------------------------------------------------
 % Behavior
@@ -163,13 +176,32 @@ bStopAnnotations = annotationType(myData, bStopAnnotArr, skipTrials, 'bStop');
 bStopAnnotations = get_event_vols(bStopAnnotations, '04', '40');
 annotationTypes{end + 1} = bStopAnnotations;
 
+% ----------------------------------------------------------------------------------------------
+% IR laser
+% ----------------------------------------------------------------------------------------------
+
+% Add IR laser stim frames
+laserAnnotArr = zeros(nTrials, nFrames);
+for iTrial = 1:nTrials
+    if myData.stimSepTrials.Laser(iTrial)
+        onsetFrame = round(myData.stimOnsetTimes(iTrial)) * FRAME_RATE;
+        offsetFrame = (round(myData.stimOnsetTimes(iTrial)) + round(myData.stimDurs(iTrial))) * FRAME_RATE;
+        laserAnnotArr(iTrial, onsetFrame:offsetFrame) = 3;
+    end
+end
+laserAnnotArr(~goodTrials, :) = 0;
+
+laserAnnotations = annotationType(myData, laserAnnotArr, skipTrials, 'laser');
+laserAnnotations = get_event_vols(laserAnnotations, '03', '30');
+annotationTypes{end + 1} = laserAnnotations;
+
 % ==================================================================================================
 
 % Make list of all annotation type names
 for iType = 1:numel(annotationTypes)
     annotationTypeNames{iType} = annotationTypes{iType}.name;
 end
-annotationTypeSummary = table([1:numel(annotationTypeNames)]', annotationTypeNames', 'VariableNames', {'Index', 'AnnotationType'});
+annotationTypeSummary = table((1:numel(annotationTypeNames))', annotationTypeNames', 'VariableNames', {'Index', 'AnnotationType'});
 
 %% SEPARATE TRIALS BASED ON EVENT INTERACTIONS
 analysisWindows = []; overshoots = [];
@@ -179,10 +211,18 @@ analysisWindows = []; overshoots = [];
 
 disp(annotationTypeSummary)
 
-activeEventTypes = [1 7];
+activeEventTypes = [2 3 4 8 10];
 disp(annotationTypeSummary(activeEventTypes, 2))
 
-% Odor
+% Odor A
+analysisWindows(end+1,:) = [ 1  1 ];
+overshoots(end+1)        = 0;
+
+% Odor B
+analysisWindows(end+1,:) = [ 1  1 ];
+overshoots(end+1)        = 0;
+
+% Carrier stream stop
 analysisWindows(end+1,:) = [ 1  1 ];
 overshoots(end+1)        = 0;
 
@@ -195,7 +235,7 @@ overshoots(end+1)        = 0;
 % overshoots(end+1)        = 0;
 
 % Display active filter types
-activeFilterTypes = [1 7];
+activeFilterTypes = [1 8 10];
 disp(annotationTypeSummary(activeFilterTypes, 2))
 
 % Create filters for different condition components
@@ -218,6 +258,11 @@ anyMove =   [ 0  0  0 ];
 filtWindows(end+1,:)     = [  1  1  ];
 allFilts{end+1} = [startMove; endMove; contMove; noMove; anyMove];
 allFiltNames{end+1} = {'StartMove', 'EndMove', 'contMove', 'NoMove', 'AnyMove'};
+
+% IR laser
+withLaser = [ 0  1  0];
+noLaser =   [-1 -1  0];
+anyLaser =  [ 0  0  0];
 
 % % Ball stopping
 % bStopped =  [ 0  1  0 ];
@@ -318,19 +363,19 @@ for iType = 1:nEventTypes
             baselineRep = repmat(baselineAvg, 1, 1, 1, size(baselineData, 4));       % --> [y, x, plane, volume]
             baselineDff = calc_dFF(baselineData, baselineRep, 5);                    % --> [y, x, plane, volume]
             
-            currDff = calc_dFF(respData, baselineData, 5);                              % --> [y, x, plane, volume]
-            combinedVolsDff = cat(4, baselineDff, currDff);                             % --> [y, x, plane, volume]
-            currDffAvg = calc_dFF(respData, baselineData, [4 5]);                       % --> [y, x, plane]
+            currDff = calc_dFF(respData, baselineData, 5);                           % --> [y, x, plane, volume]
+            combinedVolsDff = cat(4, baselineDff, currDff);                          % --> [y, x, plane, volume]
+            currDffAvg = calc_dFF(respData, baselineData, [4 5]);                    % --> [y, x, plane]
             
             
             
-            baselineRawF{iType}{iCond} = baselineData;                                  % --> {eventType}{Condition}[y, x, plane, volume, event]
-            respRawF{iType}{iCond} = respData;                                          % --> {eventType}{Condition}[y, x, plane, volume, event]
+            baselineRawF{iType}{iCond} = baselineData;                               % --> {eventType}{Condition}[y, x, plane, volume, event]
+            respRawF{iType}{iCond} = respData;                                       % --> {eventType}{Condition}[y, x, plane, volume, event]
             
             
             
-            onsetDff{iType}(:,:,:,:, iCond) = combinedVolsDff;                          % --> {eventType}[y, x, plane, volume, condition]
-            onsetDffAvg{iType}(:,:,:, iCond) = currDffAvg;                              % --> {eventType}[y, x, plane, condition]
+            onsetDff{iType}(:,:,:,:, iCond) = combinedVolsDff;                       % --> {eventType}[y, x, plane, volume, condition]
+            onsetDffAvg{iType}(:,:,:, iCond) = currDffAvg;                           % --> {eventType}[y, x, plane, condition]
             
         end
         
@@ -607,10 +652,10 @@ clear('currPlaneData');
 
     %% PLOT MEAN ROI dF/F THROUGHOUT TRIAL
 
-    tmp = [6 10 11 12 13 14 18 19 22 23 25 26 28 30 31 35 38 40 42 44 57] + 1;
-    myData.stimSepTrials.OdorBPulse = zeros(1, nTrials);
-    myData.stimSepTrials.OdorBPulse(tmp) = 1;
-    myData.stimSepTrials.OdorB(tmp) = 0;
+%     tmp = [6 10 11 12 13 14 18 19 22 23 25 26 28 30 31 35 38 40 42 44 57] + 1;
+%     myData.stimSepTrials.OdorBPulse = zeros(1, nTrials);
+%     myData.stimSepTrials.OdorBPulse(tmp) = 1;
+%     myData.stimSepTrials.OdorB(tmp) = 0;
 
     plotTitlePrefixes = { ...
         ''
@@ -716,6 +761,9 @@ for iPlot = 1:nPlots
         plotNames{iPlot} = 'Ball Stopping';
         titleStrings{iPlot} = [regexprep(expDate, '_', '\\_'), '    ', [plotNames{iPlot}, ' Summary ', plotTitleSuffix]]; % regex to add escape characters
         annotArr{iPlot} = bStopAnnotArr;
+    elseif plotTypes{iPlot} == 4
+        % IR laser stim
+        plotNames{iPlot} = 'Laser Stimulation';
     end%if
 end%for
 

@@ -126,9 +126,32 @@ for iExp = 1:length(expDates)
 end
 
 % -------------------------------------------------------------------------------------------------
-
 %==================================================================================================
-%%% CREATE BEHAVIOR VIDEOS -------------------------------------------------------------------------
+%% % CREATE POST-NoRMCorre AVERAGE FLUORESCENCE VIDEOS ------------------------------------------------------------
+%==================================================================================================
+
+% -------------------------------------------------------------------------------------------------
+
+expDates = {'2018_02_25' ...
+            }
+
+sids = [ 2 ...
+    ];
+for iExp = 1:length(expDates)
+    
+    expDate = expDates{iExp}
+    sid = sids(iExp);
+    
+    tic
+    parentDir = ['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate];
+    disp('Creating average fluorescence videos...');
+    create_average_fluorescence_vid(parentDir, sid)
+    writeToLog(sprintf('%s average fluorescence vids made in %s min', expDate, num2str(round(toc/60, 1))));
+    disp(['Creating average fluorescence videos took ', num2str(round(toc/60, 1)) ' min']);
+end
+% -------------------------------------------------------------------------------------------------
+%==================================================================================================
+%% % CREATE BEHAVIOR VIDEOS -------------------------------------------------------------------------
 %==================================================================================================
 
 expDates = {'2018_02_25'
@@ -168,8 +191,7 @@ end
 %% % MAKE OPTIC FLOW COMBINED VIDS------------------------------------------------------------------
 %==================================================================================================
 
-expDates = {'2018_02_09_exp_1' ...
-            '2018_02_09_exp_2' ...
+expDates = {'2018_02_25'
             }
 
 sids = [ 2 ...
@@ -177,8 +199,7 @@ sids = [ 2 ...
     ];
      
 
-fileNames = {'Behavior_Vid_ROI_Data_sid_2.mat' ...
-            'Behavior_Vid_ROI_Data.mat' ...
+fileNames = {'Behavior_Vid_ROI_Data.mat' ...
 };
 
  FRAME_RATE = 25;
@@ -216,7 +237,7 @@ fileNames = {'Behavior_Vid_ROI_Data_sid_2.mat' ...
 
 % -------------------------------------------------------------------------------------------------
 
-expDate = '2018_02_06_exp_5';
+expDate = '2018_02_07_exp_1';
 parentDir = ['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate];
 sid = 0;
 
@@ -242,7 +263,7 @@ system7zip(parentDir, archiveName, '7z', ['*sid_', num2str(sid), '_t*'], 1);
 
 FRAME_RATE = 25;
 trialDuration = 20;
-expDate = '2018_02_09_exp_2';
+expDate = '2018_02_25';
 sid = 2;
 
 parentDir = ['B:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate, '\_Movies'];

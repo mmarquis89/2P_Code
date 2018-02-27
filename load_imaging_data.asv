@@ -16,7 +16,7 @@ function outputData = load_imaging_data()
 %               nVolumes         = the number of imaging volumes per trial in the session
 %               origFileNames    = cell array containing the file names of all the raw .tif files that generated the input data structure
 %               refImg           = 1 x nPlanes cell array, with each cell containing the average of one plane across all volumes and trials [y, x]
-%               scanFrameRate    = the acquisition frame rate of the 2P data
+%               scanFrameRate    = the acquisition rate of the 
 %               sid              = the session ID of the data that was loaded
 %               stimDurs         = 1 x nTrials numeric vector containing the duration of the stimulus in each trial
 %               stimOnsetTimes   = 1 x nTrials numeric vector containing the onset time of the stimulus in seconds for each trial
@@ -129,6 +129,16 @@ else
         outputData.stimSepTrials.(outputData.stimTypes{iStim}) = logical(cellfun(@(x) ...
             strcmp(x, outputData.stimTypes{iStim}), outputData.trialType));
     end
+    
+    % Separate out all odor stim trials (if any)
+    odorTrials = zeros(1, outputData.nTrials);
+    if isfield(outputData.stimSepTrials, 'OdorA')
+        odorTrials = odorTrials + logical(outputData.stimSepTrials.OdorA);
+    end
+    if isfield(outputData.stimSepTrials, 'OdorB')
+        odorTrials = odorTrials + logical(outputData.stimSepTrials.OdorB);
+    end
+    outputData.stimSepTrials.odorTrials = logical(odorTrials);
     
     % Match frame times to volumes if annotation data was provided (contains the video frame that 
     % most closely matches the time of the volume for each volume in the trial)

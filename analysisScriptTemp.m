@@ -1140,27 +1140,12 @@ myData.ROIDataAvg = ROIDataAvg;
         ax2 = gca;
         plot_ROI_data(ax2, currDffAvg, myData, 'EventShading', eventShading);
         yL2 = ylim(ax2); 
-        
-%         % Laser plot
-%         currDffAvg = ROIDffAvg(:,logical(s.Laser .* (goodTrials)), iROI); % --> [volume, trial]
-%         subaxis(4, 3, [7:9])
-%         ax2 = gca;
-%         plot_ROI_data(ax2, currDffAvg, myData, 'AnnotationType', s.Laser);
-%         yL2 = ylim(ax2); 
-% 
-%         % Carrier stream stop plot
-%         currDffAvg = ROIDffAvg(:,logical(s.CarrierStreamStop.* (goodTrials)), iROI); % --> [volume, trial]
-%         subaxis(4, 3, [10:12])
-%         ax3 = gca;
-%         plot_ROI_data(ax3, currDffAvg, myData, 'AnnotationType', s.CarrierStreamStop);
-%         yL3 = ylim(ax3); 
 
         % Scale y-axes to match
         yMin = min([yL1, yL2]);
         yMax = max([yL1, yL2]);
         ylim(ax1, [yMin yMax]);
         ylim(ax2, [yMin yMax]);
-%         ylim(ax3, [yMin yMax]);
 
         % Save figure -------------------------------------------------------------------------------
         if saveDir
@@ -1172,8 +1157,8 @@ myData.ROIDataAvg = ROIDataAvg;
     %% PLOT MEAN ROI dF/F THROUGHOUT TRIAL FOR EARLY VS LATE TRIALS
     saveDir = 0;
     saveDir = uigetdir(['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), '\Analysis'], 'Select a save directory');
-    plotTitle = 'ACV responses - early (top), vs late (bottom) trials'
-    s = myData.stimSepTrials.OdorB;
+    plotTitle = 'cVA responses - early (top), vs late (bottom) trials'
+    s = myData.stimSepTrials.OdorA;
     eventShading = [10 12];
     
     splitPoint = 10;
@@ -1194,27 +1179,28 @@ myData.ROIDataAvg = ROIDataAvg;
         currPlane = myData.ROIdata(iROI).plane;
         xData = myData.ROIdata(iROI).xi;
         yData = myData.ROIdata(iROI).yi;
-        subaxis(3, 3, [1 2], 'ML', 0.06, 'MR', 0.015, 'MT', 0.05, 'MB', 0.08, 'SH', 0)
+        subaxis(2, 3, [1 2], 'ML', 0.06, 'MR', 0.015, 'MT', 0.05, 'MB', 0.08, 'SH', 0)
         hold on
         imshow(myData.refImg{currPlane}, [0 MAX_INTENSITY]);
         plot(xData, yData, 'Color', 'g');
         title(['Plane #', num2str(myData.ROIdata(iROI).plane)])
 
+        trialGroups = ones(1, nTrials);
+        trialGroups(50:end) = 2;
+        trialGroups(100:end) = 3;
+        trialGroups = trialGroups(logical(s .* goodTrials));
+
+        
         % Early trials plot
-        currDffAvg = ROIDffAvg(:,logical(s .* filterVecs(1,:) .* goodTrials), iROI); % --> [volume, trial]
-        subaxis(3, 3, [4:6])
+        currDffAvg = ROIDffAvg(:,logical(s .* goodTrials), iROI); % --> [volume, trial]
+        subaxis(2, 3, [4:6])
         ax1 = gca;
 %         tmp = goodTrials; tmp(skipTrials) = 0;
-        plot_ROI_data(ax1, currDffAvg, myData, 'EventShading', eventShading);
+        plot_ROI_data(ax1, currDffAvg, myData, 'EventShading', eventShading, 'TrialGroups', trialGroups, 'SingleTrials', 1, 'SingleTrialAlpha', 0.25, 'StdDevShading', 0);
         yL1 = ylim(ax1);
         title(plotTitle);
 
-        % Late trials plot
-        currDffAvg = ROIDffAvg(:,logical(s .* filterVecs(2,:) .* goodTrials), iROI); % --> [volume, trial]
-        subaxis(3, 3, [7:9])
-        ax2 = gca;
-        plot_ROI_data(ax2, currDffAvg, myData, 'EventShading', eventShading);
-        yL2 = ylim(ax2); 
+
         
 %         % Laser plot
 %         currDffAvg = ROIDffAvg(:,logical(s.Laser .* (goodTrials)), iROI); % --> [volume, trial]
@@ -1229,12 +1215,12 @@ myData.ROIDataAvg = ROIDataAvg;
 %         ax3 = gca;
 %         plot_ROI_data(ax3, currDffAvg, myData, 'AnnotationType', s.CarrierStreamStop);
 %         yL3 = ylim(ax3); 
-
-        % Scale y-axes to match
-        yMin = min([yL1, yL2]);
-        yMax = max([yL1, yL2]);
-        ylim(ax1, [yMin yMax]);
-        ylim(ax2, [yMin yMax]);
+% 
+%         % Scale y-axes to match
+%         yMin = min([yL1, yL2]);
+%         yMax = max([yL1, yL2]);
+%         ylim(ax1, [yMin yMax]);
+%         ylim(ax2, [yMin yMax]);
 %         ylim(ax3, [yMin yMax]);
 
         % Save figure -------------------------------------------------------------------------------

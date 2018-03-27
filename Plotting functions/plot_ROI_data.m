@@ -18,6 +18,12 @@ function plot_ROI_data(ax, ROIDffAvg, infoStruct, varargin)
 %
 % OPTIONAL NAME-VALUE PAIR ARGUMENTS:
 %
+%       'TrialGroups'    = <OPTIONAL> 1 x nTrials numeric array specifying two or more trial groups 
+%                          (numbers starting at one) to split the data into. Each group will be assigned
+%                          a color (the individual trials will no longer be plotted chronologically),
+%                          and instead of plotting the average of all trials each group will 
+%                          have its own trial-averaging line.
+%
 %       'OutlierSD'      = (default: 5) the number of standard deviations to use as an outlier 
 %                           exclusion threshold.
 % 
@@ -40,11 +46,15 @@ function plot_ROI_data(ax, ROIDffAvg, infoStruct, varargin)
 %                          labeling the X-axis. For example, if you are imaging at 10 volumes/sec 
 %                          and want your X-axis labeling to start at -2 seconds, use -20.
 %
+%       'SingleTrialAlpha' = (default: 1) a value from 0-1 specifying the transparency of the single
+%                          trial lines.
+%
 %===================================================================================================   
 
 % Parse optional arguments
 p = inputParser;
 % addParameter(p, 'InfoStruct', []);
+addParameter(p, 'TrialGroups', []);
 addParameter(p, 'OutlierSD', 5);
 addParameter(p, 'SingleTrials', 1);
 addParameter(p, 'StdDevShading', 1);
@@ -52,8 +62,10 @@ addParameter(p, 'EventShading', []);
 addParameter(p, 'SmoothWinSize', 3);
 addParameter(p, 'VolumeRate', []);
 addParameter(p, 'VolOffset', 0);
+addParameter(p, 'SingleTrialAlpha', 1);
 parse(p, varargin{:});
 % infoStruct = p.Results.InfoStruct;
+trialGroups = p.Results.TrialGroups;
 outlierSD = p.Results.OutlierSD;
 singleTrials = p.Results.SingleTrials;
 shadeSDs = p.Results.StdDevShading;
@@ -61,6 +73,7 @@ eventShading = p.Results.EventShading;
 smoothWin = p.Results.SmoothWinSize;
 volumeRate = p.Results.VolumeRate;
 volOffset = p.Results.VolOffset;
+singleTrialAlpha = p.Results.SingleTrialAlpha;
 if ~isempty(infoStruct)
     volumeRate = infoStruct.volumeRate;
 end
@@ -70,6 +83,13 @@ nVolumes = size(ROIDffAvg, 1);
 volTimes = ([1:1:nVolumes] + volOffset) ./ volumeRate;
 trialAvgDff = mean(ROIDffAvg, 2);
 stdDev = std(ROIDffAvg, 0, 2);
+nTrials = size(ROIDffAvg, 2);
+if ~isempty(trialGroups)
+   nGroups = numel(unique(trialGroups(trialGroups ~= 0))); 
+else
+   nGroups = 1;
+   trialGroups = ones(nTrials, 1);
+end
 
 % Format axes
 hold on
@@ -89,28 +109,65 @@ if sum(outliers) > 0
     disp(['Omitting ' num2str(sum(outliers)), ' outlier trials'])
 end
 ROIDffAvg(:, logical(outliers)) = [];
-trialAvgDff = mean(ROIDffAvg, 2);
-stdDev = std(ROIDffAvg, 0, 2);
+trialGroups(logical(outliers)) = [];
 
-% Plot individual trials in background
-nTrials = size(ROIDffAvg, 2);
-cm = jet(nTrials);
-if singleTrials
-    for iTrial = 1:size(ROIDffAvg, 2)
-        currData = ROIDffAvg(:, iTrial);
-        plot(ax, volTimes, smooth(currData, smoothWin), 'color', cm(iTrial,:), 'LineWidth', 0.1)
+if nGroups == 1
+    cm = jet(nTrials);
+else
+    % Create custom colormap if using trial groups
+    cm = [rgb('Blue'); ...
+          rgb('Green'); ...
+          rgb('Red'); ...
+          rgb('Magenta'); ...
+          rgb('Cyan'); ...
+          rgb('Gold'); ...
+          rgb('DarkRed'); ...
+          rgb('Yellow'); ...
+          rgb('Lime') ...
+          ];
+end
+
+for iGroup = 1:nGroups
+    
+    % Select plotting colors
+    if nGroups == 1
+        shadeColor = [0 0 1];
+        meanLineColor = [0 0 0];
+    else
+        shadeColor = cm(iGroup, :);
+        meanLineColor = shadeColor;
     end
+    
+    % Separate data from current trial group and calculate average dF/F
+    groupAvgDff = mean(ROIDffAvg(:, trialGroups == iGroup), 2);
+    groupDff = ROIDffAvg(:, trialGroups == iGroup);
+    groupStdDev = std(groupDff, 0, 2);
+    
+    % Plot individual trials in background
+    if singleTrials
+        for iTrial = 1:size(groupDff, 2)
+            currData = groupDff(:, iTrial);
+            if nGroups == 1
+                currColor = cm(iTrial, :);
+            else
+                currColor = cm(iGroup, :);
+            end
+            plt = plot(ax, volTimes, smooth(currData, smoothWin), 'color', currColor, 'LineWidth', 0.1);
+            plt.Color(4) = singleTrialAlpha; 
+        end
+    end
+    
+    % Shade one SD above and below mean
+    if shadeSDs
+        upper = smooth(groupAvgDff, 3) + groupStdDev;
+        lower = smooth(groupAvgDff, 3) - groupStdDev;
+        jbfill(volTimes, upper', lower', shadeColor, shadeColor, 1, 0.2);
+    end
+    
+    % Plot mean response line
+    plot(ax, volTimes, smooth(groupAvgDff, smoothWin), 'LineWidth', 2, 'Color', meanLineColor * 1);
+    
 end
-
-% Shade one SD above and below meanS
-if shadeSDs
-    upper = smooth(trialAvgDff, 3) + stdDev;
-    lower = smooth(trialAvgDff, 3) - stdDev;
-    jbfill(volTimes, upper', lower', 'b', 'b', 1, 0.2);
-end
-
-% Plot mean response line
-plot(ax, volTimes, smooth(trialAvgDff, smoothWin), 'LineWidth', 2, 'Color', 'k');
 
 % Plot alignment line if applicable
 yL = ylim();

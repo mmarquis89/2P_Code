@@ -1103,10 +1103,9 @@ myData.ROIDataAvg = ROIDataAvg;
     plotTitle = 'cVA\_e-1 (top), ACV\_e-1 (bottom)'
     s = myData.stimSepTrials;
     filterVecs = [s.OdorA; s.OdorB];
-    eventShading = [10 12];
-    
-%     ROIlist = 1:size(ROIDffAvg, 3);
-    ROIlist = [1 2 3];
+
+    ROIlist = 1:size(ROIDffAvg, 3);
+%     ROIlist = [1 2 3];
 
     for iROI = ROIlist       
 
@@ -1130,7 +1129,7 @@ myData.ROIDataAvg = ROIDataAvg;
         subaxis(3, 3, [4:6])
         ax1 = gca;
 %         tmp = goodTrials; tmp(skipTrials) = 0;
-        plot_ROI_data(ax1, currDffAvg, myData, 'EventShading', eventShading);
+        plot_ROI_data(ax1, currDffAvg, myData, 'EventShading', s.OdorA);
         yL1 = ylim(ax1);
         title(plotTitle);
 
@@ -1138,7 +1137,7 @@ myData.ROIDataAvg = ROIDataAvg;
         currDffAvg = ROIDffAvg(:,logical(s.OdorB .* (goodTrials)), iROI); % --> [volume, trial]
         subaxis(3, 3, [7:9])
         ax2 = gca;
-        plot_ROI_data(ax2, currDffAvg, myData, 'EventShading', eventShading);
+        plot_ROI_data(ax2, currDffAvg, myData, 'EventShading', s.OdorB);
         yL2 = ylim(ax2); 
         
 %         % Laser plot
@@ -1172,16 +1171,15 @@ myData.ROIDataAvg = ROIDataAvg;
     %% PLOT MEAN ROI dF/F THROUGHOUT TRIAL FOR EARLY VS LATE TRIALS
     saveDir = 0;
     saveDir = uigetdir(['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), '\Analysis'], 'Select a save directory');
-    plotTitle = 'ACV responses - early (top), vs late (bottom) trials'
-    s = myData.stimSepTrials.OdorB;
-    eventShading = [10 12];
+    plotTitle = 'cVA responses - early (top), vs late (bottom) trials'
+    s = myData.stimSepTrials.OdorA;
     
-    splitPoint = 10;
+    midExp = nTrials / 2;
     allTrials = 1:nTrials;
-    filterVecs = [logical(allTrials < splitPoint); logical(allTrials > splitPoint)];
+    filterVecs = [logical(allTrials < midExp); logical(allTrials > midExp)];
 
-%     ROIlist = 1:size(ROIDffAvg, 3);
-    ROIlist = [1 2 3];
+    ROIlist = 1:size(ROIDffAvg, 3);
+%     ROIlist = [1 2 3];
 
     for iROI = ROIlist       
 
@@ -1205,7 +1203,7 @@ myData.ROIDataAvg = ROIDataAvg;
         subaxis(3, 3, [4:6])
         ax1 = gca;
 %         tmp = goodTrials; tmp(skipTrials) = 0;
-        plot_ROI_data(ax1, currDffAvg, myData, 'EventShading', eventShading);
+        plot_ROI_data(ax1, currDffAvg, myData, 'EventShading', s.OdorA);
         yL1 = ylim(ax1);
         title(plotTitle);
 
@@ -1213,7 +1211,7 @@ myData.ROIDataAvg = ROIDataAvg;
         currDffAvg = ROIDffAvg(:,logical(s .* filterVecs(2,:) .* goodTrials), iROI); % --> [volume, trial]
         subaxis(3, 3, [7:9])
         ax2 = gca;
-        plot_ROI_data(ax2, currDffAvg, myData, 'EventShading', eventShading);
+        plot_ROI_data(ax2, currDffAvg, myData, 'EventShading', [10 );
         yL2 = ylim(ax2); 
         
 %         % Laser plot

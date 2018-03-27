@@ -123,11 +123,6 @@ for iFilt = 1:nFilters
         else
             alignVol = eventStart;
         end
-
-% %TEMP
-% if trial > 25
-%    skipArr(iEvent,:) = 1; 
-% end
   
         % Calculate the starting and ending volumes of the filtering window
         startVol = alignVol - analysisWindow(1) - filtWin(1);
@@ -165,12 +160,12 @@ for iFilt = 1:nFilters
         else
             preFilt = -1;
         end
-        if sum(filterEventData(trial, alignVol:(alignVol + analysisWindow(2)), iFilt))
+        if sum(filterEventData(trial, alignVol:(alignVol + analysisWindow(2) - 1), iFilt))
             stimFilt = 1;
         else
             stimFilt = -1;
         end
-        if sum(filterEventData(trial, ((alignVol + filtWin(2) + 1):endVol), iFilt))
+        if sum(filterEventData(trial, ((alignVol + analysisWindow(2)):endVol), iFilt))
             postFilt = 1;
         else
             postFilt = -1;

@@ -1,8 +1,9 @@
 %==================================================================================================
 %%% EXTRACT SAMPLE FRAMES FROM ANATOMY STACKS -----------------------------------------------------
-%==================================================================================================
+%% ==================================================================================================
 
-expDates = {'2018_02_25' ...
+expDates = {...
+    '2018_02_28_exp_3' ...
             }
 
 targetPlanes = [ 200 ...
@@ -22,19 +23,25 @@ for iExp = 1:length(expDates)
     writeToLog(sprintf('%s sample frames extracted in %s min', expDate, num2str(round(toc/60, 1))));
     disp(['Extracting sample frames took ', num2str(round(toc/60, 1)) ' min']);
 end
+clear expDates targetPlanes fileStr dirPath
 % -------------------------------------------------------------------------------------------------
 
-%==================================================================================================
+%% ==================================================================================================
 %%% CREATE AVERAGE FLUORESCENCE VIDEOS ------------------------------------------------------------
 %==================================================================================================
 
 % -------------------------------------------------------------------------------------------------
 
-expDates = {'2018_02_25' ...
+expDates = {...
+    '2018_03_23_exp_1' ...
+    '2018_03_23_exp_2' ...
             }
 
-sids = [ 2 ...
+sids = [ ...
+    0 ...
+    0 ...
     ];
+
 for iExp = 1:length(expDates)
     
     expDate = expDates{iExp}
@@ -47,13 +54,16 @@ for iExp = 1:length(expDates)
     writeToLog(sprintf('%s average fluorescence vids made in %s min', expDate, num2str(round(toc/60, 1))));
     disp(['Creating average fluorescence videos took ', num2str(round(toc/60, 1)) ' min']);
 end
+clear expDates sids parentDir
 % -------------------------------------------------------------------------------------------------
 
 %==================================================================================================
 %%% CREATE ANATOMY STACKS --------------------------------------------------------------------------
 %==================================================================================================
 
-expDates = {'2018_02_25' ...
+expDates = {...
+    '2018_03_23_exp_1' ...
+    '2018_03_23_exp_2' ...
             }
 
 fileStr = '*Stack*.tif';
@@ -64,23 +74,28 @@ for iExp = 1:length(expDates)
     
     parentDir = ['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate];
     tic
-    create_anatomy_stack(parentDir, fileStr, '_BungaroToxin_Stack');
+    create_anatomy_stack(parentDir, fileStr, '_Stack');
     disp(['Creating the anatomy stacks took ', num2str(round(toc/60, 1)) ' min']);
     writeToLog(sprintf('%s anatomy stack created in %s min', expDate, num2str(round(toc/60, 1))));
 end
+clear expDates fileStr parentDir
 % -------------------------------------------------------------------------------------------------
 
-%==================================================================================================
-%% % PRE-REGISTRATION PROCESSING --------------------------------------------------------------------
-%==================================================================================================
-% % <3 you Michael!
-
+%===================================================================================================
+%%% PRE-REGISTRATION PROCESSING -------------------------------------------------------------------
+%===================================================================================================
+% 
+% <3 you Michael!
 % -------------------------------------------------------------------------------------------------
 
-expDates = {'2018_02_25' ...
+expDates = {...
+    '2018_03_23_exp_1' ...
+    '2018_03_23_exp_2' ...
             }
 
-sids = [ 2 ...
+sids = [ ...
+    0 ...
+    0 ...
     ];
 
 for iExp = 1:length(expDates)
@@ -93,24 +108,28 @@ for iExp = 1:length(expDates)
     preReg_routine_MM(parentDir, sid, expDate) 
     writeToLog(sprintf('%s_%s pre-processing completed in %s min', expDate, num2str(round(toc/60, 1))));
 end
-
+clear expDates sids parentDir
 % -------------------------------------------------------------------------------------------------
 
 %==================================================================================================
-%% % NoRMCorre REGISTRATION --------------------------------------------------------------------
+%%% NoRMCorre REGISTRATION --------------------------------------------------------------------
 %==================================================================================================
 
 % -------------------------------------------------------------------------------------------------
 
-expDates = {'2018_02_25' ...
+expDates = {...
+    '2018_03_23_exp_1' ...
+    '2018_03_23_exp_2' ...
             }
 
-sids = [ 2 ...
+sids = [ ...
+    0 ...
+    0 ...
     ];
 
-% fileNames = repmat(['sid_', num2str(sid), '_sessionFile.mat'], 1, 2);
-fileNames = { 'sid_2_Chan_1_sessionFile.mat', ...
-            }
+fileNames = repmat({['sid_', num2str(sid), '_sessionFile.mat']}, 1, numel(expDates));
+% fileNames = { 'sid_1_Chan_1_sessionFile.mat', ...
+%             }
 
 for iExp = 1:length(expDates)
     
@@ -124,43 +143,20 @@ for iExp = 1:length(expDates)
     writeToLog(sprintf('%s_%s NoRMCorre registration completed in %s min', expDate, fileName, num2str(round(toc/60, 1))));
     
 end
-
-% -------------------------------------------------------------------------------------------------
-%==================================================================================================
-%% % CREATE POST-NoRMCorre AVERAGE FLUORESCENCE VIDEOS ------------------------------------------------------------
-%==================================================================================================
-
+clear expDates sids fileNames fileName parentDir
 % -------------------------------------------------------------------------------------------------
 
-expDates = {'2018_02_25' ...
+%==================================================================================================
+%%% CREATE BEHAVIOR VIDEOS -------------------------------------------------------------------------
+%==================================================================================================
+expDates = {...
+    '2018_03_23_exp_1' ...
+    '2018_03_23_exp_2' ...
             }
 
-sids = [ 2 ...
-    ];
-for iExp = 1:length(expDates)
-    
-    expDate = expDates{iExp}
-    sid = sids(iExp);
-    
-    tic
-    parentDir = ['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate];
-    disp('Creating average fluorescence videos...');
-    create_average_fluorescence_vid(parentDir, sid)
-    writeToLog(sprintf('%s average fluorescence vids made in %s min', expDate, num2str(round(toc/60, 1))));
-    disp(['Creating average fluorescence videos took ', num2str(round(toc/60, 1)) ' min']);
-end
-% -------------------------------------------------------------------------------------------------
-%==================================================================================================
-%% % CREATE BEHAVIOR VIDEOS -------------------------------------------------------------------------
-%==================================================================================================
-
-expDates = {'2018_02_25'
-            }
-
-sids = [ 2 ...
-         2 ...
-         0 ...
-         0 ...
+sids = [ ...
+    0 ...
+    0 ...
     ];
 
 FRAME_RATE = 25;
@@ -184,6 +180,7 @@ for iExp = 1:length(expDates)
     disp(['Concatenating behavior vids took ', num2str(round(toc/60, 1)) ' min']);
     writeToLog(sprintf('%s behavior vids concatenated in %s min', expDate, num2str(round(toc/60, 1))));
 end
+clear expDates sids parentDir
 % -------------------------------------------------------------------------------------------------
 
 
@@ -191,15 +188,19 @@ end
 %% % MAKE OPTIC FLOW COMBINED VIDS------------------------------------------------------------------
 %==================================================================================================
 
-expDates = {'2018_02_25'
+expDates = {...
+    '2018_03_23_exp_2' ...
             }
 
-sids = [ 2 ...
-         2 ...
+sids = [ ...
+    0 ...
+    0 ...
     ];
      
 
-fileNames = {'Behavior_Vid_ROI_Data.mat' ...
+fileNames = { ...
+    'Behavior_Vid_ROI_Data.mat' ...
+    'Behavior_Vid_ROI_Data.mat' ...
 };
 
  FRAME_RATE = 25;
@@ -214,6 +215,7 @@ fileNames = {'Behavior_Vid_ROI_Data.mat' ...
      select_video_ROIs(parentDir, sid);
      writeToLog(sprintf('%s optic flow ROIs defined', expDate));
  end
+
  %%
  for iExp = 1:length(expDates)
      
@@ -228,7 +230,7 @@ fileNames = {'Behavior_Vid_ROI_Data.mat' ...
      disp(['Creating combined vids took ', num2str(round(toc/60, 1)) ' min']);
      writeToLog(sprintf('%s combined vids created in %s min', expDate, num2str(round(toc/60, 1))));
  end
-
+ clear expDates sids parentDir fileName
 % -------------------------------------------------------------------------------------------------
 
 %==================================================================================================
@@ -237,9 +239,9 @@ fileNames = {'Behavior_Vid_ROI_Data.mat' ...
 
 % -------------------------------------------------------------------------------------------------
 
-expDate = '2018_02_07_exp_1';
+expDate = '2018_02_09_exp_1';
 parentDir = ['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate];
-sid = 0;
+sid = 2;
 
 %%% Archive raw anatomy stacks
 archiveName = 'AnatomyStacks';
@@ -256,6 +258,7 @@ parentDir = ['B:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate];
 archiveName = ['sid_', num2str(sid), '_RawFrames'];
 system7zip(parentDir, archiveName, '7z', ['*sid_', num2str(sid), '_t*'], 1);
 
+clear parentDir archiveName filterString
 % -------------------------------------------------------------------------------------------------
 %==================================================================================================
 %% PROCESS ANVIL ANNOTATION DATA ------------------------------------------------------------------
@@ -263,17 +266,18 @@ system7zip(parentDir, archiveName, '7z', ['*sid_', num2str(sid), '_t*'], 1);
 
 FRAME_RATE = 25;
 trialDuration = 20;
-expDate = '2018_02_25';
-sid = 2;
+expDate = '2018_03_23_exp_2';
+sid = 0;
 
 parentDir = ['B:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate, '\_Movies'];
 saveDir = ['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)];
 annotationFileName = [expDate, '_Annotation.txt'];
 
 tic
-test = process_anvil_annotations(sid, parentDir, saveDir, annotationFileName, FRAME_RATE, trialDuration);
+process_anvil_annotations(sid, parentDir, saveDir, annotationFileName, FRAME_RATE, trialDuration);
 disp(['Processing Anvil annotations took ', num2str(round(toc/60, 1)) ' min']);
 
+clear parentDir saveDir annotationFileName
 % -------------------------------------------------------------------------------------------------
 
 %% ==================================================================================================

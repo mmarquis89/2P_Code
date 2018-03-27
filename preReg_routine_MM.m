@@ -114,7 +114,7 @@ for iSession = mySessions
         if iFile == 1
             disp('Creating session data array(s)...')
             arraySize = size(squeeze(chanData(:,:,:,:,1))); % --> [y, x, plane, volume]
-            arraySize(end+1) = size(currFiles,1);           % --> [y, x, plane]
+            arraySize(end+1) = size(currFiles,1);          
             wholeSession_1 = uint16(zeros(arraySize));      % --> [y, x, plane, volume, trialNum]
             if nChannels > 1
                 % Make a second array if there are two channels of imaging data

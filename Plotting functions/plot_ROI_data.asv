@@ -27,8 +27,10 @@ function plot_ROI_data(ax, ROIDffAvg, infoStruct, varargin)
 %       'StdDevShading'  = (default: 1) boolean specifying whether to shade 1 standard deviation 
 %                           above and below the mean dF/F line.
 % 
-%       'EventShading'   = (default: []) two element vector specifying times in seconds to shade to
-%                          indicate stimulus presentation
+%       'EventShading'   = (default: 1) boolean specifying whether to shade event times (e.g. odor 
+%                           stims). Requires an 'AnnotationType' to work properly.
+% 
+%       'stimTrials' = (default: []) an logical vector with the onset and volumes                      for an annotation that occurred in every trial.
 %       
 %       'SmoothWinSize'  = (default: 3) the width in volumes of the moving average smoothing window
 %                           that will be applied to BOTH the mean dF/F plot and the individual trial 
@@ -48,7 +50,8 @@ p = inputParser;
 addParameter(p, 'OutlierSD', 5);
 addParameter(p, 'SingleTrials', 1);
 addParameter(p, 'StdDevShading', 1);
-addParameter(p, 'EventShading', []);
+addParameter(p, 'EventShading', 1);
+addParameter(p, 'AnnotationType', []);
 addParameter(p, 'SmoothWinSize', 3);
 addParameter(p, 'VolumeRate', []);
 addParameter(p, 'VolOffset', 0);
@@ -58,6 +61,7 @@ outlierSD = p.Results.OutlierSD;
 singleTrials = p.Results.SingleTrials;
 shadeSDs = p.Results.StdDevShading;
 eventShading = p.Results.EventShading;
+annotationType = p.Results.AnnotationType;
 smoothWin = p.Results.SmoothWinSize;
 volumeRate = p.Results.VolumeRate;
 volOffset = p.Results.VolOffset;
@@ -119,11 +123,20 @@ if volTimes(1) < 0
 end
 ylim(yL);
 
-% Plot event timing
-if ~isempty(eventShading)
-    onsetTime = eventShading(1);
-    offsetTime = eventShading(2);
-    fill(ax, [onsetTime, onsetTime, offsetTime, offsetTime], [-100, 100, 100, -100], 'r', 'facealpha', 0.1, 'edgealpha', 0); % Huge numbers so the bars don't get cut off if I increase the ylims later
-    ylim(yL);
+% Plot annotationTiming
+if eventShading
+    if ~isempty(stimTrials)
+        eventOnsetTimes = unique(infoStruct.stimOnsetTimes(logical(stimTrials)));
+        eventOffsetTimes = unique(eventOnsetTimes + infoStruct.stimDurs(logical(stimTrials)));
+        yL = ylim();
+        for iEvent = 1:numel(eventOnsetTimes)
+            onsetTime = eventOnsetTimes(iEvent);
+            offsetTime = eventOffsetTimes(iEvent);
+            fill(ax, [onsetTime, onsetTime, offsetTime, offsetTime], [-100, 100, 100, -100], 'r', 'facealpha', 0.20, 'edgealpha', 0); % Huge numbers so the bars don't get cut off if I increase the ylims later
+        end
+        ylim(yL);
+    else
+        disp('Warning: no annotation type was provided. Skipping annotation timing shading.')
+    end
 end
 end

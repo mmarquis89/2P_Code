@@ -1,10 +1,8 @@
 function msg = make_vids_2P(sid, parentDir, frameRate)
 %==============================================================================================================================
 % CREATE MOVIES FROM .TIF FILES FROM 2P EXPERIMENT
-% Creates an .avi movie for each trial of a 2P imaging experiment from the .tif files captured by the fly behavior camera,
-% and returns a message string indicating whether the operation was a success (and if not, which trial it failed on).
-% The videos are saved in a folder within the parent directory named '_Movies'. The function also saves .mat files condtaining 
-% information about the total number of frames and the frame-to-frame optic flow data in the same directory.
+% Creates an .avi movie for each trial of a 2P imaging experiment from the .tif files captured by the fly behavior camera.
+% The videos are saved in a folder within the parent directory named '_Movies'.
 %
 % Inputs:
 %       sid       = the session ID of the videos you want to process.
@@ -18,8 +16,8 @@ dirFiles = dir(fullfile(parentDir, ['*sid_', num2str(sid), '_t*']));
 sessionDirs = dirFiles([dirFiles.isdir]); % Drop any non-folder items in the directory (e.g. ball/metadata files)
 
 disp('Creating videos...')
-% try
-    frameCounts = []; flowData = []; rawFlowMags = [];
+
+    frameCounts = [];
     for iTrial = 1:length(sessionDirs)
         
         % Pad the trial number with leading zeros if necessary to ensure correct filename sorting
@@ -45,43 +43,36 @@ disp('Creating videos...')
         % Make sure this video doesn't already exist
         if exist(fullfile(savePath, [trialStr, '.mp4']), 'file') == 0
             
+            % Create video writer object using MPEG-4 H.264 compression for Anvil compatibility
+            outputVid = VideoWriter(fullfile(savePath, [trialStr, '.mp4']), 'MPEG-4');
+            outputVid.FrameRate = frameRate;
+            open(outputVid)
+            
             % Make sure there's at least one image file in this trial's directory
             currFiles = dir(fullfile(parentDir, folderName, '*.tif'));
             if ~isempty(currFiles)
                 currFrames = sort({currFiles.name}');
                 
-                % Create video writer object using MPEG-4 H.264 compression for Anvil compatibility
-                outputVid = VideoWriter(fullfile(savePath, [trialStr, '.mp4']), 'MPEG-4');
-                outputVid.FrameRate = frameRate;
-                open(outputVid)
-                
-                % Write each .tif file to video and record optic flow data
-%                 opticFlow = opticalFlowFarneback;
-%                 meanFlowMag = zeros(length(currFrames),1);
-%                 rawFlowMag = [];
+                % Write each .tif file to video
                 for iFrame = 1:length(currFrames)
                     
                     % Read image
                     currImg = imread(fullfile(sourcePath, currFrames{iFrame}));
                     
-%                     % Calculate optic flow
-%                     currFlow = estimateFlow(opticFlow, currImg);
-%                     meanFlowMag(iFrame) = mean(mean(currFlow.Magnitude));
-%                     rawFlowMag(:,:,iFrame) = currFlow.Magnitude;
-                    
                     % Write frame to video
                     writeVideo(outputVid, currImg);                    
                 end
                 
-%                 % Save optic flow data for current trial
-%                 savefast(fullfile(savePath, [trialStr, '_opticFlowData.mat']), 'meanFlowMag', 'rawFlowMag')
-                close(outputVid)
-                
                 % Record number of frames in log
                 frameCounts(iTrial).nFrames = length(currFrames);
                 frameCounts(iTrial).trial = trialStr;
-                
+            else
+                % Record number of frames in log
+                frameCounts(iTrial).nFrames = 0;
+                frameCounts(iTrial).trial = trialStr;
             end%if
+            
+            close(outputVid)
         else
             disp(['Video already exists...skipping ', trialStr]);
         end%if
@@ -90,17 +81,5 @@ disp('Creating videos...')
     % Save frame count log
     save(fullfile(savePath, ['sid_', num2str(sid) '_frameCountLog.mat']), 'frameCounts')    
     msg = 'Videos created successfully!';
-% catch
-%     msg = ['Error - video making failed on trial #', num2str(iTrial)];
-%     disp(msg)
-%     
-%     % Create save directory if it doesn't already exist
-%     if ~isdir(savePath)
-%         mkdir(savePath);
-%     end
-%     
-%     % Save frame count log
-%     save(fullfile(savePath, ['sid_', num2str(sid) '_frameCountLog.mat']), 'frameCounts')
-% end%try
 
 end%function

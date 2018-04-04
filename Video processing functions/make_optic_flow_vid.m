@@ -25,7 +25,14 @@ load(fullfile(parentDir, roiDataFile));
 
 % Load frame count log
 individualVidFrameCounts = load(fullfile(parentDir, ['sid_', num2str(sid), '_frameCountLog.mat']));
-frameCounts = [individualVidFrameCounts.frameCounts.nFrames];
+frameCounts = [];
+for iTrial = 1:length(individualVidFrameCounts.frameCounts)
+    if isempty(individualVidFrameCounts.frameCounts(iTrial).nFrames)
+        frameCounts(iTrial) = 0;
+    else
+        frameCounts(iTrial) = individualVidFrameCounts.frameCounts(iTrial).nFrames;
+    end   
+end
 framesPerTrial = mode(frameCounts);
 
 % Calculate optic flow for each movie frame (unless file already exists)
@@ -72,14 +79,7 @@ vidFile = fullfile(parentDir, ['sid_', num2str(sid), '_AllTrials.mp4']);
  else
      % Just load the existing data if it exists
     load(fullfile(parentDir, ['sid_', num2str(sid), '_optic_flow_data.mat']));
-
-% TEMP
-nFrames = 69899;
-frameTimes = (1:1:nFrames) ./ FRAME_RATE;
-
  end
- 
- 
  
  % Recreate vidReader
 myVid = VideoReader(vidFile);
@@ -132,6 +132,9 @@ for iFrame = 1:nFrames
     trialBoundTimes = [];
     runningCount = 1;
     for iTrial = 1:(length(frameCounts)-1)
+        if runningCount > length(frameTimes) % This prevents an error if the first one or more trials has zero frames
+           runningCount = length(frameTimes); 
+        end
         trialBoundTimes(iTrial) = frameTimes(runningCount);
         runningCount = runningCount + frameCounts(iTrial);
     end

@@ -16,10 +16,13 @@ function select_video_ROIs(parentDir, sid)
 % Load and plot 1st frame acquired during the first trial (number choice is arbitrary)
 myFolders = dir(fullfile(parentDir, ['*sid_', num2str(sid), '*tid*']));
 myFolders = myFolders([myFolders.isdir]);
-firstFolder = myFolders(1);
-myFrames = dir(fullfile(parentDir, firstFolder.name, '*.tif'));
-plotImg = uint8(imread(fullfile(parentDir, firstFolder.name, myFrames(1).name)));
-
+iTrial = 1;
+myFrames = dir(fullfile(parentDir, myFolders(iTrial).name, '*.tif'));
+while isempty(myFrames) % In case the first trial doesn't have any video frames
+    iTrial = iTrial + 1;
+    myFrames = dir(fullfile(parentDir, myFolders(iTrial).name, '*.tif'));
+end
+plotImg = uint8(imread(fullfile(parentDir, myFolders(iTrial).name, myFrames(1).name)));
 h = figure(1);clf; hold on
 im = imshow(plotImg, []);
 

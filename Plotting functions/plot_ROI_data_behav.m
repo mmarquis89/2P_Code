@@ -1,4 +1,4 @@
-function plot_ROI_data(ax, ROIDffAvg, varargin)
+function plot_ROI_data_behav(ax, ROIDffAvg, varargin)
 %=========================================================================================================
 % PLOT MEAN dF/F DATA WITHIN ROI THROUGHOUT TRIAL
 %
@@ -124,12 +124,15 @@ if ~isempty(annotArr)
 end
 
 % Create colormap
-if ~isempty(annotArr)
-     cm =[rgb('RoyalBlue') * 0.6; ...
+if nGroups == 1
+    cm = jet(nTrials);
+elseif ~isempty(annotArr)
+    
+    cm =[rgb('Indigo'); ...
         rgb('Magenta'); ...
-        rgb('Cyan') * 0.85; ...
-        rgb('Crimson'); ...
-        rgb('Gold') * 0.9; ...
+        rgb('Cyan'); ...
+        rgb('DarkRed'); ...
+        rgb('Gold'); ...
         rgb('Yellow'); ...
         rgb('Green'); ...
         rgb('Red'); ...
@@ -137,8 +140,6 @@ if ~isempty(annotArr)
         rgb('Gold'); ...
         rgb('black') ...
         ];
-elseif nGroups == 1
-    cm = jet(nTrials);
 else
     cm = [rgb('Blue'); ...
         rgb('Green'); ...
@@ -177,6 +178,7 @@ for iGroup = 1:nGroups
         for iTrial = 1:size(groupDff, 2)
             currData = smooth(groupDff(:, iTrial), smoothWin);
             
+            
             if ~isempty(annotArr)
                 
                 % Plot trial dF/F in segments if coloring by annotation data
@@ -186,42 +188,21 @@ for iGroup = 1:nGroups
                 currAnnotDataStr = regexprep(num2str(currAnnotData'), ' ', '');
                 postStartTransVols = regexp(currAnnotDataStr, '.(?=(0[234])|2[034]|3[024]|4[023])') + 1;
                 startTransVols = regexp(currAnnotDataStr, '^0[234]'); % Necessary if there is a transition between volumes #1 and #2
-                endTransVols = regexp(currAnnotDataStr, '[234]0$'); % Same but for the last few volumes
-                transVols = [startTransVols, postStartTransVols, endTransVols];
+                transVols = [startTransVols, postStartTransVols];
                 volTypes = currAnnotDataStr(transVols);
                 
-                % Plot each line segment in the proper color
-                for iSeg = 1:numel(transVols)
+                for iSeg = 1:numel(transVols)-1
                     if iSeg == 1
                         startVol = 1;
-                        endVol = transVols(1);
+                        endVol = transVols(1)
                     else
-                        startVol = transVols(iSeg - 1) + 1;
-                        endVol = transVols(iSeg);
+                        startVol = transVols(iSeg) + 1
+                        endVol = transVols(iSeg + 1)
                     end
-                    currVolType = str2double(volTypes(iSeg));
-                    currColor = cm(currVolType + 1, :);
-                    plt = plot(ax, volTimes(startVol:endVol+1), currData(startVol:endVol+1), 'color', currColor, 'LineWidth', 1);
+                    currVolType = str2double(volTypes(iSeg+1))
+                    currColor = cm(currVolType + 1, :)
+                    plt = plot(ax, volTimes(startVol:endVol+1), currData(startVol:endVol+1), 'color', currColor, 'LineWidth', 0.1);
                     plt.Color(4) = singleTrialAlpha;
-                end
-                
-                if ~isempty(transVols)
-                    % Still have to plot the final segment
-                    startVol = transVols(end) + 1;
-                    endVol = numel(currAnnotDataStr);
-                    currVolType = str2double(currAnnotDataStr(end));
-                    currColor = cm(currVolType + 1, :);
-                    plt = plot(ax, volTimes(startVol:endVol), currData(startVol:endVol), 'color', currColor, 'LineWidth', 1);
-                    plt.Color(4) = singleTrialAlpha;
-                else
-                    % In case there's no behavior in the trial, just plot a single line
-                    startVol = 1;
-                    endVol = numel(currAnnotDataStr);
-                    currVolType = str2double(currAnnotDataStr(1));
-                    currColor = cm(currVolType + 1, :);
-                    plt = plot(ax, volTimes(startVol:endVol), currData(startVol:endVol), 'color', currColor, 'LineWidth', 1);
-                    plt.Color(4) = singleTrialAlpha;
-                    
                 end
                 
             else

@@ -7,6 +7,14 @@ myData = load_imaging_data();
 % myData.goodTrials = [0, 0, 0, myData.goodTrials];
 % myData.trialAnnotations = [{[], [], []}, myData.trialAnnotations];
 
+% myData.nTrials = 121;
+% myData.origFileNames(22) = [];
+% myData.stimDurs(22) = [];
+% myData.stimOnsetTimes(22) = [];
+% myData.trialType(22) = [];
+% myData.stimSepTrials.OdorA(22) = [];
+% myData.stimSepTrials.OdorB(22) = [];
+% myData.wholeSession(:,:,:,:, 22) = [];
 
 for iFold = 1    
     % Copy variables for convenience
@@ -46,8 +54,8 @@ end%iFold
 
 %% VIEW RAW DATA FOR A SINGLE TRIAL AND PLANE
 
-planeNum = 6;
-trialNum = 15; % Does not account for any skipped trials
+planeNum = 10;
+trialNum = 4; % Does not account for any skipped trials
 
 preview_trial_movie(myData.wholeSession, planeNum, trialNum, [], [], []);
 clear planeNum trialNum
@@ -228,23 +236,23 @@ analysisWindows = []; overshoots = []; filterMatches = [];
 disp(annotationTypeSummary)
 
 % Choose active alignment events
-activeEventTypes = [4 6];
+activeEventTypes = [4];
 disp(annotationTypeSummary(activeEventTypes, 2))
 
 % Choose active filter events
-activeFilterTypes = [1 6];
+activeFilterTypes = [1];
 disp(annotationTypeSummary(activeFilterTypes, 2))
 
 
 % --------- ALIGNMENT EVENTS -------------
 
 % % Odor A
-% analysisWindows(end+1,:) = [ 1  3 ];
+% analysisWindows(end+1,:) = [ 2  3 ];
 % overshoots(end+1)        = 1;
 % filterMatches{end+1} = [];
 % 
 % % Odor B
-% analysisWindows(end+1,:) = [ 1  3 ];
+% analysisWindows(end+1,:) = [ 2  3 ];
 % overshoots(end+1)        = 1;
 % filterMatches{end+1} = [];
 
@@ -257,11 +265,16 @@ disp(annotationTypeSummary(activeFilterTypes, 2))
 analysisWindows(end+1,:) = [ 2  3 ];
 overshoots(end+1)        = 0;
 filterMatches{end+1} = [];
-% 
-% Grooming
-analysisWindows(end+1,:) = [ 2  3 ];
-overshoots(end+1)        = 0;
-filterMatches{end+1} = [2];
+
+% % Isolated Movement
+% analysisWindows(end+1,:) = [ 2  2 ];
+% overshoots(end+1)        = 1;
+% filterMatches{end+1} = [3];
+
+% % Grooming
+% analysisWindows(end+1,:) = [ 1  3 ];
+% overshoots(end+1)        = 0;
+% filterMatches{end+1} = [];
 
 % ------------- FILTER EVENTS -----------------
 
@@ -276,6 +289,22 @@ filtWindows(end+1,:)     = [  1  0  ];
 allFilts{end+1} = [withOdor; noOdor]; %
 allFiltNames{end+1} = {'WithOdor', 'NoOdor'}; %
 
+% % Odor A
+% withOdorA =  [ 0  1  0 ];
+% noOdorA =    [-1 -1  0 ];
+% anyOdorA =   [ 0  0  0 ];
+% filtWindows(end+1,:)     = [  1  0  ];
+% allFilts{end+1} = [withOdorA; noOdorA]; %
+% allFiltNames{end+1} = {'WithOdorA', 'NoOdorA'}; %
+% 
+% % Odor B
+% withOdorB =  [ 0  1  0 ];
+% noOdorB =    [-1 -1  0 ];
+% anyOdorB =   [ 0  0  0 ];
+% filtWindows(end+1,:)     = [  1  0  ];
+% allFilts{end+1} = [withOdorB; noOdorB]; %
+% allFiltNames{end+1} = {'WithOdorB', 'NoOdorB'}; %
+
 % % Locomotion
 % startLoc = [-1  1  0 ];
 % endLoc =   [ 1  0 -1 ];
@@ -287,17 +316,30 @@ allFiltNames{end+1} = {'WithOdor', 'NoOdor'}; %
 % allFilts{end+1} = [noLoc; startLoc; contLoc]; %endMove; anyMove;startLoc; 
 % allFiltNames{end+1} = { 'NoLoc', 'startLoc', 'contLoc'}; %'EndMove', 'AnyMove','StartLoc',
 
-% Grooming
-startGroom = [-1  1  0 ];
-endGroom =   [ 1  0 -1 ];
-contGroom =  [ 1  1  0 ];
-noGroom =    [-1 -1 -1 ];
-anyGroom =   [ 0  0  0 ];
-withGroom =  [ 0  1  0 ];
-filtWindows(end+1,:)     = [  1  1  ];
-allFilts{end+1} = [noGroom; withGroom]; %endMove; anyMove;
-allFiltNames{end+1} = {'NoGroom', 'withGroom'}; %'EndMove', , 'AnyMove'
+% % Isolated movement
+% startIsoMove = [-1  1  0 ];
+% endIsoMove =   [ 1  0 -1 ];
+% contIsoMove =  [ 1  1  0 ];
+% noIsoMove =    [-1 -1 -1 ];
+% anyIsoMove =   [ 0  0  0 ];
+% withIsoMove =  [ 0  1  0 ];
+% afterIsoMove = [ 1  0  0 ];
+% beforeIsoMove =[-1  1  0 ];
+% filtWindows(end+1,:)     = [  1  1  ];
+% allFilts{end+1} = [noIsoMove; beforeIsoMove; afterIsoMove]; %endMove; anyMove;
+% allFiltNames{end+1} = {'NoIsoMove', 'beforeIsoMove', 'afterIsoMove'}; %'EndMove', , 'AnyMove'
 
+% % Grooming
+% startGroom = [-1  1  0 ];
+% endGroom =   [ 1  0 -1 ];
+% contGroom =  [ 1  1  0 ];
+% noGroom =    [-1 -1 -1 ];
+% anyGroom =   [ 0  0  0 ];
+% withGroom =  [ 0  1  0 ];
+% filtWindows(end+1,:)     = [  1  1  ];
+% allFilts{end+1} = [noGroom; withGroom]; %endMove; anyMove;
+% allFiltNames{end+1} = {'NoGroom', 'withGroom'}; %'EndMove', , 'AnyMove'
+% 
 % % All behavior
 % startMove = [-1  1  0 ];
 % endMove =   [ 1  0 -1 ];
@@ -305,8 +347,8 @@ allFiltNames{end+1} = {'NoGroom', 'withGroom'}; %'EndMove', , 'AnyMove'
 % noMove =    [-1 -1 -1 ];
 % anyMove =   [ 0  0  0 ];
 % filtWindows(end+1,:)     = [ 0  0 ];
-% allFilts{end+1} = [noMove; startMove; endMove; contMove]; %endMove; anyMove;
-% allFiltNames{end+1} = {'NoMove', 'StartMove', 'EndMove' 'ContMove'}; %'EndMove', , 'AnyMove'
+% allFilts{end+1} = [noMove; startMove; contMove]; %endMove; anyMove;
+% allFiltNames{end+1} = {'NoMove', 'StartMove', 'ContMove'}; %'EndMove', , 'AnyMove'
 
 for iFold = 1
 
@@ -480,17 +522,17 @@ end%iFold
 %%%=================================================================================================
 %% PLOT 2-D SUMMARY OF BEHAVIOR DATA ANNOTATIONS
 
-saveFig = 0;
+saveFig = 1;
 plotTypes = [2 1]; % 1 = odor stims, 2 = behavior
 s = myData.stimSepTrials;
 
 % trialGroups = [];
 % plotTitleSuffix = '';
 % fileNameSuffix = '_AllTrials';
-% % 
-trialGroups = [[s.OdorA + 2 * s.OdorB] .* goodTrials]; 
-plotTitleSuffix = ' - IBA\_e-1 (top) vs. ACV\_e-1 (bottom)';%
-fileNameSuffix = '_OdorAvsOdorB';
+% 
+trialGroups = [[s.OdorA + 2 * s.OdorB + 3 * s.NoStim] .* goodTrials]; 
+plotTitleSuffix = ' - Ethanol\_neat (top) vs. ACV\_e-1 (mid) vs. no Stim (bottom)';%
+fileNameSuffix = '_OdorAvsOdorBvsNoStim';
 
 for iFold = 1
 
@@ -587,16 +629,18 @@ end%iFold'
 %----- Plot 1D trial-averaged movement data -----
 s = myData.stimSepTrials;
 
-saveFig = 0;
+saveFig = 1;
 actionLabel = [2]; % locomotionLabel = 2; noActionLabel = 0; groomingLabel = 3; isoMovementLabel = 4;
-figTitle = [expDate, ' - Fly movements throughout trial (red = odor)'];
-plotNames = {'IBA\_e-1', 'ACV\_e-1'};
+figTitle = regexprep([expDate, '  —  Fly locomotion throughout trial (red = odor)'], '_', '\\_');
+plotNames = {'Ethanol\_neat', 'ACV\_e-1', 'No Stim'};
 
 % trialGroups =  []; 
-% fileNameSuffix = '_AllTrials_IsoMove';
-
-trialGroups =  [s.OdorA + 2 * s.OdorB] .* goodTrials; 
-fileNameSuffix = '_OdorAvsOdorB_IsoMove'; 
+% fileNameSuffix = '_AllTrials_Locomotion';
+% 
+trialGroups =  [s.OdorA + 2 * s.OdorB + 3 * s.NoStim] .* goodTrials; 
+% trialGroups(1:60) = 0;
+trialGroups(60:end) = 0;
+fileNameSuffix = '_OdorAvsOdorBvsNoStim_EarlyTrials'; 
 
 stimShadingColors = {'red', 'green'};
 
@@ -686,7 +730,7 @@ if saveFig
     end
     
     % Create filename
-    fileName = ['Summed_Movement', fileNameSuffix, '_', expDate];
+    fileName = regexprep(['Summed_Movement', fileNameSuffix, '_', expDate], '_', '\_');
     
     % Warn user and offer to cancel save if this will overwrite existing files
     overwrite = 1;
@@ -719,20 +763,20 @@ for iFoldOut = 1
     %% PLOT ODOR ONSET/OFFSET HEATMAPS FOR SOME TRIAL CONDITIONS
     
     % Show summary again
-    odorEventName = 'odor_B';
+    odorEventName = 'odor_A';
     eventInd = ~cellfun(@isempty, strfind(primaryEventNames, odorEventName));
     currSummary = allCondSummaries{eventInd};
     currCondNames = allCondNames{eventInd};
     disp(currSummary)
     
     % Calculate absolute max dF/F value across all planes and stim types
-    currConds = [1 4 7 5];
+    currConds = [1 2 3];
     makeVid = 1;
     sigma = [0.6];   
     rangeType = 'Max';
     rangeScalar = 0.4;
     saveDir = [];
-    fileName = 'ACV_Response_Heatmaps';
+    fileName = 'EtOH_Response_Heatmaps';
 
     plotTitles = [];
     for iCond = currConds
@@ -760,10 +804,10 @@ for iFold = 1
     smoothingSigma = [0.6]; 
     rangeType = 'max';
     rangeScalar = 1;
-    makeVid = 0;
+    makeVid = 1;
     saveDir = [];
-    fileName = 'Movement_Plane_Heatmaps';
-    titleStr = {'dF/F - Movement vs. Quiescence'};
+    fileName = 'Locomotion_Plane_Heatmaps';
+    titleStr = {'dF/F - Locomotion vs. Quiescence'};
     
 for iFoldIn = 1
     % Identify behavioral state during each volume
@@ -784,29 +828,37 @@ for iFoldIn = 1
             stoppedVols(iTrial, :) = 0;
         end
     end
-
+    
     % Calculate average values for each plane across behavioral states
     meanActionVols = [];
     meanStoppedVols = [];
+    allTrialBaselines = [];
     for iTrial = 1:myData.nTrials
-       currImgData = wholeSession(:,:,:,:,iTrial);
-       currActionVols = logical(actionVols(iTrial,:));
-       currStoppedVols = logical(stoppedVols(iTrial,:));
-       
-       % Pull out running volumes, if any exist, from the current trial
-       if sum(currActionVols) > 0
-           meanActionVols(:,:,:,end+1) = mean(currImgData(:,:,:,currActionVols),4);    %--> [y, x, plane, trial]
-       end
-       
-       % Pull out stopping volumes, if any exist, from the current trial
-       if sum(currStoppedVols) > 0
-           meanStoppedVols(:,:,:,end+1) = mean(currImgData(:,:,:,currStoppedVols),4);  %--> [y, x, plane, trial]
-       end
-
-    end
-    actionMean = mean(meanActionVols, 4);   %--> [y, x, plane]
-    stoppedMean = mean(meanStoppedVols, 4); %--> [y, x, plane] 
-
+        disp(['Trial ', num2str(iTrial)])
+        currImgData = wholeSession(:,:,:,:,iTrial);
+        currActionVols = logical(actionVols(iTrial,:));
+        currStoppedVols = logical(stoppedVols(iTrial,:));
+        
+        % Pull out running volumes, if any exist, from the current trial
+        if sum(currActionVols) > 0
+            meanActionVols(:,:,:,end+1) = mean(currImgData(:,:,:,currActionVols),4);    %--> [y, x, plane, trial]
+        end
+        
+        % Pull out stopping volumes, if any exist, from the current trial
+        if sum(currStoppedVols) > 0
+            meanStoppedVols(:,:,:,end+1) = mean(currImgData(:,:,:,currStoppedVols),4);  %--> [y, x, plane, trial]
+        end
+        
+%         trialDataSorted = sort(wholeSession(:, :, :, :, iTrial), 4);                % --> [y, x, plane, volume]
+%         trialBaseline = mean(trialDataSorted(:,:,:,1:round(nVolumes * 0.05)), 4);   % --> [y, x, plane]
+%         allTrialBaselines(:, :, :, iTrial) = trialBaseline;                         % --> [y, x, plane, trial]
+        
+    end    
+        
+    actionMean = mean(meanActionVols, 4);          %--> [y, x, plane]
+    stoppedMean = mean(meanStoppedVols, 4);        %--> [y, x, plane] 
+    
+    
     % Get dF/F values for action relative to quiescence
     actionDff = (actionMean - stoppedMean) ./ stoppedMean; % --> [y, x, plane]
 
@@ -819,25 +871,26 @@ for iFoldIn = 1
 
 clear actionLabel baselineLabel smoothingSigma rangeType rangeScalar makeVid saveDir fileName titleStr actionVols stoppedVols currActions currActionVols
 clear meanActionVols meanStoppedVols currImgData currACtionVols currStoppedVols meanActionVols meanStoppedVols actionMean stoppedMean range volActions 
+clear trialDatasorted trialBaseline allTrialBaselines baselineMean
 end%iFoldIn
 
     %% PLOT INTERACTION HEATMAPS FOR SOME TRIAL CONDITIONS
     
     % Show summary again
-    eventInd = ~cellfun(@isempty, strfind(primaryEventNames, 'groom'));
+    eventInd = ~cellfun(@isempty, strfind(primaryEventNames, 'locomotion'));
     currSummary = allCondSummaries{eventInd};
     disp(currSummary)
                  
     currCondNames = repmat(allCondNames{eventInd}, 2, 1);
     
     % Calculate absolute max dF/F value across all planes and stim types
-    currConds = [2 4];
+    currConds = [1 2 5 6];
     sigma = [0.6]; 
     rangeType = 'Max';
-    rangeScalar = 0.1;
-    makeVid = 1;
+    rangeScalar = 0.8;
+    makeVid = 0;
     saveDir = [];
-    fileName = 'Grooming_Heatmaps';
+    fileName = 'Proboscis_Movement_Heatmaps';
 
     plotTitles = [];
     for iCond = currConds
@@ -994,18 +1047,18 @@ clear currDffAvg currDff
 %% PLOT EVENT-ALIGNED dF/F WITHIN ROIs
 
 % Show summary again
-eventName = 'groom';
+eventName = 'locomotion';
 shadeDur = 0;
 eventInd = ~cellfun(@isempty, strfind(primaryEventNames, eventName));
 currSummary = allCondSummaries{eventInd};
 disp(currSummary)
 
-currConds = [2 4];
+currConds = [3 1 2];
 currCondNames = allCondNames{eventInd}(currConds);
 
 currDffData = ROIEventDff{eventInd}(currConds); % --> {cond}[volume, event, ROI]
 
-fileNamePrefix = 'Grooming_responses_';
+fileNamePrefix = 'Locomotion_responses_';
 
 saveDir = 0;
 saveDir = uigetdir(['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), '\Analysis'], 'Select a save directory');
@@ -1057,7 +1110,7 @@ for iROI = ROIlist
         ax{iPlot} = gca;
         volOffset = round(analysisWindows(eventInd, 1) * volumeRate * -1);
         plot_ROI_data(ax{iPlot}, plotDff, 'EventShading', eventShading, 'VolumeRate', volumeRate, 'VolOffset', volOffset, 'OutlierSD', 5); 
-        title([expDate, ' - ', regexprep(currCondNames{iPlot}, '_', '\\_'), ' - ', alignStr{iPlot}])
+        title(regexprep([expDate, ' - ', currCondNames{iPlot}, ' - ', alignStr{iPlot}], '_', '\\_'))
         yLims(iPlot,:) = ylim(ax{iPlot});
     end
     
@@ -1101,7 +1154,7 @@ myData.ROIDataAvg = ROIDataAvg;
 
     % Using bottom 5% of entire ROI's mean value throughout each trial as baseline
     ROIDataAvgSorted = sort(ROIDataAvg, 1);                                     % --> [volume, trial, ROI] 
-    baselineMean = mean(ROIDataAvgSorted(1:round(nVolumes * 0.05), :, :), 1);   % --> [volume, trial, ROI] 
+    baselineMean = mean(ROIDataAvgSorted(1:round(nVolumes * 0.05), :, :), 1);   % --> [trial, ROI] 
     baselineMeanRep = baselineMean(ones(1, nVolumes), :, :);                    % --> [volume, trial, ROI] 
     ROIDffAvg = (ROIDataAvg - baselineMeanRep) ./ baselineMeanRep;              % --> [volume, trial, ROI] 
     myData.ROIDffAvg = ROIDffAvg;
@@ -1109,13 +1162,12 @@ myData.ROIDataAvg = ROIDataAvg;
  
     %% PLOT MEAN ROI dF/F THROUGHOUT TRIAL FOR ONE OR MORE STIM TYPES
 
-    saveDir = 1;
     saveDir = uigetdir(['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), '\Analysis'], 'Select a save directory');
-    plotTitle = [expDate, ' - IBA\_e-1 (top), ACV\_e-1 (bottom)'];
+    plotTitle = regexprep([expDate, ' - EtOH_neat (top), ACV_e-1 (bottom)'], '_', '\\_');
     fileNamePrefix = 'Whole_Trial_Responses_';
     s = myData.stimSepTrials;
     filterVecs = [s.OdorA; s.OdorB];
-    eventShading = [10 12];
+    eventShading = [13 15];
     
     singleTrials = 1;
     singleTrialAlpha = 0.5;
@@ -1127,7 +1179,7 @@ myData.ROIDataAvg = ROIDataAvg;
     trialFilterVecs = [logical(s.OdorA .* (goodTrials)); ...
                        logical(s.OdorB .* (goodTrials))  ...
                        ];
-    
+    yL = [];
     for iROI = ROIlist       
 
         nPlots = size(trialFilterVecs, 1);
@@ -1177,27 +1229,27 @@ myData.ROIDataAvg = ROIDataAvg;
     end
     
     %% PLOT MEAN ROI dF/F THROUGHOUT TRIAL FOR EARLY VS LATE TRIALS
-    saveDir = 0;
+
     saveDir = uigetdir(['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), '\Analysis'], 'Select a save directory');
     
-    plotTitle = [expDate, ' - ACV\_e-1 responses - early vs late trials'];
+    plotTitle = regexprep([expDate, ' - ACV_e-1 responses - early vs late trials'], '_', '\\_');
     fileNamePrefix = 'ACV_EarlyVsLateTrials_';
     s = myData.stimSepTrials.OdorB;
     
-    eventShading = [10 12];
+    eventShading = [13 15];
     
     singleTrials = 1;
     singleTrialAlpha = 0.25;
     stdDevShading = 1;
-    legendStr = {'Trials 1:30', 'Trials 31:70', 'Trials 71:100'};
+    legendStr = {'Trials 1:40', 'Trials 41:80', 'Trials 81:100'};
     
     trialGroups = ones(1, nTrials);
-    trialGroups(30:end) = 2;
-    trialGroups(70:end) = 3;
+    trialGroups(40:end) = 2;
+    trialGroups(80:end) = 3;
     trialGroups = trialGroups(logical(s .* goodTrials));
 
-%     ROIlist = 1:size(ROIDffAvg, 3);
-    ROIlist = [1 2 3];
+    ROIlist = 1:size(ROIDffAvg, 3);
+%     ROIlist = [1 2 3];
 
     for iROI = ROIlist       
 
@@ -1236,22 +1288,22 @@ myData.ROIDataAvg = ROIDataAvg;
         end
     end
 
-
-    %% PLOT MEAN ROI dF/F THROUGHOUT TRIAL CODED BY BEHAVIOR
+    %% PLOT MEAN ROI dF/F THROUGHOUT TRIAL COLOR CODED BY BEHAVIOR
     
     saveDir = uigetdir(['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), '\Analysis'], 'Select a save directory');
-    plotTitle = regexprep([expDate, ' - IBA_e-1 (top), ACV_e-1 (bottom)'], '_', '\\_');
-    fileNamePrefix = 'Whole_Trial_Responses_Behavior';
+    plotTitle = regexprep([expDate, ' - EtOH_neat(top), ACV_e-1 (bottom)'], '_', '\\_');
+    fileNamePrefix = 'Behavior_Coded_Whole_Trial_Responses_';
     s = myData.stimSepTrials;
-    filterVecs = [s.OdorA; s.OdorB];
-    eventShading = [10 12];
+    eventShading = [13 15];
+    annotValues = [2 0];
     
     singleTrials = 1;
-    singleTrialAlpha = 0.7;
+    singleTrialAlpha = 0.4;
     stdDevShading = 0;
     
     ROIlist = 1:size(ROIDffAvg, 3);
-    
+%     ROIlist = [1 2 3];
+%     trialFilterVecs = goodTrials;
     trialFilterVecs = [logical(s.OdorA .* (goodTrials)); ...
                        logical(s.OdorB .* (goodTrials))  ...
                        ];
@@ -1277,15 +1329,18 @@ myData.ROIDataAvg = ROIDataAvg;
         title(['Plane #', num2str(myData.ROIdata(iROI).plane)])
         
         clear ax
+        yL = [];
         for iPlot = 1:nPlots
-            currDffAvg = ROIDffAvg(:, filterVecs(iPlot, :), iROI); % --> [volume, trial]
+            currDffAvg = ROIDffAvg(:, trialFilterVecs(iPlot, :), iROI); % --> [volume, trial]
             annotData = annotationTypes{7}.volAnnotArr;
-            currAnnotArr = annotData(filterVecs(iPlot, :), :);
+            currAnnotArr = annotData(trialFilterVecs(iPlot, :), :);
 
             subaxis(nRows, 3, ( (iPlot*3 + 1):(iPlot*3 + 3) ))
             ax(iPlot) = gca; 
             
-            plot_ROI_data(ax(iPlot), currDffAvg, 'AnnotArray', currAnnotArr', 'EventShading', eventShading, ...
+            plot_ROI_data(ax(iPlot), currDffAvg, 'AnnotArray', currAnnotArr', ... 
+                                                 'AnnotValues', annotValues', ...
+                                                 'EventShading', eventShading, ...
                                                  'SingleTrials', singleTrials, ...
                                                  'SingleTrialAlpha', singleTrialAlpha, ...
                                                  'StdDevShading', stdDevShading);            
@@ -1309,7 +1364,6 @@ myData.ROIDataAvg = ROIDataAvg;
     end
     
     
-    
     %% PLOT dF/F WITHIN ROIs THROUGHOUT EXPERIMENT
     
     % Concatate the trial-by-trial dF/F values into one long vector
@@ -1329,9 +1383,10 @@ myData.ROIDataAvg = ROIDataAvg;
         
         % Plot dF/F and event annotations
         plot(smooth(concatROIDff(:,iROI), 3), 'b');
-        plot(odorAVols, 'c');
-        plot(odorBVols, 'r');
-%         plot(behavVols, 'k');
+        plot(odorAVols, 'r');
+        plot(odorBVols, 'g');
+        plot(behavVols, 'k');
+        legend({'Odor A', 'Odor B', 'Fly Movements'});
         
         % Add trial delineators and numbers
         allVols = 1:(nTrials * nVolumes);
@@ -1389,65 +1444,4 @@ end
 
 clear planeNum pcaData n m d data 2D tData2D coeff score latent explained coeffReshaped 
 
-%% CREATE VIDEO OF MEAN dF/F THROUGHOUT ENTIRE TRIAL
-
-% %++++++++++ Calculate whole-trial dF/F using overall mean as baseline ++++++++++
-% 
-% allWindTrials = myData.wholeSession;%(:,:,:,:,myData.stimSepTrials.windTrials);   % --> [y, x, plane, volume, trial]   
-% 
-% % Calculate dF/F using whole trial average as baseline
-% baseline = mean(mean(allWindTrials, 5), 4);                           % --> [y, x, plane]
-% baselineMeanRep = repmat(baseline, 1, 1, 1, size(allWindTrials, 4));  % --> [y, x, plane, volume]
-% trialAvg = mean(allWindTrials, 5);                                    % --> [y, x, plane, volume]
-% wholeTrialDff = (trialAvg - baselineMeanRep) ./ baselineMeanRep;      % --> [y, x, plane, volume]
-% 
-% % Calculate absolute max dF/F value across all planes and action states
-% rangeScalar = .3;
-% range = calc_range(wholeTrialDff, rangeScalar);
-% 
-% smoothingSigma = [0.5];
-% 
-% %----------Create video of dF/F for each plane throughout trial----------
-% 
-% % Add title above all subplots
-% titleStrings = [];
-% for iVol = 1:size(wholeTrialDff, 4)
-%     if iVol <= stimStart * volumeRate
-%         titleStr = 'Before wind onset';
-%     elseif iVol <= stimEnd * volumeRate
-%         titleStr = 'During wind stimulus';
-%     else
-%         titleStr = 'After wind stimulus';
-%     end
-%     titleStrings{iVol} = [titleStr, '  -  time = ', num2str(round(iVol./volumeRate, 1))];
-% end
-% 
-% % Create video
-% savePath = ['B:\Dropbox (HMS)\2P Data\Imaging Data\', myData.expDate, '\sid_0\Analysis'];
-% fileName = 'Full_Trial_dFF';
-% make_heatmap_vid(wholeTrialDff, myData, range, fileName, titleStrings, savePath, [], [], [], smoothingSigma);
-% 
-% %----------Create video of mean raw fluorescence signal throughout trial----------
-% 
-% % Calculate range
-% rangeScalar = 0.25;
-% range = calc_range(trialAvg, rangeScalar);
-% 
-% % Add title above all subplots
-% titleStrings = [];
-% for iVol = 1:size(wholeTrialDff, 4)
-%     if iVol <= stimStart * volumeRate
-%         titleStr = 'Before wind onset';
-%     elseif iVol <= stimEnd * volumeRate
-%         titleStr = 'During wind stimulus';
-%     else
-%         titleStr = 'After wind stimulus';
-%     end
-%     titleStrings{iVol} = [titleStr, '  -  time = ', num2str(round(iVol./volumeRate, 1))];
-% end
-% 
-% % Update file name and create video
-% savePath = ['B:\Dropbox (HMS)\2P Data\Imaging Data\', myData.expDate, '\sid_0\Analysis'];
-% fileName = 'Full_Trial_RawF';
-% make_heatmap_vid(trialAvg, myData, range, fileName, titleStrings, savePath, [], [], [], smoothingSigma);
 end%iFold

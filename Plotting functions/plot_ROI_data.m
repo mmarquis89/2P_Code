@@ -57,6 +57,11 @@ function plot_ROI_data(ax, ROIDffAvg, varargin)
 %                            each volume. Note that the trials should not be divided into multiple groups
 %                            if using this option or the coloring of the results will be confusing.
 %
+%       'AnnotValues'      = (default:[]) a vector of numbers to include when plotting behavior annotation
+%                            segments. By default, all segments will be plotted, but passing a restricted
+%                            list will only plot segments when their annotation value is a member of this 
+%                            list.
+%
 %=========================================================================================================
 
 % Parse optional arguments
@@ -73,6 +78,7 @@ addParameter(p, 'SingleTrialAlpha', 1);
 addParameter(p, 'Legend', []);
 addParameter(p, 'VolumeRate', 6.44);
 addParameter(p, 'AnnotArray', []);
+addParameter(p, 'AnnotValues', []);
 parse(p, varargin{:});
 trialGroups = p.Results.TrialGroups;
 outlierSD = p.Results.OutlierSD;
@@ -86,6 +92,7 @@ volOffset = p.Results.VolOffset;
 singleTrialAlpha = p.Results.SingleTrialAlpha;
 meanLineLegend = p.Results.Legend;
 annotArr = p.Results.AnnotArray;
+annotValues = p.Results.AnnotValues;
 
 % Setup variables
 nVolumes = size(ROIDffAvg, 1);
@@ -98,6 +105,9 @@ if ~isempty(trialGroups)
 else
     nGroups = 1;
     trialGroups = ones(nTrials, 1);
+end
+if isempty(annotValues)
+    annotValues = unique(annotArr(:));
 end
 
 % Format axes
@@ -125,7 +135,7 @@ end
 
 % Create colormap
 if ~isempty(annotArr)
-     cm =[rgb('RoyalBlue') * 0.6; ...
+    cm =[rgb('RoyalBlue') * 0.6; ...
         rgb('Magenta'); ...
         rgb('Cyan') * 0.85; ...
         rgb('Crimson'); ...
@@ -166,14 +176,15 @@ for iGroup = 1:nGroups
     
     % Separate data from current trial group and calculate average dF/F
     groupAvgDff = mean(ROIDffAvg(:, trialGroups == iGroup), 2);
-    groupDff = ROIDffAvg(:, trialGroups == iGroup);
+    groupDff = ROIDffAvg(:, trialGroups == iGroup); % --> [volume, trial]
     groupStdDev = std(groupDff, 0, 2);
-    if ~isempty(annotArr)
-        groupAnnotArr = annotArr(:, trialGroups == iGroup);
-    end
     
     % Plot individual trials in background
     if singleTrials
+        if ~isempty(annotArr)
+            uniqueAnnotVals = unique(annotArr(:));
+            meanAnnotData = nan(size(groupDff, 1), size(groupDff, 2), length(uniqueAnnotVals)); % --> [volume, trial, annotVal]
+        end
         for iTrial = 1:size(groupDff, 2)
             currData = smooth(groupDff(:, iTrial), smoothWin);
             
@@ -201,8 +212,12 @@ for iGroup = 1:nGroups
                     end
                     currVolType = str2double(volTypes(iSeg));
                     currColor = cm(currVolType + 1, :);
-                    plt = plot(ax, volTimes(startVol:endVol+1), currData(startVol:endVol+1), 'color', currColor, 'LineWidth', 1);
-                    plt.Color(4) = singleTrialAlpha;
+                    if ismember(currVolType, annotValues)
+                        plt = plot(ax, volTimes(startVol:endVol+1), currData(startVol:endVol+1), 'color', currColor, 'LineWidth', 1);
+                        plt.Color(4) = singleTrialAlpha;
+                        meanAnnotData(startVol:endVol+1, iTrial, uniqueAnnotVals == currVolType) = currData(startVol:endVol+1); % --> [volume, trial, annotVal]
+                    end
+                    
                 end
                 
                 if ~isempty(transVols)
@@ -211,17 +226,22 @@ for iGroup = 1:nGroups
                     endVol = numel(currAnnotDataStr);
                     currVolType = str2double(currAnnotDataStr(end));
                     currColor = cm(currVolType + 1, :);
-                    plt = plot(ax, volTimes(startVol:endVol), currData(startVol:endVol), 'color', currColor, 'LineWidth', 1);
-                    plt.Color(4) = singleTrialAlpha;
+                    if ismember(currVolType, annotValues)
+                        plt = plot(ax, volTimes(startVol:endVol), currData(startVol:endVol), 'color', currColor, 'LineWidth', 1);
+                        plt.Color(4) = singleTrialAlpha;
+                        meanAnnotData(startVol:endVol, iTrial, uniqueAnnotVals == currVolType) = currData(startVol:endVol); % --> [volume, trial, annotVal]
+                    end
                 else
                     % In case there's no behavior in the trial, just plot a single line
                     startVol = 1;
                     endVol = numel(currAnnotDataStr);
                     currVolType = str2double(currAnnotDataStr(1));
                     currColor = cm(currVolType + 1, :);
-                    plt = plot(ax, volTimes(startVol:endVol), currData(startVol:endVol), 'color', currColor, 'LineWidth', 1);
-                    plt.Color(4) = singleTrialAlpha;
-                    
+                    if ismember(currVolType, annotValues)
+                        plt = plot(ax, volTimes(startVol:endVol), currData(startVol:endVol), 'color', currColor, 'LineWidth', 1);
+                        plt.Color(4) = singleTrialAlpha;
+                        meanAnnotData(startVol:endVol, iTrial, uniqueAnnotVals == currVolType) = currData(startVol:endVol); % --> [volume, trial, annotVal]   
+                    end
                 end
                 
             else
@@ -246,9 +266,16 @@ for iGroup = 1:nGroups
     end
     
     % Plot mean response line
+    if ~isempty(annotArr)
+       for iAnnot = 1:length(uniqueAnnotVals)
+           currMeanAnnotData = mean(meanAnnotData(:,:,iAnnot), 2, 'omitnan'); % --> [volume]
+           meanPlots(iAnnot) = plot(ax, volTimes, smooth(currMeanAnnotData, smoothWin), 'LineWidth', 2, 'Color', cm(uniqueAnnotVals(iAnnot) + 1, :));
+       end
+    end
+    
     meanPlots(iGroup) = plot(ax, volTimes, smooth(groupAvgDff, smoothWin), 'LineWidth', 2, 'Color', meanLineColor * 1);
     
-end
+end%iGroup
 
 % Add legend if applicable
 if ~isempty(meanLineLegend)

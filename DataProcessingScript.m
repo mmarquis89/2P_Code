@@ -3,7 +3,7 @@
 %% ==================================================================================================
 
 expDates = {...
-    '2018_02_28_exp_3' ...
+    '2018_04_16'
             }
 
 targetPlanes = [ 200 ...
@@ -26,6 +26,33 @@ end
 clear expDates targetPlanes fileStr dirPath
 % -------------------------------------------------------------------------------------------------
 
+%% ===================================================================================================
+%%% SELECT ROI FOR OPTIC FLOW CALCULATION
+%% ===================================================================================================
+
+expDates = {...
+    '2018_04_16'
+            }
+
+sids = [ ...
+    0 ...
+    ];
+     
+
+ FRAME_RATE = 25;
+
+ for iExp = 1:length(expDates)
+     
+     expDate = expDates{iExp}
+     sid = sids(iExp)
+     
+     %%% Define ROIs for optic flow combined vids
+     parentDir = ['B:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate];
+     select_video_ROIs(parentDir, sid);
+     writeToLog(sprintf('%s optic flow ROIs defined', expDate));
+ end
+
+
 %% ==================================================================================================
 %%% CREATE AVERAGE FLUORESCENCE VIDEOS ------------------------------------------------------------
 %==================================================================================================
@@ -33,11 +60,11 @@ clear expDates targetPlanes fileStr dirPath
 % -------------------------------------------------------------------------------------------------
 
 expDates = {...
-    '2018_03_29_exp_2' ...
+    '2018_04_16'
             }
 
 sids = [ ...
-    2 ...
+    0 ...
     ];
 
 for iExp = 1:length(expDates)
@@ -60,7 +87,7 @@ clear expDates sids parentDir
 %==================================================================================================
 
 expDates = {...
-    '2018_03_29_exp_2' ...
+    '2018_04_16'
             }
 
 fileStr = '*Stack*.tif';
@@ -79,20 +106,21 @@ clear expDates fileStr parentDir
 % -------------------------------------------------------------------------------------------------
 
 %===================================================================================================
-%% % PRE-REGISTRATION PROCESSING -------------------------------------------------------------------
+%%% PRE-REGISTRATION PROCESSING -------------------------------------------------------------------
 %===================================================================================================
 % 
 % <3 you Michael!
 % -------------------------------------------------------------------------------------------------
 
 expDates = {...
-    '2018_03_29_exp_2' ...
+    '2018_04_16'
             }
 
 sids = [ ...
-    2 ...
+    0 ...
     ];
 
+disp('Starting pre-processing...')
 for iExp = 1:length(expDates)
     
     expDate = expDates{iExp};
@@ -113,22 +141,22 @@ clear expDates sids parentDir
 % -------------------------------------------------------------------------------------------------
 
 expDates = {...
-    '2018_03_29_exp_2' ...
+    '2018_04_16'
             }
 
 sids = [ ...
-    2 ...
+    0 ...
     ];
 
-fileNames = repmat({['sid_', num2str(sid), '_sessionFile.mat']}, 1, numel(expDates));
+% fileNames = repmat({['sid_', num2str(sid), '_sessionFile.mat']}, 1, numel(expDates));
 % fileNames = { 'sid_1_Chan_1_sessionFile.mat', ...
 %             }
-
+disp('Starting NoRMCorre registration...')
 for iExp = 1:length(expDates)
     
     expDate = expDates{iExp};
     sid = sids(iExp);
-    fileName = fileNames{iExp};
+    fileName = ['sid_', num2str(sid), '_sessionFile.mat'];%fileNames{iExp};
     
     parentDir = ['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)];
     
@@ -140,10 +168,10 @@ clear expDates sids fileNames fileName parentDir
 % -------------------------------------------------------------------------------------------------
 
 %==================================================================================================
-%% % CREATE BEHAVIOR VIDEOS -------------------------------------------------------------------------
+%%% CREATE BEHAVIOR VIDEOS ------------------------------------------------------------------------
 %==================================================================================================
 expDates = {...
-    '2018_03_29_exp_1' ...
+    '2018_04_16'
             }
 
 sids = [ ...
@@ -152,17 +180,18 @@ sids = [ ...
 
 FRAME_RATE = 25;
 
+disp('Creating behavior vids...')
 for iExp = 1:length(expDates)
     
     expDate = expDates{iExp};
     sid = sids(iExp);    
     
-%     %%% Make vids
-%     parentDir = ['B:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate];
-%     tic
-%     make_vids_2P(sid, parentDir, FRAME_RATE)
-%     disp(['Creating behavior vids took ', num2str(round(toc/60, 1)) ' min']);
-%     writeToLog(sprintf('%s behavior vids created in %s min', expDate, num2str(round(toc/60, 1))));
+    %%% Make vids
+    parentDir = ['B:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate];
+    tic
+    make_vids_2P(sid, parentDir, FRAME_RATE)
+    disp(['Creating behavior vids took ', num2str(round(toc/60, 1)) ' min']);
+    writeToLog(sprintf('%s behavior vids created in %s min', expDate, num2str(round(toc/60, 1))));
     
     %%% Concatenate vids
     tic
@@ -176,38 +205,24 @@ clear expDates sids parentDir
 
 
 %==================================================================================================
-%% % MAKE OPTIC FLOW COMBINED VIDS------------------------------------------------------------------
+%%% MAKE OPTIC FLOW COMBINED VIDS------------------------------------------------------------------
 %==================================================================================================
-
+ 
 expDates = {...
-    '2018_03_29_exp_2' ...
+    '2018_04_16'
             }
 
 sids = [ ...
     0 ...
     ];
-     
 
 fileNames = { ...
     'Behavior_Vid_ROI_Data.mat' ...
     'Behavior_Vid_ROI_Data.mat' ...
 };
 
- FRAME_RATE = 25;
-
- for iExp = 1:length(expDates)
-     
-     expDate = expDates{iExp}
-     sid = sids(iExp)
-     
-     %%% Define ROIs for optic flow combined vids
-     parentDir = ['B:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate];
-     select_video_ROIs(parentDir, sid);
-     writeToLog(sprintf('%s optic flow ROIs defined', expDate));
- end
-
- %%
- for iExp = 1:length(expDates)
+disp('Creating optic flow combined vids...')
+for iExp = 1:length(expDates)
      
      expDate = expDates{iExp}
      sid = sids(iExp);
@@ -256,13 +271,13 @@ clear parentDir archiveName filterString
 
 FRAME_RATE = 25;
 trialDuration = 20;
-expDate = '2018_03_29_exp_2';
-sid = 2;
+expDate = '2018_04_14_exp_2';
+sid = 0;
 
 parentDir = ['B:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate, '\_Movies'];
 saveDir = ['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid)];
-% annotationFileName = [expDate, '_Annotation.txt'];
-annotationFileName = [expDate, '_sid_', num2str(sid), '_Annotation.txt'];
+annotationFileName = [expDate, '_Annotation.txt'];
+% annotationFileName = [expDate, '_sid_', num2str(sid), '_Annotation.txt'];
 
 tic
 process_anvil_annotations(sid, parentDir, saveDir, annotationFileName, FRAME_RATE, trialDuration);

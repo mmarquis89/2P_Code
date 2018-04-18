@@ -20,7 +20,7 @@ function concat_vids_2P(vidDir, fileStr, varargin)
 %       FrameRate = (default: 25) the frame rate that the video was acquired at in FPS
 %
 %       OutputFile = (default = fileStr + '_AllTrials') the desired name of the output file. Default
-%                    removes all wildcard characters and the fileStr and appends '_AllTrials'
+%                    will remove all wildcard characters and from the fileStr and append '_AllTrials'
 %
 %===================================================================================================
 
@@ -65,11 +65,12 @@ for iTrial = 1:length(vidNames)
         end
 end%iTrial
 
+
 close(myVidWriter)
 clear('myMovie')
 
 % Save frame count log
-save(fullfile(vidDir, [outputFileName, '_frameCountLog.mat']), 'frameCount')
+save(fullfile(vidDir, ['sid_', num2str(sid) '_AllTrials_frameCountLog.mat']), 'frameCount')
 
 disp(['Videos concatenated successfully! Total frames = ', num2str(frameCount)])
 

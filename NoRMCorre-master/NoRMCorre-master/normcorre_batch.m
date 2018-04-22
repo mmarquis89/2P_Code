@@ -2,13 +2,13 @@ function [M_final,shifts_g,template,options,col_shift] = normcorre_batch(Y,optio
 
 % online motion correction through DFT subpixel registration
 % Based on the dftregistration.m function from Manuel Guizar and Jim Fienup
-
+%
 % INPUTS
 % Y:                Input data, can be already loaded in memory as a 3D
 %                   tensor, a memory mapped file, or a pointer to a tiff stack
 % options:          options structure for motion correction (optional, rigid registration is performed if not provided)
 % template:         provide template (optional)
-
+%
 % OUTPUTS
 % M_final:          motion corrected data
 % shifts_up:        upsampled shifts

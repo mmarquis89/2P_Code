@@ -17,10 +17,12 @@ function concat_vids_2P(vidDir, fileStr, varargin)
 % 
 % OPTIONAL NAME-VALUE PAIR ARGUMENTS:
 %
-%       FrameRate = (default: 25) the frame rate that the video was acquired at in FPS
+%       FrameRate    = (default: 25) the frame rate that the video was acquired at in FPS
 %
-%       OutputFile = (default = fileStr + '_AllTrials') the desired name of the output file. Default
-%                    removes all wildcard characters and the fileStr and appends '_AllTrials'
+%       OutputFile   = (default = fileStr + '_AllTrials') the desired name of the output file. Default
+%                       removes all wildcard characters and the fileStr and appends '_AllTrials'
+%
+%       OutputFormat = (default = .mp4) The desired output video file format
 %
 %===================================================================================================
 
@@ -28,19 +30,21 @@ function concat_vids_2P(vidDir, fileStr, varargin)
 p = inputParser;
 addParameter(p, 'FrameRate', 25);
 addParameter(p, 'OutputFile', [regexprep(regexprep(fileStr, '*', ''), '.mp4', ''), '_AllTrials']);
+addParameter(p, 'OutputFormat', '.mp4')
 parse(p, varargin{:});
 FRAME_RATE = p.Results.FrameRate;
 outputFileName = p.Results.OutputFile;
+outputFormat = p.Results.OutputFormat;
 
 % Identify files to be processed
 vidFiles = dir(fullfile(vidDir, fileStr));
 vidNames = sort({vidFiles.name});
 
 % Make sure concatenated video file doesn't already exist
-assert(exist(fullfile(vidDir, ['sid_', num2str(sid),'_AllTrials.mp4']), 'file')==0, 'Error: concatenated video file already exists in this directory');
+assert(exist(fullfile(vidDir, [outputFileName, outputFormat]), 'file')==0, 'Error: concatenated video file already exists in this directory');
 
 % Create vidWriter
-myVidWriter = VideoWriter(fullfile(vidDir, [outputFileName, '.mp4']), 'MPEG-4');
+myVidWriter = VideoWriter(fullfile(vidDir, [outputFileName, outputFormat]));
 myVidWriter.FrameRate = FRAME_RATE;
 open(myVidWriter)
 frameCount = 0;

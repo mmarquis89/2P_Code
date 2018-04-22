@@ -35,7 +35,7 @@ options_rigid = NoRMCorreSetParms('d1', size(concatSession, 1), 'd2', size(conca
 %                     );
                 
 % Rigid registration
-tic; [M, ~, ~, ~] = normcorre(concatSession, options_rigid); toc
+tic; [M, ~, ~, ~] = normcorre_batch(concatSession, options_rigid); toc
 regProduct = reshape(M, size(wholeSession));
 if exist('scanimageInfo', 'var')
     savefast(fullfile(parentDir, ['rigid_', fileName]), 'regProduct', 'trialType', 'origFileNames', 'expDate', 'scanimageInfo');

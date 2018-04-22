@@ -195,18 +195,17 @@ for iExp = 1:length(expDates)
     sid = sids(iExp);    
     
     %%% Make vids
-%     parentDir = ['B:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate];
-%     tic
-%     make_vids_2P(sid, parentDir, FRAME_RATE)
-%     disp(['Creating behavior vids took ', num2str(round(toc/60, 1)) ' min']);
-%     writeToLog(sprintf('%s behavior vids created in %s min', expDate, num2str(round(toc/60, 1))));
+    parentDir = ['B:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate];
+    tic
+    make_vids_2P(sid, parentDir, FRAME_RATE)
+    disp(['Creating behavior vids took ', num2str(round(toc/60, 1)) ' min']);
+    writeToLog(sprintf('%s behavior vids created in %s min', expDate, num2str(round(toc/60, 1))));
     
     %%% Concatenate vids
     tic
     parentDir = ['B:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate, '\_Movies'];
-    fileStr = ['sid_', num2str(sid), '_tid*.mp4'];
-    outputFileName = ['sid_', num2str(sid), '_AllTrials.mp4'];
-    concat_vids_2P(parentDir, fileStr, 'OutputFile', outputFileName)
+    fileStr = ['sid_', num2str(sid), 'tid_*.mp4'];
+    concat_vids_2P(parentDir, fileStr)
     disp(['Concatenating behavior vids took ', num2str(round(toc/60, 1)) ' min']);
     writeToLog(sprintf('%s behavior vids concatenated in %s min', expDate, num2str(round(toc/60, 1))));
 end
@@ -215,7 +214,7 @@ clear expDates sids parentDir
 
 
 %==================================================================================================
-%% % MAKE OPTIC FLOW COMBINED VIDS------------------------------------------------------------------
+%%% MAKE OPTIC FLOW COMBINED VIDS------------------------------------------------------------------
 %==================================================================================================
  
 expDates = {...

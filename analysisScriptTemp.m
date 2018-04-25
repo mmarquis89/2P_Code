@@ -2,7 +2,7 @@
 
   
 % Load .mat file containing trial data
-myData = load_imaging_data();
+[myData, m] = load_imaging_metadata();
 
 % myData.goodTrials = [0, 0, 0, myData.goodTrials];
 % myData.trialAnnotations = [{[], [], []}, myData.trialAnnotations];
@@ -18,8 +18,7 @@ myData = load_imaging_data();
 
 for iFold = 1    
     % Copy variables for convenience
-    wholeSession = myData.wholeSession;
-    sessionSize = size(wholeSession);
+    sessionSize = size(m, 'wholeSession');
     expDate = myData.expDate;
     sid = myData.sid;
     nPlanes = myData.nPlanes;
@@ -57,7 +56,7 @@ end%iFold
 planeNum = 10;
 trialNum = 4; % Does not account for any skipped trials
 
-preview_trial_movie(myData.wholeSession, planeNum, trialNum, [], [], []);
+preview_trial_movie(m, planeNum, trialNum, [], [], []);
 clear planeNum trialNum
 
 %% MAKE AVERAGE FLUORESCENCE VIDEO FROM REGISTERED DATA
@@ -69,7 +68,6 @@ fileName = 'postReg_average_fluorescence_by_trial';
 myVid = VideoWriter(fullfile(saveDir, fileName));
 myVid.FrameRate = 1;
 open(myVid);
-volAvgData = squeeze(mean(wholeSession, 4)); % --> [y, x, plane, trial]
 for iTrial = 1:nTrials
     
     % Create fig
@@ -82,8 +80,8 @@ for iTrial = 1:nTrials
     for iPlane = nPlanes:-1:1 % Reverse order so planes go from dorsal --> ventral
         
         % Plot averaged image for each plane
-        ax = subaxis(nPlots(1), nPlots(2), iPlane, 'Spacing', 0, 'MB', 0.025);
-        imshow(volAvgData(:,:,iPlane, iTrial), [])
+        subaxis(nPlots(1), nPlots(2), iPlane, 'Spacing', 0, 'MB', 0.025);
+        imshow(squeeze(mean(m.wholeSession(:, :, iPlane, :, iTrial), 4)), []);
         
         % Label postions
         if iPlane == nPlanes
@@ -246,45 +244,45 @@ analysisWindows = []; overshoots = []; filterMatches = [];
 disp(annotationTypeSummary)
 
 % Choose active alignment events
-activeEventTypes = [5 7];
+activeEventTypes = [2 3];
 disp(annotationTypeSummary(activeEventTypes, 2))
 
 % Choose active filter events
-activeFilterTypes = [2 3];
+activeFilterTypes = [8];
 disp(annotationTypeSummary(activeFilterTypes, 2))
 
 
 % --------- ALIGNMENT EVENTS -------------
 
-% % Odor A
-% analysisWindows(end+1,:) = [ 2  3 ];
-% overshoots(end+1)        = 1;
-% filterMatches{end+1} = [];
-% 
-% % Odor B
-% analysisWindows(end+1,:) = [ 2  3 ];
-% overshoots(end+1)        = 1;
-% filterMatches{end+1} = [];
+% Odor A
+analysisWindows(end+1,:) = [ 2  3 ];
+overshoots(end+1)        = 1;
+filterMatches{end+1} = [];
+
+% Odor B
+analysisWindows(end+1,:) = [ 2  3 ];
+overshoots(end+1)        = 1;
+filterMatches{end+1} = [];
 
 % % All behavior
 % analysisWindows(end+1,:) = [ 1  2 ];
 % overshoots(end+1)        = 0;
 % filterMatches{end+1} = [2];
 
-% Locomotion
-analysisWindows(end+1,:) = [ 2  3 ];
-overshoots(end+1)        = 0;
-filterMatches{end+1} = [];
+% % Locomotion
+% analysisWindows(end+1,:) = [ 2  3 ];
+% overshoots(end+1)        = 0;
+% filterMatches{end+1} = [];
 
 % % Isolated Movement
 % analysisWindows(end+1,:) = [ 2  2 ];
 % overshoots(end+1)        = 1;
 % filterMatches{end+1} = [3];
 
-% Grooming
-analysisWindows(end+1,:) = [ 2  3 ];
-overshoots(end+1)        = 0;
-filterMatches{end+1} = [];
+% % Grooming
+% analysisWindows(end+1,:) = [ 2  3 ];
+% overshoots(end+1)        = 0;
+% filterMatches{end+1} = [];
 
 % ------------- FILTER EVENTS -----------------
 
@@ -299,21 +297,21 @@ allFilts = []; allFiltNames = []; filtWindows = [];
 % allFilts{end+1} = [withOdor; noOdor]; %
 % allFiltNames{end+1} = {'WithOdor', 'NoOdor'}; %
 
-% Odor A
-withOdorA =  [ 0  1  0 ];
-noOdorA =    [-1 -1  0 ];
-anyOdorA =   [ 0  0  0 ];
-filtWindows(end+1,:)     = [  1  0  ];
-allFilts{end+1} = [withOdorA; noOdorA]; %
-allFiltNames{end+1} = {'WithOdorA', 'NoOdorA'}; %
-
-% Odor B
-withOdorB =  [ 0  1  0 ];
-noOdorB =    [-1 -1  0 ];
-anyOdorB =   [ 0  0  0 ];
-filtWindows(end+1,:)     = [  1  0  ];
-allFilts{end+1} = [withOdorB; noOdorB]; %
-allFiltNames{end+1} = {'WithOdorB', 'NoOdorB'}; %
+% % Odor A
+% withOdorA =  [ 0  1  0 ];
+% noOdorA =    [-1 -1  0 ];
+% anyOdorA =   [ 0  0  0 ];
+% filtWindows(end+1,:)     = [  1  0  ];
+% allFilts{end+1} = [withOdorA; noOdorA]; %
+% allFiltNames{end+1} = {'WithOdorA', 'NoOdorA'}; %
+% 
+% % Odor B
+% withOdorB =  [ 0  1  0 ];
+% noOdorB =    [-1 -1  0 ];
+% anyOdorB =   [ 0  0  0 ];
+% filtWindows(end+1,:)     = [  1  0  ];
+% allFilts{end+1} = [withOdorB; noOdorB]; %
+% allFiltNames{end+1} = {'WithOdorB', 'NoOdorB'}; %
 
 % % Locomotion
 % startLoc = [-1  1  0 ];
@@ -350,15 +348,15 @@ allFiltNames{end+1} = {'WithOdorB', 'NoOdorB'}; %
 % allFilts{end+1} = [noGroom; withGroom]; %endMove; anyMove;
 % allFiltNames{end+1} = {'NoGroom', 'withGroom'}; %'EndMove', , 'AnyMove'
 % % 
-% % All behavior
-% startMove = [-1  1  0 ];
-% endMove =   [ 1  0 -1 ];
-% contMove =  [ 1  1  0 ];
-% noMove =    [-1 -1 -1 ];
-% anyMove =   [ 0  0  0 ];
-% filtWindows(end+1,:)     = [ 0  0 ];
-% allFilts{end+1} = [noMove; startMove; contMove]; %endMove; anyMove;
-% allFiltNames{end+1} = {'NoMove', 'StartMove', 'ContMove'}; %'EndMove', , 'AnyMove'
+% All behavior
+startMove = [-1  1  0 ];
+endMove =   [ 1  0 -1 ];
+contMove =  [ 1  1  0 ];
+noMove =    [-1 -1 -1 ];
+anyMove =   [ 0  0  0 ];
+filtWindows(end+1,:)     = [ 0  0 ];
+allFilts{end+1} = [noMove; startMove; contMove]; %endMove; anyMove;
+allFiltNames{end+1} = {'NoMove', 'StartMove', 'ContMove'}; %'EndMove', , 'AnyMove'
 
 for iFold = 1
 
@@ -444,7 +442,7 @@ for iType = 1:nEventTypes
         if sum(onsetFilterVecs{iType}(:,iCond)) > 0
 
             [baselineData, respData] = extract_event_volumes(eventList, onsetFilterVecs{iType}(:,iCond), baselineDur, respDur, myData, ...
-                'offsetAlign', 0); % --> [y, x, plane, volume, event]
+                m, 'offsetAlign', 0); % --> [y, x, plane, volume, event]
             
             baselineAvg = mean(mean(baselineData, 5), 4);                            % --> [y, x, plane]
             baselineRep = repmat(baselineAvg, 1, 1, 1, size(baselineData, 4));       % --> [y, x, plane, volume]
@@ -848,7 +846,7 @@ for iFoldIn = 1
     allTrialBaselines = [];
     for iTrial = 1:myData.nTrials
         disp(['Trial ', num2str(iTrial)])
-        currImgData = wholeSession(:,:,:,:,iTrial);
+        currImgData = m.wholeSession(:,:,:,:,iTrial);
         currActionVols = logical(actionVols(iTrial,:));
         currStoppedVols = logical(stoppedVols(iTrial,:));
         
@@ -861,10 +859,6 @@ for iFoldIn = 1
         if sum(currStoppedVols) > 0
             meanStoppedVols(:,:,:,end+1) = mean(currImgData(:,:,:,currStoppedVols),4);  %--> [y, x, plane, trial]
         end
-        
-%         trialDataSorted = sort(wholeSession(:, :, :, :, iTrial), 4);                % --> [y, x, plane, volume]
-%         trialBaseline = mean(trialDataSorted(:,:,:,1:round(nVolumes * 0.05)), 4);   % --> [y, x, plane]
-%         allTrialBaselines(:, :, :, iTrial) = trialBaseline;                         % --> [y, x, plane, trial]
         
     end    
         
@@ -1151,7 +1145,7 @@ for iROI = 1:nROIs
     disp(['Extracting data for ROI #', num2str(iROI), ' of ', num2str(nROIs), '...'])
     currMask = myData.ROIdata(iROI).mask;
     currPlane = myData.ROIdata(iROI).plane;
-    currPlaneData = squeeze(wholeSession(:,:,currPlane,:,:));                                   % --> [y, x, volume, trial]
+    currPlaneData = squeeze(m.wholeSession(:,:,currPlane,:,:));                                   % --> [y, x, volume, trial]
     currPlaneData(~currMask(:,:,ones(1, nVolumes), ones(1, nTrials))) = nan;                    % --> [y, x, volume, trial]
     
     currDataLin = reshape(currPlaneData, size(currPlaneData, 1)*size(currPlaneData, 2), ...
@@ -1430,7 +1424,7 @@ for iFold = 1
 % Pull out data for one plane
 planeNum = 12;
 
-pcaData = mean(squeeze(myData.wholeSession(:,:,planeNum,:,:)),4); % --> [y, x, volume]
+pcaData = mean(squeeze(m.wholeSession(:,:,planeNum,:,:)),4); % --> [y, x, volume]
 [n,m,d] = size(pcaData);
 data2D = double(reshape(pcaData, [(n*m), d])); % --> [pixel, volume]
 

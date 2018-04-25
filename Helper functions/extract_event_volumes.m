@@ -1,4 +1,4 @@
-function [baselineData, respData] = extract_event_volumes(eventList, filterVec, baselineDur, respDur, infoStruct, varargin)
+function [baselineData, respData] = extract_event_volumes(eventList, filterVec, baselineDur, respDur, infoStruct, dataFileObj, varargin)
 %===========================================================================================================================
 % 
 % This function accepts a list of annotation events and a logical filtering vector specifying which events to extract, 
@@ -15,8 +15,11 @@ function [baselineData, respData] = extract_event_volumes(eventList, filterVec, 
 %
 %       respDur        = length of the response period in seconds.
 %
-%       infoStruct     = structure containing the imaging data and information about it. Must have the fields
-%                       [wholeSession], [nVolumes], and [volumeRate].
+%       infoStruct     = structure containing information about the imaging data. Must have the fields
+%                       [nVolumes] and [volumeRate].
+% 
+%       dataFileObj    = a matfile object containing imaging data as a variable 'wholeSession' with 
+%                        dimensions [y, x, plane, volume, trial]
 %
 %       offsetAlign    = <OPTIONAL> a boolean value indicating whether to align the baseline and response data to the 
 %                        beginning or the end of each event (default = 0).   
@@ -42,8 +45,7 @@ end
 % Set up variables
 baselineDurVols = sec2vols(baselineDur, infoStruct.volumeRate);
 respDurVols = sec2vols(respDur, infoStruct.volumeRate);
-wholeSession = infoStruct.wholeSession;
-sessionSize = size(wholeSession);
+sessionSize = size(dataFileObj, 'wholeSession');
 filteredList = eventList(filterVec, :);
 
 % Calculate starting and ending volumes for each event and run validation checks
@@ -67,14 +69,13 @@ alignVols(blStartVols == 0) = alignVols(blStartVols == 0) + 1;
 respEndVols(blStartVols == 0) = respEndVols(blStartVols == 0) + 1;
 blStartVols(blStartVols == 0) = 1;
 
-
 % Loop through and pull out data
 baselineData = zeros([sessionSize(1:3), baselineDurVols + 1, size(filteredList, 1)]);
 respData = zeros([sessionSize(1:3), respDurVols + 1, size(filteredList, 1)]);
 for iEvent = 1:size(filteredList, 1)
     currTrial = filteredList(iEvent, 3);
-    baselineData(:,:,:,:,iEvent) = wholeSession(:,:,:, blStartVols(iEvent):(alignVols(iEvent)-1), currTrial);    % --> [y, x, plane, volume, event]
-    respData(:,:,:,:,iEvent) = wholeSession(:,:,:, alignVols(iEvent):respEndVols(iEvent), currTrial);            % --> [y, x, plane, volume, event]
+    baselineData(:,:,:,:,iEvent) = m.wholeSession(:,:,:, blStartVols(iEvent):(alignVols(iEvent)-1), currTrial);    % --> [y, x, plane, volume, event]
+    respData(:,:,:,:,iEvent) = m.wholeSession(:,:,:, alignVols(iEvent):respEndVols(iEvent), currTrial);            % --> [y, x, plane, volume, event]
 end
 
 end

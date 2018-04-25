@@ -1,7 +1,11 @@
+%% LOAD IMAGING METADATA
+
+% Load .mat file containing trial data
+[myData, m] = load_imaging_metadata();
 
 %% BASIC DATA LOADING/PROCESSING
 
-parentDir = 'B:\Dropbox (HMS)\2P Data\Behavior Vids\2018_04_14_exp_1\_Movies\FicTracData';
+parentDir = 'B:\Dropbox (HMS)\2P Data\Behavior Vids\2018_04_14_exp_2\_Movies\FicTracData';
 FRAME_RATE = 25;
 trialDuration = 20;
 nFrames = FRAME_RATE * trialDuration;
@@ -47,30 +51,25 @@ if ~exist(fullfile(parentDir, 'allTrials.csv'), 'file')
 end
 
 % LP filter for velocity data
-rate = 2 * (4/25);
+rate = 2 * (6/25);
 [kb, ka] = butter(2,rate);
 
-% % Load Anvil annotations
-% [annotDataFile, annotDataPath, ~] = uigetfile('*.mat', 'Select a behavioral annotation data file if desired', 'B:\Dropbox (HMS)\2P Data\Imaging Data');
-% if annotDataFile == 0
-%     disp('No behavioral annotation data selected')
-%     annotData.trialAnnotations = [];
-% else
-%     annotData = load([annotDataPath, annotDataFile]);
-%     disp([annotDataFile, ' loaded'])
-% end
-%
-% nTrials = size(annotData.goodTrials, 2);
-% nFrames = size(annotData.trialAnnotations{find(annotData.goodTrials, 1)}, 1);
-% behaviorAnnotArr = zeros(nTrials, nFrames);
-% if ~isempty(annotData)
-%     annotTrials = 1:nTrials;
-%     for iTrial = annotTrials(annotData.goodTrials) % Skip any trials with dropped frames
-%         behaviorAnnotArr(iTrial, :) = annotData.trialAnnotations{iTrial}.actionNums;   %--> [trial, frame]
-%         behaviorAnnotArr(iTrial, :) = behaviorAnnotArr(iTrial,:) - 1;
-%         behaviorAnnotArr(iTrial, behaviorAnnotArr(iTrial, :) < 0) = 0;
-%     end
-% end
+% Split into individual components
+
+frameCounter = squeeze(allData(:, 1, :));
+dRotCam = squeeze(allData(:, [2 3 4], :));          % [X, Y, Z]
+dRotError = squeeze(allData(:, 5, :));
+dRotLab = squeeze(allData(:, [6 7 8], :));          % [X, Y, Z]
+absOrientCam = squeeze(allData(:, [9 10 11], :));   % [X, Y, Z]
+absOrientLab = squeeze(allData(:, [12 13 14], :));  % [X, Y, Z]
+intXY = squeeze(allData(:, [15 16], :));            % [X, Y]
+intHD = squeeze(allData(:, 17, :));
+moveDirLab = squeeze(allData(:, 18, :));
+moveSpeed = squeeze(allData(:, 19, :));
+intForwardMove = squeeze(allData(:, 20, :));
+intSideMove = squeeze(allData(:, 21, :));
+timestamp = squeeze(allData(:, 22, :));
+seqNum = squeeze(allData(:, 23, :)); 
 
 
 %% % Overlay 2D movement data for all trials
@@ -82,7 +81,7 @@ HD = squeeze(currData(:, 6, :));        % --> [frame, trial]
 nFrames = size(intXY, 1);
 cm = jet(nFrames);
 cm2 = parula(nFrames);
-startTime = 1;
+startTime = 14;
 frameRate = 25;
 startFrame = startTime * frameRate;
 
@@ -122,7 +121,43 @@ xlim([-lims lims])
 ylim([-lims lims])
 legend({'2D movement (mm)'}, 'FontSize', 11)
 
+
+
+
 %% Separate data according to trial type
+
+% Separate trials
+
+yL = [0 0.05];
+s = myData.stimSepTrials;
+trialGroups = [[s.OdorA + 2 * s.OdorB] .* myData.goodTrials];
+legendStr = {'EtOH', 'ACV', 'No stim'};%
+
+trialGroups(1:floor(nTrials/3)) = 0;
+trialGroups(floor(nTrials/3):floor(2*nTrials/3)) = 0;
+% trialGroups(floor(2*nTrials/3):end) = 0;
+% 
+% trialGroups = ones(1, nTrials) .* myData.goodTrials;
+% trialGroups(floor(nTrials/3):end) = 2;
+% trialGroups(floor(2*nTrials/3):end) = 3;
+% % trialGroups(~(s.OdorB)) = 0;
+% legendStr = {'Early trials', 'Mid trials', 'Late trials'};%
+
+% postOdorA = [0, s.OdorA(1:end-1)];
+% postOdorB = [0, s.OdorB(1:end-1)];
+% postNoStim = [0, s.NoStim(1:end-1)];
+% trialGroups = [(postOdorA & s.NoStim) + 2 * (postOdorB & s.NoStim) + 3 * (postNoStim & s.NoStim)] .* myData.goodTrials;
+% legendStr = {'EtOH', 'ACV', 'No stim'};%
+
+% trialGroups = ones(1, nTrials) .* myData.goodTrials;
+% trialGroups(floor(nTrials/3):end) = 2;
+% trialGroups(floor(2*nTrials/3):end) = 3;
+% trialGroups(~(postNoStim)) = 0;
+% legendStr = {'Early trials', 'Mid trials', 'Late trials'};%
+
+
+
+% Overlay traces separated by trialGroups
 
 currData = selectData(:, [1 6 2 3 5 4],:); % re-order columns to be [Frame Count, Seq num, xPos, yPos, Speed, HD]
 
@@ -131,20 +166,11 @@ intXY = currData(:, [3 4], :); % --> [frame, var, trial]
 HD = squeeze(currData(:, 6, :));        % --> [frame, trial]
 nFrames = size(intXY, 1);
 nTrials = size(intXY, 3);
-startTime = 14;
+startTime = 11;
 frameRate = 25;
 startFrame = startTime * frameRate;
 
-
-% Separate trials
-s = myData.stimSepTrials;
-trialGroups = [[s.OdorA + 2 * s.OdorB + 3 * s.NoStim] .* myData.goodTrials];
-trialGroups = ones(1, nTrials) .* myData.goodTrials;
-trialGroups(floor(nTrials/3):end) = 2;
-trialGroups(floor(2*nTrials/3):end) = 3;
-trialGroups(~s.OdorB) = 0;
-legendStr = {'Early trials', 'Mid trials', 'Late trials'};%{'EtOH\_e-1', 'ACV\_e-1', 'No stim'};
-
+% cm = [];
 % cm{1} = hot(nFrames);
 % cm{2} = cool(nFrames);
 % cm{3} = winter(nFrames);
@@ -153,7 +179,7 @@ cm = [rgb('blue'); rgb('red'); rgb('green')];
 
 % Movement map
 maxes = 0; legendPlots = [0 0 0]; legendObj = [];
-for iTrial = 1:size(intXY, 3)%[16 80 28]
+for iTrial = 1:nTrials%[16 80 28]
     
     if trialGroups(iTrial)
         currXY = intXY(:, :, iTrial);
@@ -198,6 +224,46 @@ ylim([-lims lims])
 legend(legendObj, legendStr, 'FontSize', 12)
 % legend({'2D movement (mm)', 'b', 'c'}, 'FontSize', 11)
 
+
+% Plot mean locomotion speed at each time throughout trial
+
+speedData = squeeze(selectData(:, 5, :)); % --> [frame, trial]
+cm = [rgb('blue'); rgb('red'); rgb('green')];
+dHD = abs(diff(unwrap(intHD, [], 1), 1));
+
+% LP filter for velocity data
+rate = 2 * (12/25);
+[kb, ka] = butter(2,rate);
+
+figure(14);clf;hold on; ax = gca;
+for iGroup = 1:numel(unique(trialGroups(trialGroups > 0)))
+    plot(filtfilt(kb, ka, smooth(mean(speedData(:, trialGroups == iGroup), 2), 11)), 'Color', cm(iGroup, :));
+end
+legend(legendStr)
+ax.XTick = xTick;
+ax.XTickLabels = xTickLabels;
+shadeFrames = [10 12] * FRAME_RATE;
+plot_stim_shading(shadeFrames, 'Axes', ax);
+title('Mean XY velocity')
+xlabel('Time (sec)')
+ylim(yL)
+
+% LP filter for velocity data
+rate = 2 * (12/25);
+[kb, ka] = butter(2,rate);
+
+figure(15);clf;hold on; ax = gca;
+for iGroup = 1:numel(unique(trialGroups(trialGroups > 0)))
+    plot(filtfilt(kb, ka, movmean(mean(dHD(:, trialGroups == iGroup), 2), 11)), 'Color', cm(iGroup, :));
+end
+legend(legendStr)
+ax.XTick = xTick;
+ax.XTickLabels = xTickLabels;
+shadeFrames = [10 12] * FRAME_RATE;
+plot_stim_shading(shadeFrames, 'Axes', ax);
+title('Mean rate of heading change')
+xlabel('Time (sec)')
+ylim(yL)
 
 %% VARIABLE PLOTTING SCRIPT
 
@@ -553,176 +619,4 @@ for iTrial = 1:size(selectData, 3)
     writeVideo(myVidWriter, writeFrame);
 end
 
-close(myVidWriter)
-
-
-%% OLD PLOTTING CODE
-% Get yaw velocity
-dHD = [0; diff(unwrap(currData(:,6)))];
-
-% Convert xy data from radians to mm and add yaw vel
-r = 4.5;
-mmData = [currData(:,1:2), currData(:, 3:5) * r, currData(:, 6), dHD]; % --> columns: [Frame Count, Seq num, xPos, yPos, Speed, HD, HD vel]
-
-% Smooth  data
-smoothVelData = mmData(:, [5, 7]);
-for iAxis = 1:size(smoothVelData, 2)
-    smoothWin = 3;
-    smoothVelData(:, iAxis) = smooth(smoothVelData(:, iAxis), smoothWin);  % --> [sample, axis, trial]
-end
-
-% LP filter velocity data
-rate = 2 * (5/25);
-[kb, ka] = butter(2,rate);
-velData = filtfilt(kb, ka, smoothVelData); % --> columns: [xyVel, hdVel]
-
-% DISPLACEMENT
-figure(1); clf; hold on
-plot(mmData(:, [3 4 6]));
-plot(unwrap(mmData(:, 6)));
-ax = gca;
-ax.XTick = xTick;
-ax.XTickLabel = xTickLabels;
-legend({'X', 'Y', 'HD'})
-title('mmData')
-
-% VELOCITY
-figure(2); clf; hold on
-plot(velData(:,1));
-ax = gca;
-ax.XTick = xTick;
-ax.XTickLabel = xTickLabels;
-legend({'Speed (mm/sec)'})
-title('velData')
-
-% MOVEMENT MAP
-figure(3); clf; hold on;
-nSegs = 20;
-vectorLen = floor(size(mmData, 1) / nSegs);
-cm = jet(nSegs);
-for iSeg = 1:nSegs
-    if iSeg == 1
-        pad = 1;
-    else
-        pad = 0;
-    end
-    currSegInd = (pad + ((iSeg-1)*vectorLen)):(iSeg * vectorLen);
-    plot(smooth(mmData(currSegInd, 3)), smooth(mmData(currSegInd, 4)), 'Color', cm(iSeg, :))
-end
-lims = max(max(abs(mmData(:, [3 4]))));
-xlim([-lims lims])
-ylim([-lims lims])
-
-% HD VELOCITY
-figure(4); clf; hold on
-plot(rad2deg(velData(:,2)));
-ax = gca;
-ax.XTick = xTick;
-ax.XTickLabel = xTickLabels;
-legend({'Yaw Speed (deg/frame)'})
-title('hdvelData')
-
-%% YEF DATA PROCESSING
-
-sR = 20000;
-
-xRad = xRaw * (2*pi/10);
-yRad = yRaw * (2*pi/10);
-hdRad = HDraw * (2*pi/2);
-figure(1);clf;hold on;
-plot(xRad); plot(yRad);
-
-uwX = unwrap(xRad);
-uwY = unwrap(yRad);
-uwHD = unwrap(hdRad);
-zeroX = uwX - uwX(1);
-zeroY = uwY - uwY(1);
-zeroHD = uwHD - uwHD(1);
-
-smX = smooth(zeroX, 10);
-smY = smooth(zeroY, 10);
-smHD = smooth(zeroHD, 10);
-
-dsX = downsample(smX, 400);
-dsY = downsample(smY, 400);
-dsHD = downsample(smHD, 400);
-
-
-figure(2);clf;hold on
-plot(xCut); plot(yCut);
-
-xCut = dsX(1:10000) * 9;
-yCut = dsY(1:10000) * 9;
-hdCut = dsHD(1:10000);
-
-xyMove = [xCut, yCut];
-xyMoveDiff = [0,0 ; diff(xyMove, 1)];
-
-figure(1);clf;hold on
-currPoint = [0 0];
-cm = jet(length(hdCut));
-xyPos = [0 0];
-for iTheta = 1:length(hdCut)
-    disp(num2str(iTheta))
-    %    iTheta = 55;
-    theta = dsHD(iTheta);
-    R = [cos(theta), -sin(theta); sin(theta), cos(theta)];
-    %    rotMat = R;
-    rotXY = R * [xyMoveDiff(iTheta, 1); xyMoveDiff(iTheta, 2)];
-    
-    oldPoint = currPoint;
-    currPoint = currPoint + rotXY';
-    xyPos(iTheta, :) = currPoint;
-    
-    plot([oldPoint(1), currPoint(1)], [oldPoint(2), currPoint(2)], 'color', cm(iTheta,:))
-end
-
-yL = ylim;
-xL = xlim;
-
-lims = max([xL, yL]);
-ylim([-lims, lims])
-xlim([-lims, lims])
-
-
-myVidWriter = VideoWriter(fullfile(parentDir, ['testVid.mp4']), 'MPEG-4');
-myVidWriter.FrameRate = 50;
-open(myVidWriter)
-nSegs = 20;
-h = figure(10);
-h.Position = [50 50 800 800];
-for iFrame = 1:length(hdCut)
-    clf
-    
-    % Movement map plot
-    hold on
-    nSegs = 20;
-    vectorLen = floor(length(hdCut) / nSegs);
-    cm = jet(nSegs);
-    for iSeg = 1:nSegs
-        if iSeg == 1
-            pad = 1;
-        else
-            pad = 0;
-        end
-        currSegInd = (pad + ((iSeg-1)*vectorLen)):(iSeg * vectorLen);
-        plot(xyPos(currSegInd, 1), xyPos(currSegInd, 2), 'Color', cm(iSeg, :))
-    end
-    %     lims = max(abs([ylim, xlim]));
-    %     xlim([-lims lims])
-    %     ylim([-lims lims])
-    
-    xlim([-20 5]);
-    ylim([-5 20]);
-    axis equal;
-    legend({'2D movement (mm)'}, 'FontSize', 11)
-    x = xyPos(iFrame, 1);
-    y = xyPos(iFrame, 2);
-    [arrowVec(1), arrowVec(2)] = pol2cart(hdCut(iFrame)+(pi * 1.5), 0.1);
-    
-    arrow([x - arrowVec(1)/2, y-arrowVec(2)/2], [x + arrowVec(1)/2, y + arrowVec(2)/2]);
-    
-    writeFrame = getframe(h);
-    writeVideo(myVidWriter, writeFrame);
-end
 close(myVidWriter)

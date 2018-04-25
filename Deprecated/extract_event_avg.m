@@ -13,8 +13,11 @@ function [baselineData, eventData] = extract_event_avg(eventList, filterVec, bas
 %
 %       baselineDur  = the time in seconds of the baseline period.
 %
-%       infoStruct   = structure containing the imaging data and information about it. Must have the fields
-%                     [wholeSession], [nVolumes], and [volumeRate].
+%       infoStruct     = structure containing information about the imaging data. Must have the fields
+%                       [nVolumes] and [volumeRate].
+% 
+%       dataFileObj    = a matfile object containing imaging data as a variable 'wholeSession' with 
+%                        dimensions [y, x, plane, volume, trial]
 %
 %       offsetAlign  = <OPTIONAL> a boolean value indicating whether to collect the baseline data from the  
 %                      beginning or the end of each event (default = 0).   

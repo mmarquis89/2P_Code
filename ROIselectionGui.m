@@ -19,9 +19,6 @@ function ROIselectionGui()
 %
 %===================================================================================================
 
-
-% myData.wholeSession = [y, x, plane, volume, trial]
-
 close all
 
 %++++++++++++++++++++++++ INITIALIZATION TASKS +++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -32,7 +29,7 @@ close all
 if dataFile == 0
     
     % Prompt user for imaging data file to get ref images
-    myData = load_imaging_data();
+    [myData, ~] = load_imaging_metadata();
     refImages = myData.refImg;
     nPlanes = myData.nPlanes;
 else

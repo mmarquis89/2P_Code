@@ -1,4 +1,4 @@
-function preview_trial_movie(sessionData, planeNum, trialNum, cMapRange, sigma, fps)
+function preview_trial_movie(sessionObj, planeNum, trialNum, cMapRange, sigma, fps)
 %===================================================================================================
 % Opens the movie player app and loads a movie of a specific trial and plane (useful for screening
 % trials for movement when deciding which trial and volume to use as a registration template). It 
@@ -7,7 +7,8 @@ function preview_trial_movie(sessionData, planeNum, trialNum, cMapRange, sigma, 
 %
 % INPUTS:
 %
-%   sessionData = the full dataset for the experiment with dimensions [y, x, plane, volume, trial]
+%   sessionObj = a matfile object containing imaging data as a variable 'wholeSession' with 
+%                dimensions [y, x, plane, volume, trial]
 %
 %   planeNum    = the number of the plane to show video from.
 %
@@ -36,7 +37,10 @@ if isempty(fps)
 end
 
 % Get movie data
-trialData = squeeze(sessionData(:,:,planeNum,:,trialNum));
+disp('loading currData')
+currData = sessionObj.wholeSession(:,:,planeNum,:,trialNum);
+disp('currData loaded')
+trialData = squeeze(currData);
 filtData = [];
 for iVol = 1:size(trialData,3)
     filtData(:,:,iVol) = imgaussfilt(trialData(:,:,iVol), sigma);

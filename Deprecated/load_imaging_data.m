@@ -1,8 +1,12 @@
-function outputData = load_imaging_data()
+function outputData = load_imaging_data(varargin)
 %=======================================================================================================================================================
 %
 %  Prompts user for input data file(s) containing 2P imaging data and loads the data. Can handle either 1 or 2 channel imaging. Also does some basic
 %  pre-processing/metadata extraction before returning it all as a single data structure.
+%
+%  INPUT (optional):
+%       includeSession           = <default: 1> optional positional argument specifying whether to include the imaging data or just the metadata.
+%
 %
 %  OUTPUT:
 %       outputData = a structure with the following fields:
@@ -22,7 +26,6 @@ function outputData = load_imaging_data()
 %               stimOnsetTimes   = 1 x nTrials numeric vector containing the onset time of the stimulus in seconds for each trial
 %               stimSepTrials    = a structure with 1 x nTrials logical vectors for each stimType
 %               stimTypes        = cell array containing the names of each unique trialType in the session
-%               tE_sec           = time in seconds it took to register the data
 %               trialAnnotations = cell array with behavior annotation data (see process_anvil_annotations() for more info)
 %               trialDuration    = total duration of trial in seconds
 %               trialType        = cell array with the stimulus type for each trial that went in the data structure
@@ -37,8 +40,15 @@ if dataFile == 0
     disp('Initialization cancelled')
     outputData = []; % Skip loading if user clicked "Cancel"
 else
+    imgData = [];
     disp(['Loading ' dataFile, '...'])
-    imgData = load([sessionDataPath, dataFile]); % Fields are: 'regProduct','trialType','origFileNames','tE_sec', 'scanimageInfo', 'expDate' (scanimageInfo not present in older exps)
+    m = matfile([sessionDataPath, dataFile], 'Writable', true); % Fields are: 'regProduct','trialType','origFileNames','tE_sec', 'scanimageInfo', 'expDate' (scanimageInfo not present in older exps)
+    imgData.trialType = m.trialType;
+    imgData.origFileNames = m.origFileNames;
+    imgData.scanimageInfo = m.scanimageInfo;
+    imgData.expDate = m.expDate;
+
+imgData = load([sessionDataPath, dataFile]); 
     disp([dataFile, ' loaded'])
     
     % Prompt user for a metadata file

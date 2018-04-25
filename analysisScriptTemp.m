@@ -104,7 +104,7 @@ clear saveDir fileName myVid volAvgData f nPlots ax writeFrame
 
 %% INITIAL DATA PROCESSING STEPS
 
-skipTrials = [];
+skipTrials = [18 19 54 55];
 myData.skipTrials = skipTrials;
 nSkippedTrials = length(skipTrials); myData.nSkippedTrials = nSkippedTrials;
 
@@ -121,20 +121,24 @@ annotationTypes = [];
 
 % Add odor stim frames
 odorAnnotArr = zeros(nTrials, nFrames);
+noStimAnnotArr = odorAnnotArr;
 odorStims = {'OdorA', 'OdorB'};
 myData.stimSepTrials.odorTrials = logical(zeros(nTrials, 1));
 for iStim = 1:numel(odorStims)
     myData.stimSepTrials.odorTrials(myData.stimSepTrials.(odorStims{iStim})) = 1;
 end
 for iTrial = 1:nTrials
+    onsetFrame = round(myData.stimOnsetTimes(iTrial)) * FRAME_RATE;
+    offsetFrame = (round(myData.stimOnsetTimes(iTrial)) + round(myData.stimDurs(iTrial))) * FRAME_RATE;
     if myData.stimSepTrials.odorTrials(iTrial)
-        onsetFrame = round(myData.stimOnsetTimes(iTrial)) * FRAME_RATE;
-        offsetFrame = (round(myData.stimOnsetTimes(iTrial)) + round(myData.stimDurs(iTrial))) * FRAME_RATE;
-        odorAnnotArr(iTrial, onsetFrame:offsetFrame) = 4; %--> [trial, frame]
+        odorAnnotArr(iTrial, onsetFrame:offsetFrame) = 4;   %--> [trial, frame]
+    else
+        noStimAnnotArr(iTrial, onsetFrame:offsetFrame) = 4; %--> [trial, frame]
     end
 end
 goodOdorTrials = logical(myData.stimSepTrials.odorTrials .* goodTrials');
 odorAnnotArr(~goodOdorTrials, :) = 0;
+noStimAnnotArr(~goodTrials', :) = 0;
 
 % All odor events
 odorAnnotations = annotationType(myData, odorAnnotArr, skipTrials, 'odor');
@@ -155,7 +159,13 @@ odorAnnotations_B = annotationType(myData, annotArr_OdorB, skipTrials, 'odor_B')
 odorAnnotations_B = get_event_vols(odorAnnotations_B, '04', '40');
 annotationTypes{end + 1} = odorAnnotations_B;
 
-% Early Odor A events
+% No stim "lack of events"
+annotArr_NoStim = noStimAnnotArr;
+annotArr_NoStim(~myData.stimSepTrials.NoStim, :) = 0;
+odorAnnotations_NoStim = annotationType(myData, annotArr_NoStim, skipTrials, 'NoStim');
+odorAnnotations_NoStim = get_event_vols(odorAnnotations_NoStim, '04', '40');
+annotationTypes{end + 1} = odorAnnotations_NoStim;
+
 
 % % Carrier stream stopping events
 % annotArr_CarrierStreamStop = odorAnnotArr;
@@ -236,11 +246,11 @@ analysisWindows = []; overshoots = []; filterMatches = [];
 disp(annotationTypeSummary)
 
 % Choose active alignment events
-activeEventTypes = [4];
+activeEventTypes = [5 7];
 disp(annotationTypeSummary(activeEventTypes, 2))
 
 % Choose active filter events
-activeFilterTypes = [1];
+activeFilterTypes = [2 3];
 disp(annotationTypeSummary(activeFilterTypes, 2))
 
 
@@ -271,39 +281,39 @@ filterMatches{end+1} = [];
 % overshoots(end+1)        = 1;
 % filterMatches{end+1} = [3];
 
-% % Grooming
-% analysisWindows(end+1,:) = [ 1  3 ];
-% overshoots(end+1)        = 0;
-% filterMatches{end+1} = [];
+% Grooming
+analysisWindows(end+1,:) = [ 2  3 ];
+overshoots(end+1)        = 0;
+filterMatches{end+1} = [];
 
 % ------------- FILTER EVENTS -----------------
 
 % Create filters for different condition components
 allFilts = []; allFiltNames = []; filtWindows = [];
 
-% Odor
-withOdor =  [ 0  1  0 ];
-noOdor =    [-1 -1  0 ];
-anyOdor =   [ 0  0  0 ];
-filtWindows(end+1,:)     = [  1  0  ];
-allFilts{end+1} = [withOdor; noOdor]; %
-allFiltNames{end+1} = {'WithOdor', 'NoOdor'}; %
+% % Odor
+% withOdor =  [ 0  1  0 ];
+% noOdor =    [-1 -1  0 ];
+% anyOdor =   [ 0  0  0 ];
+% filtWindows(end+1,:)     = [  1  0  ];
+% allFilts{end+1} = [withOdor; noOdor]; %
+% allFiltNames{end+1} = {'WithOdor', 'NoOdor'}; %
 
-% % Odor A
-% withOdorA =  [ 0  1  0 ];
-% noOdorA =    [-1 -1  0 ];
-% anyOdorA =   [ 0  0  0 ];
-% filtWindows(end+1,:)     = [  1  0  ];
-% allFilts{end+1} = [withOdorA; noOdorA]; %
-% allFiltNames{end+1} = {'WithOdorA', 'NoOdorA'}; %
-% 
-% % Odor B
-% withOdorB =  [ 0  1  0 ];
-% noOdorB =    [-1 -1  0 ];
-% anyOdorB =   [ 0  0  0 ];
-% filtWindows(end+1,:)     = [  1  0  ];
-% allFilts{end+1} = [withOdorB; noOdorB]; %
-% allFiltNames{end+1} = {'WithOdorB', 'NoOdorB'}; %
+% Odor A
+withOdorA =  [ 0  1  0 ];
+noOdorA =    [-1 -1  0 ];
+anyOdorA =   [ 0  0  0 ];
+filtWindows(end+1,:)     = [  1  0  ];
+allFilts{end+1} = [withOdorA; noOdorA]; %
+allFiltNames{end+1} = {'WithOdorA', 'NoOdorA'}; %
+
+% Odor B
+withOdorB =  [ 0  1  0 ];
+noOdorB =    [-1 -1  0 ];
+anyOdorB =   [ 0  0  0 ];
+filtWindows(end+1,:)     = [  1  0  ];
+allFilts{end+1} = [withOdorB; noOdorB]; %
+allFiltNames{end+1} = {'WithOdorB', 'NoOdorB'}; %
 
 % % Locomotion
 % startLoc = [-1  1  0 ];
@@ -522,17 +532,17 @@ end%iFold
 %%%=================================================================================================
 %% PLOT 2-D SUMMARY OF BEHAVIOR DATA ANNOTATIONS
 
-saveFig = 1;
+saveFig = 0;
 plotTypes = [2 1]; % 1 = odor stims, 2 = behavior
 s = myData.stimSepTrials;
 
-% trialGroups = [];
-% plotTitleSuffix = '';
-% fileNameSuffix = '_AllTrials';
+trialGroups = [];
+plotTitleSuffix = '';
+fileNameSuffix = '_AllTrials';
 % 
-trialGroups = [[s.OdorA + 2 * s.OdorB + 3 * s.NoStim] .* goodTrials]; 
-plotTitleSuffix = ' - Ethanol\_neat (top) vs. ACV\_e-1 (mid) vs. no Stim (bottom)';%
-fileNameSuffix = '_OdorAvsOdorBvsNoStim';
+% trialGroups = [[s.OdorA + 2 * s.OdorB + 3 * s.NoStim] .* goodTrials]; 
+% plotTitleSuffix = ' - Ethanol\_neat (top) vs. CO2\_e-2 (mid) vs. no Stim (bottom)';%
+% fileNameSuffix = '_OdorAvsOdorBvsNoStim';
 
 for iFold = 1
 
@@ -544,9 +554,10 @@ annotArr = [];
 for iPlot = 1:nPlots
     if plotTypes(iPlot) == 1
         % Odor stim
+        tempAnnotArr = annotArr_OdorA + 0.5 * annotArr_OdorB;
         plotNames{iPlot} = 'Odor Delivery';
         titleStrings{iPlot} = [regexprep(expDate, '_', '\\_'), '    ', [plotNames{iPlot}, ' summary ', plotTitleSuffix]]; % regex to add escape characters
-        annotArr{iPlot} = odorAnnotArr;
+        annotArr{iPlot} = tempAnnotArr;
     elseif plotTypes(iPlot) == 2
          % Behavior
         plotNames{iPlot} = 'Behavior Annotation';
@@ -629,18 +640,20 @@ end%iFold'
 %----- Plot 1D trial-averaged movement data -----
 s = myData.stimSepTrials;
 
-saveFig = 1
+saveFig = 0
 actionLabel = [2]; % locomotionLabel = 2; noActionLabel = 0; groomingLabel = 3; isoMovementLabel = 4;
 figTitle = regexprep([expDate, '  —  Fly locomotion throughout trial (red = odor)'], '_', '\\_');
-plotNames = {'Ethanol\_neat', 'ACV\_e-1', 'No Stim'};
+plotNames = {'Ethanol\_neat', 'CO2\_e-2', 'No Stim'};
 
-trialGroups =  []; 
-fileNameSuffix = '_AllTrials_Locomotion';
+% trialGroups =  [goodTrials]; 
+% % trialGroups(1:45) = 0;
+% % trialGroups(45:end) = 0;
+% fileNameSuffix = '_AllTrials_Locomotion';
 % 
-% trialGroups =  [s.OdorA + 2 * s.OdorB + 3 * s.NoStim] .* goodTrials; 
-% % trialGroups(1:60) = 0;
-% % trialGroups(60:end) = 0;
-% fileNameSuffix = '_OdorAvsOdorBvsNoStim'; 
+trialGroups =  [s.OdorA + 2 * s.OdorB + 3 * s.NoStim] .* goodTrials; 
+% trialGroups(1:10) = 0;
+trialGroups(40:end) = 0;
+fileNameSuffix = '_OdorAvsOdorBvsNoStim_Locomotion_LateTrials'; 
 
 stimShadingColors = {'red', 'green'};
 
@@ -770,13 +783,13 @@ for iFoldOut = 1
     disp(currSummary)
     
     % Calculate absolute max dF/F value across all planes and stim types
-    currConds = [1 2];
-    makeVid = 0;
+    currConds = [3 6];
+    makeVid = 1;
     sigma = [0.6];   
     rangeType = 'Max';
-    rangeScalar = 0.6;
+    rangeScalar = 0.8;
     saveDir = [];
-    fileName = 'EtOH_Response_Heatmaps';
+    fileName = 'CO2_Response_Heatmaps';
 
     plotTitles = [];
     for iCond = currConds
@@ -798,7 +811,7 @@ for iFold = 1
     %% CALCULATE AND PLOT OVERALL MEAN dF/F ACROSS BEHAVIORAL STATES
 
     locomotionLabel = 2; noActionLabel = 0; groomingLabel = 3; isoMovementLabel = 4;
-    actionLabel = [2];
+    actionLabel = [3];
     baselineLabel = [0];
 
     smoothingSigma = [0.6]; 
@@ -806,8 +819,8 @@ for iFold = 1
     rangeScalar = 1;
     makeVid = 1;
     saveDir = [];
-    fileName = 'Locomotion_Plane_Heatmaps';
-    titleStr = {'dF/F - Locomotion vs. Quiescence'};
+    fileName = 'Grooming_Plane_Heatmaps';
+    titleStr = {'dF/F - Grooming vs. Quiescence'};
     
 for iFoldIn = 1
     % Identify behavioral state during each volume
@@ -884,7 +897,7 @@ end%iFoldIn
     currCondNames = repmat(allCondNames{eventInd}, 2, 1);
     
     % Calculate absolute max dF/F value across all planes and stim types
-    currConds = [1 2 3 4];
+    currConds = [2 3 6 5];
     sigma = [0.6]; 
     rangeType = 'Max';
     rangeScalar = 0.8;
@@ -1047,18 +1060,18 @@ clear currDffAvg currDff
 %% PLOT EVENT-ALIGNED dF/F WITHIN ROIs
 
 % Show summary again
-eventName = 'odor_B';
-shadeDur = 1;
+eventName = 'groom';
+shadeDur = 0;
 eventInd = ~cellfun(@isempty, strfind(primaryEventNames, eventName));
 currSummary = allCondSummaries{eventInd};
 disp(currSummary)
 
-currConds = [1 2];
+currConds = [2 5];
 currCondNames = allCondNames{eventInd}(currConds);
 
 currDffData = ROIEventDff{eventInd}(currConds); % --> {cond}[volume, event, ROI]
 
-fileNamePrefix = 'Locomotion_responses_';
+fileNamePrefix = 'EtOH_responses_';
 
 saveDir = 0;
 saveDir = uigetdir(['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), '\Analysis'], 'Select a save directory');
@@ -1094,7 +1107,7 @@ for iROI = ROIlist
     % Plot dF/F for each condition
     alignStr = currSummary.Align(currConds);
     for iPlot = 1:(nPlots - 1) 
-        if strcmp(alignStr, 'onset')
+        if strcmp(alignStr{iPlot}, 'onset')
             eventShading = [0, shadeDur];
         else
             eventShading = [-shadeDur, 0];
@@ -1163,11 +1176,11 @@ myData.ROIDataAvg = ROIDataAvg;
     %% PLOT MEAN ROI dF/F THROUGHOUT TRIAL FOR ONE OR MORE STIM TYPES
 
     saveDir = uigetdir(['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), '\Analysis'], 'Select a save directory');
-    plotTitle = regexprep([expDate, ' - EtOH_neat (top), ACV_e-1 (bottom)'], '_', '\\_');
+    plotTitle = regexprep([expDate, ' - EtOH_neat (top), CO2_e-2 (middle), No stim (bottom)'], '_', '\\_');
     fileNamePrefix = 'Whole_Trial_Responses_';
     s = myData.stimSepTrials;
-    filterVecs = [s.OdorA; s.OdorB];
     eventShading = [13 15];
+    filterVecs = logical([s.OdorA; s.OdorB; s.NoStim] .* repmat(goodTrials, 3, 1));
     
     singleTrials = 1;
     singleTrialAlpha = 0.5;
@@ -1176,13 +1189,10 @@ myData.ROIDataAvg = ROIDataAvg;
     ROIlist = 1:size(ROIDffAvg, 3);
 %     ROIlist = [1 2 3];
     
-    trialFilterVecs = [logical(s.OdorA .* (goodTrials)); ...
-                       logical(s.OdorB .* (goodTrials))  ...
-                       ];
     yL = [];
     for iROI = ROIlist       
 
-        nPlots = size(trialFilterVecs, 1);
+        nPlots = size(filterVecs, 1);
         nRows = nPlots + 1;
         
         % Create figure
@@ -1233,24 +1243,26 @@ myData.ROIDataAvg = ROIDataAvg;
 
     saveDir = uigetdir(['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), '\Analysis'], 'Select a save directory');
     
-    plotTitle = regexprep([expDate, ' - ACV_e-1 responses - early vs late trials'], '_', '\\_');
-    fileNamePrefix = 'ACV_EarlyVsLateTrials_';
-    s = myData.stimSepTrials.OdorB;
+    plotTitle = regexprep([expDate, ' - No stim - early vs late trials'], '_', '\\_');
+    fileNamePrefix = 'NoStim_EarlyVsLateTrials_';
+    s = myData.stimSepTrials.NoStim;
     
     eventShading = [13 15];
     
     singleTrials = 1;
     singleTrialAlpha = 0.25;
     stdDevShading = 1;
-    legendStr = {'Trials 1:40', 'Trials 41:80', 'Trials 81:100'};
+    outlierSD = 2;
+    legendStr = {'Trials 1:30', 'Trials 31:60', 'Trials 61:90'};
     
     trialGroups = ones(1, nTrials);
-    trialGroups(40:end) = 2;
-    trialGroups(80:end) = 3;
+    trialGroups(1:10) = 0;
+    trialGroups(30:end) = 2;
+%     trialGroups(80:end) = 3;
     trialGroups = trialGroups(logical(s .* goodTrials));
 
-    ROIlist = 1:size(ROIDffAvg, 3);
-%     ROIlist = [1 2 3];
+%     ROIlist = 1:size(ROIDffAvg, 3);
+    ROIlist = [1];
 
     for iROI = ROIlist       
 
@@ -1277,6 +1289,7 @@ myData.ROIDataAvg = ROIDataAvg;
                                       'TrialGroups', trialGroups,   ...
                                       'SingleTrials', singleTrials, ...
                                       'SingleTrialAlpha', singleTrialAlpha, ...
+                                      'OutlierSD', outlierSD, ...
                                       'Legend', legendStr, ...
                                       'StdDevShading', stdDevShading);
         title(plotTitle);
@@ -1292,11 +1305,13 @@ myData.ROIDataAvg = ROIDataAvg;
     %% PLOT MEAN ROI dF/F THROUGHOUT TRIAL COLOR CODED BY BEHAVIOR
     
     saveDir = uigetdir(['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate, '\sid_', num2str(sid), '\Analysis'], 'Select a save directory');
-    plotTitle = regexprep([expDate, ' - EtOH_neat(top), ACV_e-1 (bottom)'], '_', '\\_');
+    plotTitle = regexprep([expDate, ' - EtOH_neat (top), CO2_e-2 (middle), No stim (bottom)'], '_', '\\_');
     fileNamePrefix = 'Behavior_Coded_Whole_Trial_Responses_';
     s = myData.stimSepTrials;
     eventShading = [13 15];
-    annotValues = [2 0];
+    annotValues = [2 0];    
+    
+    trialFilterVecs = logical([s.OdorA; s.OdorB; s.NoStim] .* repmat(goodTrials, 3, 1));
     
     singleTrials = 1;
     singleTrialAlpha = 0.4;
@@ -1304,10 +1319,6 @@ myData.ROIDataAvg = ROIDataAvg;
     
     ROIlist = 1:size(ROIDffAvg, 3);
 %     ROIlist = [1 2 3];
-%     trialFilterVecs = goodTrials;
-    trialFilterVecs = [logical(s.OdorA .* (goodTrials)); ...
-                       logical(s.OdorB .* (goodTrials))  ...
-                       ];
     
     for iROI = ROIlist       
 
@@ -1373,9 +1384,11 @@ myData.ROIDataAvg = ROIDataAvg;
     concatROIDff = reshape(ROIDffAvg, nVolumes * nTrials, nROIs);   % --> [volume, ROI]
     
     % Get linear arrays of event annotations
-    behavVols = annotationTypes{7}.eventVolsLin;
+    behavVols = annotationTypes{5}.eventVolsLin;
     odorAVols = annotationTypes{2}.eventVolsLin;
     odorBVols = annotationTypes{3}.eventVolsLin;
+    noStimVols = annotationTypes{4}.eventVolsLin;
+    groomVols = annotationTypes{7}.eventVolsLin;
     odorVols = annotationTypes{1}.eventVolsLin;
     for iROI = 1:nROIs
         
@@ -1387,8 +1400,10 @@ myData.ROIDataAvg = ROIDataAvg;
         plot(smooth(concatROIDff(:,iROI), 3), 'b');
         plot(odorAVols, 'r');
         plot(odorBVols, 'g');
+        plot(noStimVols, 'm');
         plot(behavVols, 'k');
-        legend({'Odor A', 'Odor B', 'Fly Movements'});
+        plot(groomVols, 'c');
+        legend({'', 'EtOH', 'CO2', 'No Stim', 'Fly Movements'});
         
         % Add trial delineators and numbers
         allVols = 1:(nTrials * nVolumes);

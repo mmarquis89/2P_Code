@@ -256,9 +256,9 @@ for iExp = 1:length(expDates)
 
 % -------------------------------------------------------------------------------------------------
 
-expDate = '2018_02_09_exp_2';
+expDate = '2018_03_14';
 parentDir = ['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate];
-sid = 2;
+sid = 0;
 
 %%% Archive raw anatomy stacks
 archiveName = 'AnatomyStacks';
@@ -283,7 +283,7 @@ clear parentDir archiveName filterString
 
 FRAME_RATE = 25;
 trialDuration = 20;
-expDate = '2018_04_16';
+expDate = '2018_04_20_exp_2';
 sid = 0;
 
 parentDir = ['B:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate, '\_Movies'];

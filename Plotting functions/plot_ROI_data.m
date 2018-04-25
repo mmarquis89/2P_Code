@@ -97,8 +97,6 @@ annotValues = p.Results.AnnotValues;
 % Setup variables
 nVolumes = size(ROIDffAvg, 1);
 volTimes = ([1:1:nVolumes] + volOffset) ./ volumeRate;
-trialAvgDff = mean(ROIDffAvg, 2);
-stdDev = std(ROIDffAvg, 0, 2);
 nTrials = size(ROIDffAvg, 2);
 if ~isempty(trialGroups)
     nGroups = numel(unique(trialGroups(trialGroups ~= 0)));
@@ -116,22 +114,22 @@ ax.YLabel.String =  'dF/F';
 ax.XLabel.String = 'Time (s)';
 xlim(ax, [min(volTimes), max(volTimes)]);
 
-% Discard any trials that are >5 SDs from mean
-outliers = zeros(1, size(ROIDffAvg, 2));
-for iTrial = 1:size(ROIDffAvg, 2)
-    if sum(abs(ROIDffAvg(:, iTrial) - trialAvgDff) > (outlierSD * stdDev))
-        outliers(iTrial) = 1;
-        
-    end
-end
-if sum(outliers) > 0
-    disp(['Omitting ' num2str(sum(outliers)), ' outlier trials'])
-end
-ROIDffAvg(:, logical(outliers)) = [];
-trialGroups(logical(outliers)) = [];
-if ~isempty(annotArr)
-    annotArr(:, logical(outliers)) = [];
-end
+% % Discard any trials that are too many SDs from mean
+% outliers = zeros(1, size(ROIDffAvg, 2));
+% for iTrial = 1:size(ROIDffAvg, 2)
+%     if max(abs(ROIDffAvg(:, iTrial) - trialAvgDff) > (outlierSD * mean(std(ROIDffAvg, 0, 2))))
+%         outliers(iTrial) = 1;
+%         
+%     end
+% end
+% if sum(outliers) > 0
+%     disp(['Omitting ' num2str(sum(outliers)), ' outlier trials'])
+% end
+% ROIDffAvg(:, logical(outliers)) = [];
+% trialGroups(logical(outliers)) = [];
+% if ~isempty(annotArr)
+%     annotArr(:, logical(outliers)) = [];
+% end
 
 % Create colormap
 if ~isempty(annotArr)
@@ -177,6 +175,21 @@ for iGroup = 1:nGroups
     % Separate data from current trial group and calculate average dF/F
     groupAvgDff = mean(ROIDffAvg(:, trialGroups == iGroup), 2);
     groupDff = ROIDffAvg(:, trialGroups == iGroup); % --> [volume, trial]
+    
+    % Discard any trials that are too many SDs from mean
+    outliers = zeros(1, size(groupDff, 2));
+    for iTrial = 1:size(groupDff, 2)
+        if max(abs(groupDff(:, iTrial) - groupAvgDff) > (outlierSD * mean(std(ROIDffAvg, 0, 2))))
+            outliers(iTrial) = 1;
+        end
+    end
+    if sum(outliers) > 0
+        disp(['Omitting ' num2str(sum(outliers)), ' outlier trials'])
+    end
+    groupDff(:, logical(outliers)) = [];
+    if ~isempty(annotArr)
+        annotArr(:, logical(outliers)) = [];
+    end
     groupStdDev = std(groupDff, 0, 2);
     
     % Plot individual trials in background

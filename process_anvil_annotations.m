@@ -93,7 +93,7 @@ end
 
 % Make sure output data file doesn't already exist for this session, then save processed annotation
 % data along with behavior labels
-saveFilePath = fullfile(saveDir, ['sid_', num2str(sid), '_Annotations.mat']);
+saveFilePath = fullfile(saveDir, ['Annotations.mat']);
 assert(exist(saveFilePath, 'file') == 0, 'Error: a file with this name already exists in the save directory')
 if nTracks == 2
     save(saveFilePath, 'trialAnnotations', 'behaviorLabels', 'ballStopLabels', 'goodTrials');

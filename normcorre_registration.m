@@ -37,10 +37,11 @@ options_rigid = NoRMCorreSetParms('d1', size(concatSession, 1), 'd2', size(conca
 % Rigid registration
 tic; [M, ~, ~, ~] = normcorre_batch(concatSession, options_rigid); toc
 wholeSession = reshape(M, size(wholeSession));
+savefast(fullfile(parentDir, ['rigid_wholeSession']), 'wholeSession')
 if exist('scanimageInfo', 'var')
-    savefast(fullfile(parentDir, ['rigid_', fileName]), 'wholeSession', 'trialType', 'origFileNames', 'expDate', 'scanimageInfo');
+    savefast(fullfile(parentDir, ['imgMetadata']), 'trialType', 'origFileNames', 'expDate', 'scanimageInfo');
 else
-    savefast(fullfile(parentDir, ['rigid_', fileName]), 'wholeSession', 'trialType', 'origFileNames', 'expDate');
+    savefast(fullfile(parentDir, ['imgMetadata']), 'trialType', 'origFileNames', 'expDate');
 end
 
 % Create and save reference images from registered data
@@ -48,7 +49,7 @@ refImages = [];
 for iPlane = 1:size(regProduct, 3)
     refImages{iPlane} = squeeze(mean(mean( regProduct(:,:,iPlane,:,:), 4), 5)); % --> [y, x]
 end
- savefast(fullfile(parentDir, ['refImages_', fileName]), 'refImages');
+ savefast(fullfile(parentDir, ['refImages_Reg.mat']), 'refImages');
 
 
 end

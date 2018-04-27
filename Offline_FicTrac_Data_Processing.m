@@ -5,7 +5,7 @@
 
 %% BASIC DATA LOADING/PROCESSING
 
-parentDir = 'B:\Dropbox (HMS)\2P Data\Behavior Vids\2018_04_14_exp_2\_Movies\FicTracData';
+parentDir = 'B:\Dropbox (HMS)\2P Data\Behavior Vids\2018_04_20_exp_1\_Movies\FicTracData';
 FRAME_RATE = 25;
 trialDuration = 20;
 nFrames = FRAME_RATE * trialDuration;

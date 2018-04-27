@@ -155,12 +155,11 @@ else
     disp('Creating reference images...')
     channelNum = 1;
     refImages = [];
-    for iPlane = 1:sz(3)
-        disp(['Plane #', num2str(iPlane)]);
+    for iPlane = 1:size(m, 'wholeSession')
+        disp(['Pla
         currData = m.wholeSession(:,:,iPlane,:,:);
         refImages{iPlane} = squeeze(mean(mean(currData,4),5)); % --> [y, x]
     end
-    disp('Saving reference images...');
     savefast(fullfile(sessionDir, sprintf('sid_%.0f_refImages.mat', sid)), 'refImages', 'channelNum');
     clear m
 end

@@ -1,8 +1,19 @@
-function [outputMetadata, dataFileObj] = load_imaging_metadata()
+function [outputMetadata, dataFileObj] = load_imaging_metadata(varargin)
 %=======================================================================================================================================================
 %
 %  Prompts user for input data file(s) containing 2P imaging data and loads everything except the actual imaging data array. Also does some basic 
 %  pre-processing/metadata extraction before returning it all as a single data structure.
+%
+%
+%  OPTIONAL NAME-VALUE PAIR ARGUMENTS:
+%
+%  These are collectively the default assumtions for filenames, which should all be in the same directory as the 
+%  selected session data file. Pass arguments to override, or [] to prompt a file selection dialog for the 
+%  indicated filename.
+%
+%       'AnnotFile'              = (default: 'Annotations.mat')
+%       'imgMetadataFile'        = (default: 'imgMetadata.mat')
+%       'refImgFile'             = (default: 'refImages_Reg.mat')
 %
 %  OUTPUT:
 %       outputData = a structure with the following fields:
@@ -32,25 +43,43 @@ function [outputMetadata, dataFileObj] = load_imaging_metadata()
 %
 %========================================================================================================================================================
 
+
+% Parse optional arguments
+p = inputParser;
+addParameter(p, 'AnnotFile', 'Annotations.mat');
+addParameter(p, 'imgMetadataFile', 'imgMetadata.mat');
+addParameter(p, 'refImgFile', 'refImages_Reg.mat')
+parse(p, varargin{:});
+annotFileName = p.Results.AnnotFile;
+imgMetadataFileName = p.Results.imgMetadataFile;
+refImgFileName = p.Results.refImgFile;
+
 % Prompt user for imaging data file
 [dataFile, sessionDataPath, ~] = uigetfile('*.mat', 'Select an imaging data session file', 'B:\Dropbox (HMS)\2P Data\Imaging Data\');
 if dataFile == 0
+    % Skip loading if user clicked "Cancel"
     disp('Initialization cancelled')
-    outputMetadata = []; % Skip loading if user clicked "Cancel"
+    outputMetadata = []; 
+    dataFileObj = [];
 else
-    imgData = [];
+    imgMetadata = [];
     disp(['Loading ' dataFile, '...'])
-    dataFileObj = matfile([sessionDataPath, dataFile], 'Writable', true); % Fields are: 'wholeSession','trialType','origFileNames','tE_sec', 'scanimageInfo', 'expDate' (scanimageInfo not present in older exps)
-    imgData.trialType = dataFileObj.trialType;
-    imgData.origFileNames = dataFileObj.origFileNames;
-    imgData.scanimageInfo = dataFileObj.scanimageInfo;
-    imgData.expDate = dataFileObj.expDate;
+    dataFileObj = matfile([sessionDataPath, dataFile], 'Writable', true); % Only field is 'wholeSession'
+    if isempty(imgMetadataFileName)
+       [imgDataFile, imgDataFilePath, ~] = uigetfile('*.mat', 'Select an imaging metadata file', sessionDataPath);
+       if imgDataFile == 0
+           errordlg('No imaging metadata file selected!');
+           return
+       end
+       load(fullfile(imgDataFilePath, imgDataFile)); % variable "imgMetadata" with fields 'trialType','origFileNames','tE_sec', 'scanimageInfo', 'expDate' (scanimageInfo not present in older exps)
+    else
+       load(fullfile(sessionDataPath, imgMetadataFileName)); % variable "imgMetadata" with fields 'trialType','origFileNames','tE_sec', 'scanimageInfo', 'expDate' (scanimageInfo not present in older exps) 
+    end
     wholeSessionSize = size(dataFileObj, 'wholeSession'); % --> [y, x, plane, volume, trial]
-    
     disp([dataFile, ' loaded'])
     
     % Prompt user for a stimulus computer metadata file
-    [metadataFile, metaDataPath, ~] = uigetfile('*.mat', 'Select a metadata file', ['B:\Dropbox (HMS)\2P Data\Behavior Vids\', imgData.expDate]);
+    [metadataFile, metaDataPath, ~] = uigetfile('*.mat', 'Select a metadata file', ['B:\Dropbox (HMS)\2P Data\Behavior Vids\', imgMetadata.expDate]);
     if metadataFile == 0
         errordlg('No metadata file selected');
         return
@@ -58,44 +87,51 @@ else
     
     % Extract metadata
     metadata = load([metaDataPath, metadataFile]);
-    imgData.sid = metadata.metaData.sid;
-    imgData.trialDuration = metadata.metaData.trialDuration;
+    imgMetadata.sid = metadata.metaData.sid;
+    imgMetadata.trialDuration = metadata.metaData.trialDuration;
      
     % Get stimulus timing info from file names
-    fileNames = imgData.origFileNames;
-    imgData.stimOnsetTimes = []; imgData.stimDurs = [];
+    fileNames = imgMetadata.origFileNames;
+    imgMetadata.stimOnsetTimes = []; imgMetadata.stimDurs = [];
     for iTrial = 1:numel(fileNames)
         currName = strsplit(fileNames{iTrial}, {'-', '_'});
-        imgData.stimOnsetTimes(iTrial)= str2double(currName(find(cellfun(@strcmp, currName, repmat({'Onset'}, size(currName)))) + 1 ));
-        imgData.stimDurs(iTrial) = str2double(currName(find(cellfun(@strcmp, currName, repmat({'Dur'}, size(currName)))) + 1 ));
+        imgMetadata.stimOnsetTimes(iTrial)= str2double(currName(find(cellfun(@strcmp, currName, repmat({'Onset'}, size(currName)))) + 1 ));
+        imgMetadata.stimDurs(iTrial) = str2double(currName(find(cellfun(@strcmp, currName, repmat({'Dur'}, size(currName)))) + 1 ));
     end
     
     % Prompt user for annotation data file
-    [annotDataFile, annotDataPath, ~] = uigetfile('*.mat', 'Select a behavioral annotation data file if desired', sessionDataPath);
-    if annotDataFile == 0
-        disp('No behavioral annotation data selected')
+    if isempty(annotFileName)
+        [annotFileName, annotDataPath, ~] = uigetfile('*.mat', 'Select a behavioral annotation data file if desired', sessionDataPath);
+    else
+        annotDataPath = sessionDataPath;
+        if ~exist(fullfile(sessionDataPath, annotFileName), 'file')
+            annotFileName = 0;
+        end
+    end
+    if annotFileName == 0
+        disp('No behavioral annotation data loaded')
         annotDataPath = metaDataPath;
         annotData.behaviorLabels = [];
         annotData.ballStopLabels = [];
         annotData.trialAnnotations = [];
-        if exist(fullfile(annotDataPath, ['sid_', num2str(imgData.sid), '_frameCountLog.mat']), 'file')
+        if exist(fullfile(annotDataPath, ['sid_', num2str(imgMetadata.sid), '_frameCountLog.mat']), 'file')
             % Check frame counts for behavior video
-            parentDir = fullfile('B:\Dropbox (HMS)\2P Data\Behavior Vids', imgData.expDate, '_Movies')
-            [annotData.goodTrials, ~, ~, ~] = frame_count_check(parentDir, imgData.sid, 25, sum(imgData.trialDuration));
+            parentDir = fullfile('B:\Dropbox (HMS)\2P Data\Behavior Vids', imgMetadata.expDate, '_Movies')
+            [annotData.goodTrials, ~, ~, ~] = frame_count_check(parentDir, imgMetadata.sid, 25, sum(imgMetadata.trialDuration));
         else
             annotData.goodTrials = [];
         end
     else
-        disp(['Loading ' annotDataFile, '...'])
-        annotData = load([annotDataPath, annotDataFile]);
+        disp(['Loading ' annotFileName, '...'])
+        annotData = load(fullfile(annotDataPath, annotFileName));
         if ~isfield(annotData, 'ballStopLabels')
             annotData.ballStopLabels = [];
         end
-        disp([annotDataFile, ' loaded'])
+        disp([annotFileName, ' loaded'])
     end
-    
+
     % Combine imaging data and annotation data into one structure   
-    outputMetadata = setstructfields(imgData, annotData); 
+    outputMetadata = setstructfields(imgMetadata, annotData); 
     outputMetadata.nTrials = wholeSessionSize(5);
     outputMetadata.nPlanes = wholeSessionSize(3);
     outputMetadata.nVolumes = wholeSessionSize(4);
@@ -146,17 +182,26 @@ else
     end
     
     % Prompt user for a reference images file
-    [refImageFile, refImgPath, ~] = uigetfile('*.mat', 'Select a reference images file if desired', sessionDataPath);
-    if refImageFile == 0
+    if isempty(refImgFileName)
+        [refImgFileName, refImgPath, ~] = uigetfile('*.mat', 'Select a reference images file if desired', sessionDataPath);
+    else
+        refImgPath = sessionDataPath;
+        if ~exist(fullfile(sessionDataPath, refImgFileName), 'file')
+            refImgFileName = 0;
+        end
+    end
+    if refImgFileName == 0
         disp('No reference images file selected - creating reference images from main data file')
         
         % Create mean reference image for each plane
         outputMetadata.refImg = [];
         for iPlane = 1:outputMetadata.nPlanes
-            outputMetadata.refImg{iPlane} = squeeze(mean(mean(dataFileObj.wholeSession(:,:,iPlane,:,:),4),5)); % --> [y, x]
+            sessionData = dataFileObj.wholeSession(:,:,iPlane,:,:);
+            outputMetadata.refImg{iPlane} = squeeze(mean(mean(sessionData,4),5)); % --> [y, x]
         end
+        clear sessionData
     else
-        refImages = load([refImgPath, refImageFile]);
+        refImages = load(fullfile(refImgPath, refImgFileName));
         outputMetadata.refImg = refImages.refImages;
     end
     

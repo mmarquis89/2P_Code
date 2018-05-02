@@ -5,7 +5,7 @@
 
 %% BASIC DATA LOADING/PROCESSING
 
-parentDir = 'B:\Dropbox (HMS)\2P Data\Behavior Vids\2018_04_20_exp_1\_Movies\FicTracData';
+parentDir = 'B:\Dropbox (HMS)\2P Data\Behavior Vids\2018_04_14_exp_1\_Movies\FicTracData';
 FRAME_RATE = 25;
 trialDuration = 20;
 nFrames = FRAME_RATE * trialDuration;
@@ -267,7 +267,7 @@ ylim(yL)
 
 %% VARIABLE PLOTTING SCRIPT
 
-currTrial = 28;
+currTrial = 5;
 currData = selectData(:, [1 6 2 3 5 4],currTrial); % re-order columns to be [Frame Count, Seq num, xPos, yPos, Speed, HD]
 currAllData = allData(:, :, currTrial); % --> [frame, variable]
 
@@ -297,10 +297,10 @@ seqNum = currAllData(:, 23);
 % legend X Y Z
 % title dRotLab
 %
-% figure(4);clf;hold on
-% plot(absOrientCam(:, [1 3 2]))
-% legend Right-1-X  Down-3-Y Forward-2-Z
-% title absOrientCam
+figure(4);clf;hold on
+plot(absOrientCam(:, [1 3 2]))
+legend Right-1-X  Down-3-Y Forward-2-Z
+title absOrientCam
 %
 % figure(5);clf;hold on
 % plot(absOrientLab)
@@ -327,10 +327,10 @@ figure(9);clf;hold on
 plot(filtfilt(kb, ka, smooth(moveSpeed, 7)))
 title moveSpeed
 
-% figure(10);clf;hold on
-% plot([intForwardMove, intSideMove, intHD])
-% legend Forward Side HD
-% title intForward+SideMove
+figure(10);clf;hold on
+plot([intForwardMove, intSideMove, intHD])
+legend Forward Side HD
+title intForward+SideMove
 
 % Movement map
 figure(11); clf; hold on;
@@ -350,19 +350,19 @@ lims = 1.1 * max(abs(intXY(:)));
 xlim([-lims lims])
 ylim([-lims lims])
 
-% Anvil annotations
-figure(12); clf; hold on
-plot(behaviorAnnotArr(currTrial, :), '-*', 'Color', 'k')
-cm = [rgb('Navy'); rgb('Cyan'); rgb('maroon'); rgb('Gold')];
-for iPlot = 1:4
-    currData = behaviorAnnotArr(currTrial, :);
-    currData(currData ~= iPlot - 1) = nan;
-    plot(currData, '*', 'color', cm(iPlot, :))
-end
-ylim([-1 4])
-ax = gca;
-ax.YTick = [0 1 2 3];
-ax.YTickLabel = {'Quiescence', 'Locomotion', 'Grooming', 'IsolatedMovement'};
+% % Anvil annotations
+% figure(12); clf; hold on
+% plot(behaviorAnnotArr(currTrial, :), '-*', 'Color', 'k')
+% cm = [rgb('Navy'); rgb('Cyan'); rgb('maroon'); rgb('Gold')];
+% for iPlot = 1:4
+%     currData = behaviorAnnotArr(currTrial, :);
+%     currData(currData ~= iPlot - 1) = nan;
+%     plot(currData, '*', 'color', cm(iPlot, :))
+% end
+% ylim([-1 4])
+% ax = gca;
+% ax.YTick = [0 1 2 3];
+% ax.YTickLabel = {'Quiescence', 'Locomotion', 'Grooming', 'IsolatedMovement'};
 
 %% CREATE FICTRAC + BEHAVIOR VIDS
 vidDir = 'B:\Dropbox (HMS)\2P Data\Behavior Vids\2018_04_05_exp_2\_Movies'

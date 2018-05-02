@@ -56,7 +56,7 @@ if isa(Y,'char')
     end    
 elseif isobject(Y);
     filetype = 'mem';
-    var_name = 'Y';
+    var_name = 'wholeSession';%'Y';  % <------ TEMP CHANGE
     sizY = size(Y,var_name);
     T = sizY(end);
 else % array loaded in memory

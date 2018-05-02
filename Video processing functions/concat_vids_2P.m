@@ -19,8 +19,9 @@ function concat_vids_2P(vidDir, fileStr, varargin)
 %
 %       FrameRate    = (default: 25) the frame rate that the video was acquired at in FPS
 %
-%       OutputFile   = (default = fileStr + '_AllTrials') the desired name of the output file. Default
-%                       removes all wildcard characters and the fileStr and appends '_AllTrials'
+%       OutputFile   = (default = fileStr + '_AllTrials') the desired name of the output file (minus
+%                       the file extension). Default removes all wildcard characters and the fileStr 
+%                       and appends '_AllTrials'
 %
 %       OutputFormat = (default = .mp4) The desired output video file format
 %
@@ -44,7 +45,7 @@ vidNames = sort({vidFiles.name});
 assert(exist(fullfile(vidDir, [outputFileName, outputFormat]), 'file')==0, 'Error: concatenated video file already exists in this directory');
 
 % Create vidWriter
-myVidWriter = VideoWriter(fullfile(vidDir, [outputFileName, outputFormat]));
+myVidWriter = VideoWriter(fullfile(vidDir, [outputFileName, outputFormat]), 'MPEG-4');
 myVidWriter.FrameRate = FRAME_RATE;
 open(myVidWriter)
 frameCount = 0;

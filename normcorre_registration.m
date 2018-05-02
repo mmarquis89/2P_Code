@@ -15,18 +15,17 @@ function normcorre_registration(parentDir, fileName)
 
 
 
-load(fullfile(parentDir, fileName));
-if exist('regProduct', 'var')
-    wholeSession = single(regProduct);
-end
-reshapeSize = [size(squeeze(wholeSession(:,:,:,1,1))), size(wholeSession, 4) * size(wholeSession, 5)];
-concatSession = reshape(wholeSession, reshapeSize);
+m = matfile(fullfile(parentDir, fileName));
+sz = size(m, 'wholeSession'); % --> [y, x, plane,allVolumes]
+% reshapeSize = [size(squeeze(wholeSession(:,:,:,1,1))), size(wholeSession, 4) * size(wholeSession, 5)];
+% concatSession = reshape(wholeSession, reshapeSize);
 
 % Set parameters
-options_rigid = NoRMCorreSetParms('d1', size(concatSession, 1), 'd2', size(concatSession, 2), 'd3', size(concatSession, 3), ...
+options_rigid = NoRMCorreSetParms('d1', sz(1), 'd2', sz(2), 'd3', sz(3), ...
                     'max_shift', [25, 25, 2], ...
                     'init_batch', 100, ...
-                    'us_fac', 50 ...
+                    'us_fac', 50, ...
+                    'output_type', 'memmap' ...
                     ); 
 % options_nonRigid = NoRMCorreSetParms('d1', size(concatSession, 1), 'd2', size(concatSession, 2), 'd3', size(concatSession, 3), ...
 %                     'max_shift', [20, 20, 2], ...
@@ -35,14 +34,7 @@ options_rigid = NoRMCorreSetParms('d1', size(concatSession, 1), 'd2', size(conca
 %                     );
                 
 % Rigid registration
-tic; [M, ~, ~, ~] = normcorre_batch(concatSession, options_rigid); toc
-wholeSession = reshape(M, size(wholeSession));
-savefast(fullfile(parentDir, ['rigid_wholeSession']), 'wholeSession')
-if exist('scanimageInfo', 'var')
-    savefast(fullfile(parentDir, ['imgMetadata']), 'trialType', 'origFileNames', 'expDate', 'scanimageInfo');
-else
-    savefast(fullfile(parentDir, ['imgMetadata']), 'trialType', 'origFileNames', 'expDate');
-end
+tic; [M, ~, ~, ~] = normcorre_batch(m, options_rigid); toc
 
 % Create and save reference images from registered data
 refImages = [];

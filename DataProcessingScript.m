@@ -118,11 +118,11 @@ clear expDates fileStr parentDir
 % -------------------------------------------------------------------------------------------------
 expDates = {...
     '2018_04_26_exp_1'
-    '2018_04_26_exp_2'
+%     '2018_04_26_exp_2'
             }
 
 sids = [ ...
-    0 ...
+%     0 ...
     0
     ];
 
@@ -141,14 +141,14 @@ clear expDates sids parentDir
 % -------------------------------------------------------------------------------------------------
 
 %==================================================================================================
-%%% NoRMCorre REGISTRATION --------------------------------------------------------------------
+%% % NoRMCorre REGISTRATION --------------------------------------------------------------------
 %==================================================================================================
 
 % -------------------------------------------------------------------------------------------------
 
 expDates = {...
     '2018_04_26_exp_1'
-    '2018_04_26_exp_2'
+%     '2018_04_26_exp_2'
             }
 
 sids = [ ...
@@ -176,7 +176,7 @@ clear expDates sids fileNames fileName parentDir
 % -------------------------------------------------------------------------------------------------
 
 %==================================================================================================
-%%% CREATE BEHAVIOR VIDEOS ------------------------------------------------------------------------
+%% % CREATE BEHAVIOR VIDEOS ------------------------------------------------------------------------
 %==================================================================================================
 expDates = {...
     '2018_04_26_exp_1'
@@ -196,18 +196,18 @@ for iExp = 1:length(expDates)
     expDate = expDates{iExp};
     sid = sids(iExp);    
     
-    %%% Make vids
+%     %%% Make vids
 %     parentDir = ['B:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate];
 %     tic
 %     make_vids_2P(sid, parentDir, FRAME_RATE)
 %     disp(['Creating behavior vids took ', num2str(round(toc/60, 1)) ' min']);
 %     writeToLog(sprintf('%s behavior vids created in %s min', expDate, num2str(round(toc/60, 1))));
-    
+%     
     %%% Concatenate vids
     tic
     parentDir = ['B:\Dropbox (HMS)\2P Data\Behavior Vids\', expDate, '\_Movies'];
     fileStr = ['sid_', num2str(sid), '_tid*.mp4'];
-    outputFileName = ['sid_', num2str(sid), '_AllTrials.mp4'];
+    outputFileName = ['sid_', num2str(sid), '_AllTrials'];
     concat_vids_2P(parentDir, fileStr, 'OutputFile', outputFileName)
     disp(['Concatenating behavior vids took ', num2str(round(toc/60, 1)) ' min']);
     writeToLog(sprintf('%s behavior vids concatenated in %s min', expDate, num2str(round(toc/60, 1))));
@@ -217,19 +217,18 @@ clear expDates sids parentDir
 
 
 %==================================================================================================
-%% % MAKE OPTIC FLOW COMBINED VIDS------------------------------------------------------------------
+%%% MAKE OPTIC FLOW COMBINED VIDS------------------------------------------------------------------
 %==================================================================================================
  
 expDates = {...
-    '2018_04_20_exp_1'
-    '2018_04_20_exp_2'
+    '2018_04_26_exp_1'
+    '2018_04_26_exp_2'
             }
 
 sids = [ ...
     0 ...
-    0 ...
+    0
     ];
-
 fileNames = { ...
     'Behavior_Vid_ROI_Data.mat' ...
     'Behavior_Vid_ROI_Data.mat' ...

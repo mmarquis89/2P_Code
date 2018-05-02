@@ -75,11 +75,17 @@ for iFile = 1:nTrials
     
     % Create session array(s) on first loop
     if iFile == 1
+        chDataSize = size(chanData);
+        sz = [chDataSize(1:4), nTrials];
+        nVolumes = sz(4);
         if nChannels > 1
             m = matfile(fullfile(sessionDir,sprintf('sid_%.0f_Chan_1_sessionFile.mat',sid)), 'Writable', true);
             m2 = matfile(fullfile(sessionDir,sprintf('sid_%.0f_Chan_2_sessionFile.mat',sid)), 'Writable', true);
+            m.wholeSession(sz(1),sz(2),sz(3),(nVolumes * nTrials)) = 0;
+            m2.wholeSession(sz(1),sz(2),sz(3),(nVolumes * nTrials)) = 0;
         else
             m = matfile(fullfile(sessionDir,sprintf('sid_%.0f_sessionFile.mat',sid)), 'Writable', true);
+            m.wholeSession(sz(1),sz(2),sz(3),(nVolumes * nTrials)) = 0;
         end
     end
     
@@ -112,13 +118,10 @@ for iFile = 1:nTrials
         error(['Error: "', trType, '" is not a valid trial type']);
     end
     
-    % Save data to session array(s)
-    chDataSize = size(chanData);
-    sz = [chDataSize(1:4), nTrials];
-    m.wholeSession(sz(1),sz(2),sz(3),sz(4),sz(5)) = 0;
-    m.wholeSession(1:sz(1), 1:sz(2),1:sz(3), 1:sz(4),iFile) = chanData(:,:,:,:,1);     % --> [y, x, plane, volume, trial]
+    % Save data to session array(s)    
+    m.wholeSession(1:sz(1), 1:sz(2),1:sz(3), (((iFile-1) * nVolumes) +  1):(iFile * nVolumes)) = chanData(:,:,:,:,1);     % --> [y, x, plane, allVolumes]
     if nChannels > 1
-        m2.wholeSession(:,:,:,:,iFile) = squeeze(chanData(:,:,:,:,2)); % --> [y, x, plane, volume, trial]
+        m2.wholeSession(1:sz(1), 1:sz(2),1:sz(3), (((iFile-1) * nVolumes) +  1):(iFile * nVolumes)) = chanData(:,:,:,:,2); % --> [y, x, plane, allVolumes]
     end
     trialType{iFile} = trType;
     origFileNames{iFile} = fName;
@@ -127,26 +130,18 @@ for iFile = 1:nTrials
     
 end%iFile
 
-% Save other variables to channel 1
-m.trialType = trialType;
-m.origFileNames = origFileNames;
-m.expDate = expDate;
-m.scanimageInfo = scanimageInfo;
+% Save other imaging metadata variables in separate file
+savefast(fullfile(parentDir, ['imgMetadata']), 'trialType', 'origFileNames', 'expDate', 'scanimageInfo');
 
+% Create reference images
 if nChannels == 2
     channelNum = 2;
     refImages = [];
-    for iPlane = 1:size(m2.wholeSession, 3)
+    for iPlane = 1:sz(3)
         currData = m2.wholeSession(:,:,iPlane,:,:);
         refImages{iPlane} = squeeze(mean(mean(currData,4),5)); % --> [y, x]
     end
     savefast(fullfile(sessionDir, sprintf('sid_%.0f_refImages.mat', iSession)), 'refImages', 'channelNum');
-    
-    % Save other variables to channel 2
-    m2.trialType = trialType;
-    m2.origFileNames = origFileNames;
-    m2.expDate = expDate;
-    m2.scanimageInfo = scanimageInfo;
     
     clear m m2
 else
@@ -155,13 +150,14 @@ else
     disp('Creating reference images...')
     channelNum = 1;
     refImages = [];
+    tic
     for iPlane = 1:sz(3)
         disp(['Plane #', num2str(iPlane)]);
-        currData = m.wholeSession(:,:,iPlane,:,:);
+        currData = m.wholeSession(1:sz(1),1:sz(2),iPlane,1:sz(4),1:sz(5));
         refImages{iPlane} = squeeze(mean(mean(currData,4),5)); % --> [y, x]
     end
-    disp('Saving reference images...');
     savefast(fullfile(sessionDir, sprintf('sid_%.0f_refImages.mat', sid)), 'refImages', 'channelNum');
+    disp(['Reference images saved in ', num2str(toc), ' seconds']);
     clear m
 end
 

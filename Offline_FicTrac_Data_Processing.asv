@@ -7,7 +7,7 @@
 
 parentDir = 'B:\Dropbox (HMS)\2P Data\Behavior Vids\2018_04_14_exp_1\_Movies\FicTracData';
 FRAME_RATE = 25;
-trialDuration = 74;
+trialDuration = 20;
 nFrames = FRAME_RATE * trialDuration;
 
 xTick = [0:1/trialDuration:1] * (trialDuration * FRAME_RATE);
@@ -287,26 +287,20 @@ intSideMove = currAllData(:, 21);
 timestamp = currAllData(:, 22);
 seqNum = currAllData(:, 23);
 
-figure(1);clf;hold on; ax = gca();
-plot(dRotCam)
-legend Right-1-X  Forward-2-Z Down-3-Y
-title dRotCam
-ax.XTick = xTick;
-ax.XTickLabel = xTickLabels;
-tightfig
-
+% figure(1);clf;hold on
+% plot(filtfilt(kb, ka, dRotCam))
+% legend Right-1-X  Forward-2-Z Down-3-Y
+% title dRotCam
+%
 % figure(3);clf;hold on
 % plot(filtfilt(kb, ka, dRotLab))
 % legend X Y Z
 % title dRotLab
 %
-figure(4);clf;hold on; ax = gca();
-plot(absOrientCamUW(:, [1 3 2]))
-legend Towards-camera-1  Turn\_LtoR-3 Turn\_-2
+figure(4);clf;hold on
+plot(absOrientCam(:, [1 3 2]))
+legend Right-1-X  Down-3-Y Forward-2-Z
 title absOrientCam
-ax.XTick = xTick;
-ax.XTickLabel = xTickLabels;
-tightfig
 %
 % figure(5);clf;hold on
 % plot(absOrientLab)
@@ -314,9 +308,9 @@ tightfig
 % title absOrientLab
 
 figure(6);clf;hold on; ax = gca();
-plot(dRotError)
+plot(intXY)
 legend X Y x y
-title dRotError
+title intXY
 ax.XTick = xTick;
 ax.XTickLabel = xTickLabels;
 
@@ -333,12 +327,10 @@ figure(9);clf;hold on
 plot(filtfilt(kb, ka, smooth(moveSpeed, 7)))
 title moveSpeed
 
-figure(10);clf;hold on; ax = gca();
+figure(10);clf;hold on
 plot([intForwardMove, intSideMove, intHD])
 legend Forward Side HD
 title intForward+SideMove
-ax.XTick = xTick;
-ax.XTickLabel = xTickLabels;
 
 % Movement map
 figure(11); clf; hold on;

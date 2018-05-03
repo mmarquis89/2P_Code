@@ -196,9 +196,8 @@ else
         % Create mean reference image for each plane
         outputMetadata.refImg = [];
         for iPlane = 1:outputMetadata.nPlanes
-            disp(num2str(iPlane))
-            sz = wholeSessionSize;
-            sessionData = dataFileObj.wholeSession(1:sz(1),1:sz(2),iPlane,1:sz(4),1:sz(5));
+            
+            sessionData = dataFileObj.wholeSession(:,:,iPlane,:,:);
             outputMetadata.refImg{iPlane} = squeeze(mean(mean(sessionData,4),5)); % --> [y, x]
         end
         clear sessionData

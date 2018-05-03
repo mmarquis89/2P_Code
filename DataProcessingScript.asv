@@ -103,7 +103,7 @@ for iExp = 1:length(expDates)
     
     parentDir = ['B:\Dropbox (HMS)\2P Data\Imaging Data\', expDate];
     tic
-    create_anatomy_stack(parentDir, 'FileStr', fileStr, 'OutputFilePrefix', '_Stack');
+    create_anatomy_stack(parentDir, 'FileStr', fileStr, _Stack');
     disp(['Creating the anatomy stacks took ', num2str(round(toc/60, 1)) ' min']);
     writeToLog(sprintf('%s anatomy stack created in %s min', expDate, num2str(round(toc/60, 1))));
 end

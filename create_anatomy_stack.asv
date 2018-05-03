@@ -2,41 +2,39 @@ function create_anatomy_stack(dirPath, varargin)
 %===================================================================================================
 % MAKE AVERAGED ANATOMY STACK FROM INDIVIDUAL 2P VOLUMES
 % Will average together all stacks in the directory that meet the requirement specified by 'fileStr'
-% and save as .tif files the mean stack as well as a max Z-projection.
-%
+% and save as .tif files the mean stack as well as a max Z-projection. 
+% 
 % INPUTS:
 %    dirPath = folder with stack files, e.g. 'B:\Dropbox (HMS)\2P Data\Imaging Data\2017_09_05'
 %
 % OPTIONAL NAME-VALUE PAIR INPUTS:
+% 
+%    fileStr          = (default: '*Stack*.tif') filter string for dir() selection to get anatomy stack files. 
 %
-%    FileString       = (default: '*Stack*.tif') filter string for dir() selection to get anatomy
-%                       stack files.
-%
-%    OutputFilePrefix = (default: '') name to prepend to the names of output files.
+%    outputFilePrefix = (default: '') name to prepend to the names of output files.
 %===================================================================================================
-
-addpath('/home/mjm60/HelperFunctions') % If running on O2 cluster
 
 % Parse optional arguments
 p = inputParser;
-addParameter(p, 'FileString', '*Stack*.tif');
-addParameter(p, 'OutputFilePrefix', '');
-parse(p, varargin{:});
-fileStr = p.Results.FileString;
-outputFilePrefix = p.Results.OutputFilePrefix;
+addParameter(p, 'TrialGroups', []);
 
-% Get stack files
+parse(p, varargin{:});
+trialGroups = p.Results.TrialGroups;
+
+
+
 stacks = dir(fullfile(dirPath, fileStr));
 nStacks = length(stacks);
 
 % Add underscore to prefix if one is provided
 if ~isempty(outputFilePrefix)
-    outputFilePrefix = [outputFilePrefix, '_'];
+   outputFilePrefix = [outputFilePrefix, '_']; 
 end
 
 % Get sum of all stacks
 summedStacks = [];
 for iVol = 1:nStacks
+    disp(['Reading ' stacks(iVol).name, '...']);
     if iVol == 1
         firstStack = int16(read_tif(fullfile(dirPath,stacks(iVol).name)));                  % --> [y, x, plane, volume, channel]
         summedStacks = int16(firstStack);                                                   % --> [y, x, plane, volume, channel]
@@ -44,9 +42,10 @@ for iVol = 1:nStacks
         summedStacks = summedStacks + int16(read_tif(fullfile(dirPath,stacks(iVol).name))); % --> [y, x, plane, volume, channel]
     end
 end
+% disp(['Max summed value = ', num2str(max(summedStacks(:)))]);
 
 % Convert to double
-summedStacks = squeeze(double(summedStacks));                                                % --> [y, x, plane, channel]
+summedStacks = squeeze(double(summedStacks));                                                % --> [y, x, plane, channel]                                            
 
 % Check whether data has multiple channels
 nChannels = size(summedStacks, 4);
@@ -61,6 +60,10 @@ if nChannels == 1
     % Get max Z-projection of averaged stack and scale intensity range to 0-1
     maxZ = squeeze(max(avgStack, [], 3));           % --> [y, x]
     maxZScaled = maxZ ./ max(maxZ(:));              % --> [y, x]
+    
+    % Make sure files with these names don't already exist in the chosen directory
+    assert(exist(fullfile(dirPath, [outputFilePrefix, 'MeanMaxZ.tif']), 'file')==0, 'Error: a file with this name already exists in this directory');
+    assert(exist(fullfile(dirPath, [outputFilePrefix, 'MeanStack.tif']), 'file')==0, 'Error: a file with this name already exists in this directory');
     
     % Write averaged stack and Z-projection to .tif files
     imwrite(maxZScaled, fullfile(dirPath, [outputFilePrefix, 'MeanMaxZ.tif']));
@@ -88,6 +91,12 @@ else % nChannels == 2
     maxZScaled_1 = maxZ_1 ./ max(maxZ_1(:));             % --> [y, x]
     maxZScaled_2 = maxZ_2 ./ max(maxZ_2(:));             % --> [y, x]
     
+    % Make sure files with these names don't already exist in the chosen directory
+    assert(exist(fullfile(dirPath, [outputFilePrefix, 'MeanMaxZ_1.tif']), 'file')==0, 'Error: a file with this name already exists in this directory');
+    assert(exist(fullfile(dirPath, [outputFilePrefix, 'MeanMaxZ_2.tif']), 'file')==0, 'Error: a file with this name already exists in this directory');
+    assert(exist(fullfile(dirPath, [outputFilePrefix, 'MeanStack_1.tif']), 'file')==0, 'Error: a file with this name already exists in this directory');
+    assert(exist(fullfile(dirPath, [outputFilePrefix, 'MeanStack_2.tif']), 'file')==0, 'Error: a file with this name already exists in this directory');
+    
     % Write Z-projection to .tif files
     imwrite(maxZScaled_1, fullfile(dirPath, [outputFilePrefix, 'MeanMaxZ_1.tif']));
     imwrite(maxZScaled_2, fullfile(dirPath, [outputFilePrefix, 'MeanMaxZ_2.tif']));
@@ -102,5 +111,5 @@ else % nChannels == 2
         imwrite(avgStackScaled_2(:,:,iPlane), fullfile(dirPath, [outputFilePrefix, 'MeanStack_2.tif']), 'writemode','append');
     end
     
-end%if
+end
 

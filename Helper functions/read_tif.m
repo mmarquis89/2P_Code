@@ -4,6 +4,7 @@ function [ output ] = read_tif( tifPath )
 % 
 % Input: 
 %       tifPath = String specifying path to .tif file
+%
 % Output: 
 %       output = image data array: [Lines, Pixels, Planes, Volumes]
 % ==================================================================================================

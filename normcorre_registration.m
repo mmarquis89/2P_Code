@@ -1,4 +1,4 @@
-function normcorre_registration(parentDir, fileName)
+function normcorre_registration(parentDir, fileName, varargin)
 %========================================================================================================================================
 %
 % Uses the NoRMCorre algorithm to apply a rigid motion correction to pre-processed imaging data. It must be saved as a .mat file 
@@ -11,21 +11,33 @@ function normcorre_registration(parentDir, fileName)
 %       parentDir   = the full path to the directory containing the data to be registered
 %       fileName    = the name of the input .mat file (this will also affect the output file name)
 %
+% OPTIONAL NAME-VALUE PAIR INPUTS:
+%       
+%       'OutputDir' = (default: parentDir) the directory to save the processed data in
 %=========================================================================================================================================
 
+addpath('/home/mjm60/HelperFunctions') % if running on O2 cluster
 
+% Parse optional arguments
+p = inputParser;
+addParameter(p, 'OutputDir', parentDir);
+parse(p, varargin{:});
+outputDir = p.Results.OutputDir;
 
-m = matfile(fullfile(parentDir, fileName));
-sz = size(m, 'wholeSession'); % --> [y, x, plane,allVolumes]
-% reshapeSize = [size(squeeze(wholeSession(:,:,:,1,1))), size(wholeSession, 4) * size(wholeSession, 5)];
-% concatSession = reshape(wholeSession, reshapeSize);
+wholeSession = load(fullfile(parentDir, fileName));
+reshapeSize = [size(squeeze(wholeSession(:,:,:,1,1))), size(wholeSession, 4) * size(wholeSession, 5)];
+concatSession = reshape(wholeSession, reshapeSize);
+
+% Make session folder for new files if necessary
+if ~isdir(outputDir)
+    mkdir(outputDir)
+end
 
 % Set parameters
 options_rigid = NoRMCorreSetParms('d1', sz(1), 'd2', sz(2), 'd3', sz(3), ...
                     'max_shift', [25, 25, 2], ...
                     'init_batch', 100, ...
                     'us_fac', 50, ...
-                    'output_type', 'memmap' ...
                     ); 
 % options_nonRigid = NoRMCorreSetParms('d1', size(concatSession, 1), 'd2', size(concatSession, 2), 'd3', size(concatSession, 3), ...
 %                     'max_shift', [20, 20, 2], ...
@@ -35,6 +47,10 @@ options_rigid = NoRMCorreSetParms('d1', sz(1), 'd2', sz(2), 'd3', sz(3), ...
                 
 % Rigid registration
 tic; [M, ~, ~, ~] = normcorre_batch(m, options_rigid); toc
+wholeSession = reshape(M, size(wholeSession));
+
+% Save registered data
+save(fullfile(parentDir, ['rigid_', fileName]), 'wholeSession')
 
 % Create and save reference images from registered data
 refImages = [];

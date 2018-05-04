@@ -1,0 +1,16 @@
+function create_trial_list(expDate)
+
+% Create a comma-separated text file listing all the folders to be processed, 
+% and another one listing the sid and tid of each dir
+parentDir = fullfile('/n/scratch2', expDate, 'BehaviorVideo');
+dirContents = dir(fullfile(parentDir, '*sid*tid*'));
+dirFile = fopen(fullfile(parentDir, 'dirList.txt'), 'w');
+stFile = fopen(fullfile(parentDir, 'sidtid.txt'), 'w');
+for i = 1:numel(dirContents)
+    if isdir(fullfile(parentDir, dirContents(i).name))
+        fprintf(dirFile, [dirContents(i).name, '\n']);
+        
+        sidInd = regexp(dirContents(i).name, '.*sid') + 4;
+        tidInd = regexp(dirContents(i.nam
+    end
+end

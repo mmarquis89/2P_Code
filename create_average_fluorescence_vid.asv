@@ -1,4 +1,4 @@
-function create_average_fluorescence_vid(parentDir, sid, varargin)
+function create_average_fluorescence_vid(parentDir, sid)
 %===================================================================================================
 % MAKE VIDEO OF THE AVERAGE FLUORESCENCE FOR ALL PLANES AND ALL TRIALS
 %
@@ -7,25 +7,13 @@ function create_average_fluorescence_vid(parentDir, sid, varargin)
 % Can also handle imaging data with multiple channels
 %
 % INPUTS:
-%
 %    parentDir = folder with the imaging data files in it
 %
 %    sid      = a numeric vector specifying the session ID that you would like to process
-%
-% OPTIONAL NAME-VALUE PAIR ARGUMENTS:
-%
-%   'OutputDir' = (default: parentDir) the directory to save the output video in
-%
 %===================================================================================================
 
 
 addpath('/home/mjm60/HelperFunctions') % if running on O2 cluster
-
-% Parse optional arguments
-p = inputParser;
-addParameter(p, 'OutputDir', parentDir);
-parse(p, varargin{:});
-outputDir = p.Results.OutputDir;
 
 % Identify data files for each session
 myFiles = dir(fullfile(parentDir, '*sid*tid*'));
@@ -38,7 +26,9 @@ end
 currSidFiles = fileNames(sessionNums == sid);
 
 for iFile = 1:length(currSidFiles)
-       
+    
+    disp(['Processing file ', num2str(iFile), ' of ', num2str(length(currSidFiles))]);
+    
     % Load a .tif file
     rawFile = read_tif(fullfile(parentDir, currSidFiles{iFile}));
     rawFile = squeeze(rawFile); % [Lines Pixels Planes Volumes Channels]
@@ -48,15 +38,9 @@ for iFile = 1:length(currSidFiles)
     
     if iFile == 1
         for iChannel = 1:nChannels
-            
-            % Create save directory if it does not already exist
-            if ~isdir(outputDir)
-                mkdir(outputDir)
-            end
-            
             % Create a video writer for each channel
             fileName = ['Channel_', num2str(iChannel), '_sid_', num2str(sid), '_average_fluorescence_by_trial'];
-            myVids(iChannel) = VideoWriter(fullfile(outputDir, fileName));
+            myVids(iChannel) = VideoWriter(fullfile(parentDir, fileName));
             myVids(iChannel).FrameRate = 1;
             open(myVids(iChannel));
         end
@@ -112,5 +96,5 @@ end
 for iChannel = 1:nChannels
     close(myVids(iChannel))
 end
-
+disp('Processing complete')
 end

@@ -272,29 +272,27 @@ ylim(yL)
 % currAllData = allData(:, :, currTrial); % --> [frame, variable]
 
 % Split into individual components
-% frameCounter = currAllData(:, 1);
-% dRotCam = currAllData(:, [2 3 4]);          % [X, Y, Z]
-% dRotError = currAllData(:, 5);
-% dRotLab = currAllData(:, [6 7 8]);          % [X, Y, Z]
-% absOrientCam = currAllData(:, [9 10 11]);   % [X, Y, Z]
-% absOrientLab = currAllData(:, [12 13 14]);  % [X, Y, Z]
-% intXY = currAllData(:, [15 16]);            % [X, Y]
-% intHD = currAllData(:, 17);
-% moveDirLab = currAllData(:, 18);
-% moveSpeed = currAllData(:, 19);
-% intForwardMove = currAllData(:, 20);
-% intSideMove = currAllData(:, 21);
-% timestamp = currAllData(:, 22);
-% seqNum = currAllData(:, 23);
+frameCounter = currAllData(:, 1);
+dRotCam = currAllData(:, [2 3 4]);          % [X, Y, Z]
+dRotError = currAllData(:, 5);
+dRotLab = currAllData(:, [6 7 8]);          % [X, Y, Z]
+absOrientCam = currAllData(:, [9 10 11]);   % [X, Y, Z]
+absOrientLab = currAllData(:, [12 13 14]);  % [X, Y, Z]
+intXY = currAllData(:, [15 16]);            % [X, Y]
+intHD = currAllData(:, 17);
+moveDirLab = currAllData(:, 18);
+moveSpeed = currAllData(:, 19);
+intForwardMove = currAllData(:, 20);
+intSideMove = currAllData(:, 21);
+timestamp = currAllData(:, 22);
+seqNum = currAllData(:, 23);
 
 figure(1);clf;hold on; ax = gca();
 plot(dRotCam)
 legend 1 2 3
 title dRotCam
-xlabel('Time (sec)')
-ax.XTick = xTick(1:2:end);
-ax.XTickLabel = xTickLabels(1:2:end);
-xlim([0 size(dRotCam, 1)])
+ax.XTick = xTick;
+ax.XTickLabel = xTickLabels;
 tightfig
 
 figure(3);clf;hold on; ax = gca()
@@ -313,7 +311,6 @@ title absOrientCam
 ax.XTick = xTick(1:2:end);
 ax.XTickLabel = xTickLabels(1:2:end);
 xlabel('Time (sec)')
-xlim([0 size(absOrientCam, 1)])
 tightfig
 %
 figure(5);clf;hold on; ax = gca()

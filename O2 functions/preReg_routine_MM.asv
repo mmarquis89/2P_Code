@@ -7,7 +7,7 @@ function preReg_routine_MM(parentDir, sid, expDate, varargin)
 %
 %       sid        = the session ID you want to process.
 %       
-%       expDate    = the date of the experiment you want to process (e.g. '2018_04_05_exp_1')
+%       expDate    = the identifier of the experiment you want to process.
 % 
 % OPTIONAL NAME-VALUE PAIR INPUTS:
 %       
@@ -25,6 +25,7 @@ addParameter(p, 'OutputDir', parentDir);
 parse(p, varargin{:});
 outputDir = p.Results.OutputDir;
 
+sid = str2double(sid);
 
 % Identify data files for each session
 myFiles = dir(fullfile(parentDir, '*sid*tid*'));
@@ -44,8 +45,10 @@ end
 % Separate names of files from the current session
 currFiles = fileNames(sessionNums == sid);
 nTrials = numel(currFiles);
-
+disp(nTrials)
 for iFile = 1:nTrials
+    
+    disp(fullfile(parentDir, currFiles{iFile}))
     
     % Load a .tif file
     rawFile = read_tif(fullfile(parentDir, currFiles{iFile}));
@@ -53,7 +56,7 @@ for iFile = 1:nTrials
     chanData = zeros(size(rawFile)); chanData = chanData(:,:,1:end-4,:,:);
     nChannels = size(chanData, 5);
     
-    % Save scanimage data from the first trial
+    % Extract scanimage data from the first trial
     if iFile == 1
         tifObj = Tiff(fullfile(parentDir, currFiles{iFile}), 'r');
         infoStr = tifObj.getTag('ImageDescription');
@@ -137,26 +140,28 @@ for iFile = 1:nTrials
 end%iFile
 
 
+disp(size(wholeSession))
+disp('Data processing complete')
+
+
 % Save session data file
-save(fullfile(outputDir, ['sid_', num2str(sid), '_sessionFile.mat']), 'wholeSession')
+save(fullfile(outputDir, ['sid_', num2str(sid), '_sessionFile.mat']), 'wholeSession', '-v7.3')
 if nChannels == 2
    clear wholeSession
    wholeSession = wholeSession2;
-   save(fullfile(outputDir, [sid
+   save(fullfile(outputDir, [sid_', num2str(sid), '_Chan_2_sessionFile.mat']), 'wholeSession', '-v7.3');
 end
+
+disp(outputDir)
+disp('Session data file saved')
 
 % Save other imaging metadata variables in separate file
 save(fullfile(outputDir, 'imgMetadata'), 'trialType', 'origFileNames', 'expDate', 'scanimageInfo');
 
+disp('Metadata saved')
+
 % Create reference images
 if nChannels == 2
-
-    % Save session data files
-    save(fullfile(outputDir, ['sid_', num2str(sid), '_Chan_1_sessionFile.mat']), 'wholeSession')
-    clear wholeSession
-    wholeSession = wholeSession2;
-    save(fullfile(outputDir, ['sid_', num2str(sid), '_Chan_2_sessionFile.mat']), 'wholeSession')
-
 
     % Use red channel for reference images
     channelNum = 2;
@@ -164,11 +169,8 @@ if nChannels == 2
     for iPlane = 1:sz(3)
         refImages{iPlane} = squeeze(mean(mean(wholeSession2(:,:,iPlane,:,:),4),5)); % --> [y, x]
     end
-    save(fullfile(outputDir, sprintf('sid_%.0f_refImages.mat', iSession)), 'refImages', 'channelNum');
+    save(fullfile(outputDir, sprintf('sid_%.0f_refImages.mat', iSession)), 'refImages', 'channelNum', '-v7.3');
 else
-    
-    % Save session data file
-     save(fullfile(outputDir, ['sid_', num2str(sid), '_sessionFile.mat']), 'wholeSession')
     
     % Use the GCaMP channel to create and save reference images
     channelNum = 1;
@@ -176,10 +178,9 @@ else
     for iPlane = 1:sz(3)
         refImages{iPlane} = squeeze(mean(mean(wholeSession(:,:,iPlane,:,:),4),5)); % --> [y, x]
     end
-    save(fullfile(outputDir, sprintf('sid_%.0f_refImages.mat', sid)), 'refImages', 'channelNum');
+    save(fullfile(outputDir, sprintf('sid_%.0f_refImages.mat', sid)), 'refImages', 'channelNum', '-v7.3');
 end
 
+disp('Reference images created and saved')
+
 end%function
-
-
-

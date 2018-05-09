@@ -17,6 +17,7 @@ function normcorre_registration(parentDir, fileName, varargin)
 %=========================================================================================================================================
 
 addpath('/home/mjm60/HelperFunctions') % if running on O2 cluster
+addpath('/home/mjm60/NoRMCorre-master') % if running on O2 cluster
 
 % Parse optional arguments
 p = inputParser;
@@ -24,7 +25,10 @@ addParameter(p, 'OutputDir', parentDir);
 parse(p, varargin{:});
 outputDir = p.Results.OutputDir;
 
-wholeSession = load(fullfile(parentDir, fileName));
+load(fullfile(parentDir, fileName));
+if exist('regProduct', 'var')
+    wholeSession = single(regProduct);
+end
 reshapeSize = [size(squeeze(wholeSession(:,:,:,1,1))), size(wholeSession, 4) * size(wholeSession, 5)];
 concatSession = reshape(wholeSession, reshapeSize);
 
@@ -46,7 +50,7 @@ options_rigid = NoRMCorreSetParms('d1', sz(1), 'd2', sz(2), 'd3', sz(3), ...
 %                     );
                 
 % Rigid registration
-tic; [M, ~, ~, ~] = normcorre_batch(m, options_rigid); toc
+tic; [M, ~, ~, ~] = normcorre_batch(concatSession, options_rigid); toc
 wholeSession = reshape(M, size(wholeSession));
 
 % Save registered data
@@ -57,7 +61,7 @@ refImages = [];
 for iPlane = 1:size(regProduct, 3)
     refImages{iPlane} = squeeze(mean(mean( regProduct(:,:,iPlane,:,:), 4), 5)); % --> [y, x]
 end
- savefast(fullfile(parentDir, ['refImages_Reg.mat']), 'refImages');
+ save(fullfile(parentDir, ['refImages_Reg.mat']), 'refImages');
 
 
 end

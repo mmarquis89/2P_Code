@@ -1,4 +1,4 @@
-function create_average_fluorescence_vid(parentDir, sid)
+function create_average_fluorescence_vid(parentDir, sid, varargin)
 %===================================================================================================
 % MAKE VIDEO OF THE AVERAGE FLUORESCENCE FOR ALL PLANES AND ALL TRIALS
 %
@@ -7,16 +7,31 @@ function create_average_fluorescence_vid(parentDir, sid)
 % Can also handle imaging data with multiple channels
 %
 % INPUTS:
+%
 %    parentDir = folder with the imaging data files in it
 %
 %    sid      = a numeric vector specifying the session ID that you would like to process
+%
+% OPTIONAL NAME-VALUE PAIR ARGUMENTS:
+%
+%   'OutputDir' = (default: parentDir) the directory to save the output video in
+%
 %===================================================================================================
 
-
 addpath('/home/mjm60/HelperFunctions') % if running on O2 cluster
+addpath(genpath('/home/mjm60/DownloadedFunctions')) % if running on O2 cluster
+
+% Parse optional arguments
+p = inputParser;
+addParameter(p, 'OutputDir', parentDir);
+parse(p, varargin{:});
+outputDir = p.Results.OutputDir;
+
+sid = str2double(sid);
 
 % Identify data files for each session
 myFiles = dir(fullfile(parentDir, '*sid*tid*'));
+
 fileNames = sort({myFiles.name})';
 sidLocs = strfind(fileNames, 'sid_');
 for iFile = 1:length(fileNames)
@@ -26,21 +41,25 @@ end
 currSidFiles = fileNames(sessionNums == sid);
 
 for iFile = 1:length(currSidFiles)
-    
-    disp(['Processing file ', num2str(iFile), ' of ', num2str(length(currSidFiles))]);
-    
+       
     % Load a .tif file
     rawFile = read_tif(fullfile(parentDir, currSidFiles{iFile}));
     rawFile = squeeze(rawFile); % [Lines Pixels Planes Volumes Channels]
     chanData = zeros(size(rawFile)); chanData = chanData(:,:,1:end-4,:,:);
     nChannels = size(chanData, 5);
-    nPlanes = size(chanData, 3);
+    nPlanes = size(chanData, 3);                                                                                                    
     
     if iFile == 1
         for iChannel = 1:nChannels
+            
+            % Create save directory if it does not already exist
+            if ~isdir(outputDir)
+                mkdir(outputDir)
+            end
+            
             % Create a video writer for each channel
             fileName = ['Channel_', num2str(iChannel), '_sid_', num2str(sid), '_average_fluorescence_by_trial'];
-            myVids(iChannel) = VideoWriter(fullfile(parentDir, fileName));
+            myVids(iChannel) = VideoWriter(fullfile(outputDir, fileName));
             myVids(iChannel).FrameRate = 1;
             open(myVids(iChannel));
         end
@@ -57,6 +76,7 @@ for iFile = 1:length(currSidFiles)
         workingFile(:,:,1:4,:) = [];                         % --> [y, x, plane, volume]
         chanData(:,:,:,:,iChannel) = workingFile(:,:,:,:,1); % --> [y, x, plane, volume, channel]
     end
+
     
     % Write averaged frames to video
     for iChannel = 1:nChannels
@@ -74,9 +94,9 @@ for iFile = 1:length(currSidFiles)
         for iPlane = nPlanes:-1:1 % Reverse order so planes go from dorsal --> ventral
             
             % Plot averaged image for each plane
-            ax = subaxis(nPlots(1), nPlots(2), iPlane, 'Spacing', 0, 'MB', 0.025);
+            subaxis(nPlots(1), nPlots(2), iPlane, 'Spacing', 0, 'MB', 0.025);
             imshow(squeeze(avgData(:,:,iPlane)), [])
-            
+           
             % Label postions
             if iPlane == nPlanes
                 title('Ventral')
@@ -85,16 +105,18 @@ for iFile = 1:length(currSidFiles)
             end
             
         end%iPlane
-        
+
         % Write frame to video
+        drawnow
         writeFrame = getframe(f);
         writeVideo(myVids(iChannel), writeFrame);
         close(f);
         
-    end
-end
+    end%iChannel
+end%iFile
+
 for iChannel = 1:nChannels
     close(myVids(iChannel))
 end
-disp('Processing complete')
+
 end

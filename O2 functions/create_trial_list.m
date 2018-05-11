@@ -1,7 +1,7 @@
-function create_trial_list(parentDir)
+function create_trial_list(parentDir, sid)
 
-% Create a comma-separated text file listing all the folders to be processed, 
-% and another one listing the sid and tid of each dir
+% Create a comma-separated text file listing all the folders to be processed 
+% for a specific session and another one listing the tid of each dir
 
 disp(parentDir)
 
@@ -11,13 +11,12 @@ disp(num2str(numel(dirContents)))
 for i = 1:numel(dirContents)
     disp(fullfile(parentDir, dirContents(i).name))
     if isdir(fullfile(parentDir, dirContents(i).name))
-        sid = regexp(dirContents(i).name, '(?<=sid_).*(?=_tid)', 'match');
-        tid = regexp(dirContents(i).name, '(?<=tid_).*(?=_)', 'match');
-        name = dirContents(i).name;
-        test = whos('name');
-        disp(test.class)
-        writeStr = [fullfile(parentDir, [dirContents(i).name]), ',', sid{:}, ',', tid{:}, '\n'];
-        fprintf(dirFile, writeStr);
+        currSid = str2double(regexp(dirContents(i).name, '(?<=sid_).*(?=_tid)', 'match'));
+        if currSid == sid
+            tid = regexp(dirContents(i).name, '(?<=tid_).*(?=_)', 'match');
+            writeStr = [fullfile(parentDir, [dirContents(i).name]), ',', tid{:}, '\n'];
+            fprintf(dirFile, writeStr);
+        end
     end
 end
 fclose(dirFile);

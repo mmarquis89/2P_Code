@@ -1,26 +1,28 @@
-function make_optic_flow_vid(parentDir, inputVid, FRAME_RATE, varargin)
+function create_optic_flow_vid(parentDir, inputVid, roiDataFile, varargin)
 %=======================================================================================================
 % CREATE A MOVIE WITH BEHAVIOR VID COMBINED WITH OPTIC FLOW DATA
 %
 % Uses previously defined behavior vid ROI to create a movie that combines the behavior video with a
-% sliding plot of optic flow around the fly to make behavioral annotation in ANVIL easier. This function
-% relies on the video being named "sid_X_AllTrials.mp4".
+% sliding plot of optic flow around the fly to make behavioral annotation in ANVIL easier. Requires 
+% a .txt file with comma-separated frame count data for all the trials in <frame count>,<sid_X_tid_XXX>
+% format.
 %
 % INPUTS:
 %       parentDir   = the directory containing the optic flow video
 %
 %       inputVid    = the name of the input video file to use (minus the file extension)
 %
+%       roiDataFile     = 
+%
 %       FRAME_RATE  = the frame rate of the behavior video
 %
 % OPTIONAL NAME-VALUE PAIR INPUTS:
 %
-%       'ROIfile'   = (default: []) the full path to the .mat file containing the ROI data mask. Can use [] 
-%                     to have the function prompt the user to select a file.
+%       'FrameRate' = (default: 25) the frame rate that the behavior video was recorded at 
 % 
 %       'OutputDir' = (default: parentDir) the full path to the directory to save the output video in
 %
-%       'FrameCountFile' = (default: []) the full path to the .mat file containing frame count data
+%       'FrameCountFile' = (default: []) the full path to the .txt file containing frame count data
 %
 %       'OpticFlowFile' = (default: []) the full path to a .mat file containing optic flow data
 %
@@ -32,14 +34,14 @@ addpath('/home/mjm60/HelperFunctions') % if running on O2 cluster
 
 % Parse optional arguments
 p = inputParser;
-addParameter(p, 'ROIfile', [])
+addParameter(p, 'FrameRate', 25);
 addParameter(p, 'OutputDir', parentDir);
 addParameter(p, 'FrameCountFile', []);
 addParameter(p, 'OpticFlowFile', []);
 addParameter(p, 'OutputFileName', [inputVid, '_With_Optic_Flow']);
 parse(p, varargin{:});
+frameRate = p.Results.FrameRate;
 outputDir = p.Results.OutputDir;
-roiDataFile = p.Results.ROIfile;
 frameCountFile = p.Results.frameCountFile;
 flowDataFile = p.Results.OpticFlowFile;
 outputFileName = p.Results.OutputFileName;
@@ -51,11 +53,17 @@ end
 load(roiDataFile);
 
 % Load frame count log
-if isempty(frameCountFile)
-    frameCountFile = uigetfile([parentDir, '\*.mat'], 'Select a frame count file');
-end
-individualVidFrameCounts = load(frameCountFile);
+frameCountFile = fopen(frameCountFile, 'r');
 frameCounts = [];
+vidCount = 0;
+currLine = fgetl(frameCountFile);
+while ischar(currLine)
+    tid = str2double(regexp(currLine, '(?<=tid_)...)', 'match'));
+    frameCounts(tid) = str2double(regexp(currline, '.*(?=,)', 'match'));
+    currLine = fgetl(frameCountFile);
+end
+
+
 for iTrial = 1:length(individualVidFrameCounts.frameCounts)
     if isempty(individualVidFrameCounts.frameCounts(iTrial).nFrames)
         frameCounts(iTrial) = 0;
@@ -66,19 +74,15 @@ end
 framesPerTrial = mode(frameCounts);
 
 % Calculate optic flow for each movie frame (unless file already exists)    
-vidFile = fullfile(parentDir, ['sid_', num2str(sid), '_AllTrials.mp4']);
- if isempty(dir(fullfile(parentDir, ['sid_', num2str(sid), '_optic_flow_data.mat'])))
+vidFile = fullfile(parentDir, [inputVid, '.avi']);
+ if isempty(dir(flowDataFile))
      
     myVid = VideoReader(vidFile);
     frameCount = 0;
     opticFlow = opticalFlowFarneback;
     while hasFrame(myVid)
         
-        frameCount = frameCount + 1;
-        if ~mod(frameCount, 100)
-            disp(['Reading frame ', num2str(frameCount), '...'])
-        end
-        
+        frameCount = frameCount + 1;        
         currFrame = readFrame(myVid);
         currFrame = currFrame(:,:,1);
         
@@ -89,30 +93,28 @@ vidFile = fullfile(parentDir, ['sid_', num2str(sid), '_AllTrials.mp4']);
         meanFlowMag(frameCount) = nanmean(nanmean(currFlowFly));
         
     end
-    nFrames = frameCount;
-    disp('Optic flow calculation complete')
-    
+    nFrames = frameCount;    
     
     % Calculate frame times
-    frameTimes = (1:1:nFrames) ./ FRAME_RATE;
+    frameTimes = (1:1:nFrames) ./ frameRate;
     
     % Normalize flow magnitudes
     flyFlow = meanFlowMag;
     flyFlowNorm = flyFlow ./ max(flyFlow(2:end)); % First frame is artificially high so don't use that
     
     % Save optic flow data
-    savefast(fullfile(parentDir, ['sid_', num2str(sid), '_optic_flow_data.mat']), 'flyFlowNorm', 'nFrames', 'frameTimes');
+    savefast(fullfile(outputDir, ['sid_', num2str(sid), '_optic_flow_data.mat']), 'flyFlowNorm', 'nFrames', 'frameTimes');
  
  else
      % Just load the existing data if it exists
-    load(fullfile(parentDir, ['sid_', num2str(sid), '_optic_flow_data.mat']));
+    load(flowDataFile);
  end
  
- % Recreate vidReader
+% Recreate vidReader
 myVid = VideoReader(vidFile);
 
 % Create vidWriter
-myVidWriter = VideoWriter(fullfile(parentDir, outputFileName), 'MPEG-4');
+myVidWriter = VideoWriter(fullfile(outputDir, outputFileName), 'MPEG-4');
 myVidWriter.FrameRate = FRAME_RATE;
 open(myVidWriter)
 
@@ -127,7 +129,7 @@ for iFrame = 1:nFrames
     xSize = size(currFrame, 2);
     
     % Create figure
-    screenSize = get( groot, 'Screensize' );
+    screenSize = [1 1 1824 1026];
     h = figure(10);clf
     h.OuterPosition = [50 50 (xSize) screenSize(4)-50];
     
@@ -182,7 +184,6 @@ for iFrame = 1:nFrames
     
     drawnow()
     % Write frame to video
-%     h.Position;
     writeFrame = getframe(h);
     writeVideo(myVidWriter, writeFrame);   
     

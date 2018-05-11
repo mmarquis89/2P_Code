@@ -9,9 +9,8 @@
 
 parentDir=$1
 sid=$2
-expDate=$3
 
-fileName='$parentDir/sid_$sid_sessionFile.mat'
+fileName="sid_${sid}_sessionFile.mat"
 
 module load matlab/2017a
 matlab -nodesktop -r "normcorre_registration('$parentDir', '$fileName')"

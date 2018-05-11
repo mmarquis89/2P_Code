@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #SBATCH -c 4                    			# Number of cores requested
-#SBATCH -t 1:00:00                   			# Runtime in minutes
+#SBATCH -t 2:00:00                   			# Runtime in minutes
 #SBATCH -p short               			# Partition (queue) to submit to
 #SBATCH --mem=16G               			    # memory needed (memory PER CORE)
 #SBATCH --mail-user=mmarquis89@gmail.com

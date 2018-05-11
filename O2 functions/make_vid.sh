@@ -6,6 +6,7 @@
 #SBATCH --mem=8G               			    # memory needed (memory PER CORE)
 #SBATCH --mail-user=mmarquis89@gmail.com
 #SBATCH --mail-type=END         			# Mail when the job ends  
+#SBATCH --job-name="makeVid"
 
 vidDataDir=$1
 vidSaveDir=$2

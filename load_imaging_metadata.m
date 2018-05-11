@@ -62,7 +62,6 @@ if dataFile == 0
     outputMetadata = []; 
     dataFileObj = [];
 else
-    imgMetadata = [];
     disp(['Loading ' dataFile, '...'])
     dataFileObj = matfile([sessionDataPath, dataFile], 'Writable', true); % Only field is 'wholeSession'
     if isempty(imgMetadataFileName)
@@ -71,10 +70,11 @@ else
            errordlg('No imaging metadata file selected!');
            return
        end
-       imgMetadata = load(fullfile(imgDataFilePath, imgDataFile)); % variable "imgMetadata" with fields 'trialType','origFileNames','tE_sec', 'scanimageInfo', 'expDate' (scanimageInfo not present in older exps)
+%        imgMetadata = load(fullfile(imgDataFilePath, imgDataFile)); % variable "imgMetadata" with fields 'trialType','origFileNames','tE_sec', 'scanimageInfo', 'expDate' (scanimageInfo not present in older exps)
+       load(fullfile(imgDataFilePath, imgDataFile)); % variable "imgMetadata" with fields 'trialType','origFileNames','tE_sec', 'scanimageInfo', 'expDate' (scanimageInfo not present in older exps)
     else
-       imgMetadata = load(fullfile(sessionDataPath, imgMetadataFileName)); % variable "imgMetadata" with fields 'trialType','origFileNames','tE_sec', 'scanimageInfo', 'expDate' (scanimageInfo not present in older exps) 
-    end
+%        imgMetadata = load(fullfile(sessionDataPath, imgMetadataFileName)); % variable "imgMetadata" with fields 'trialType','origFileNames','tE_sec', 'scanimageInfo', 'expDate' (scanimageInfo not present in older exps) 
+       load(fullfile(sessionDataPath, imgMetadataFileName)); % variable "imgMetadata" with fields 'trialType','origFileNames','tE_sec', 'scanimageInfo', 'expDate' (scanimageInfo not present in older exps)     end
     wholeSessionSize = size(dataFileObj, 'wholeSession'); % --> [y, x, plane, volume, trial]
     disp([dataFile, ' loaded'])
     

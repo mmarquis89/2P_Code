@@ -41,7 +41,6 @@ end
 
 % Initialize variables
 trialStr = ['sid_', num2str(sid), '_tid_', padStr, num2str(tid)];
-
 % Create save directory if it doesn't already exist
 if ~isdir(outputDir)
     mkdir(outputDir);
@@ -50,14 +49,14 @@ end
 % Make sure this video doesn't already exist
 if exist(fullfile(outputDir, [trialStr, '.mp4']), 'file') == 0
     
-    % Create video writer object using MPEG-4 H.264 compression for Anvil compatibility
-    outputVid = VideoWriter(fullfile(outputDir, [trialStr, '.mp4']), 'MPEG-4');
+    % Create video writer object
+    outputVid = VideoWriter(fullfile(outputDir, trialStr), 'Motion JPEG AVI');
     outputVid.FrameRate = frameRate;
     open(outputVid)
     
     % Make sure there's at least one image file in this trial's directory
     if ~isempty(frameFiles)
-        currFrames = sort({currFiles.name}');
+        currFrames = sort({frameFiles.name}');
         
         % Write each .tif file to video
         for iFrame = 1:length(currFrames)

@@ -23,22 +23,23 @@ vidSaveDir="/home/mjm60/$expDate/BehaviorVideo"
 #sbatch create_anatomy_stack.sh "$imgDataDir" "$imgSaveDir"
 
 #-----------------------------------------------------------------
-# Imaging Data
+# Process Imaging Data
 #-----------------------------------------------------------------
 
 #jid1=$(sbatch pre_reg_processing.sh $imgDataDir $sid $expDate $imgSaveDir)
-sbatch pre_reg_processing.sh "$imgDataDir" "$sid" "$expDate" "$imgSaveDir"
+#jid1="${jid1//[!0-9]/}"
 
 #sbatch --dependency=afterok:$jid1 NoRMCorre_registration.sh $imgSaveDir $sid $expDate
 
 #-----------------------------------------------------------------
-# Behavior Vids
+# Create Behavior Vids
 #-----------------------------------------------------------------
 
+# Create behavior vids
+sbatch make_behavior_vids.sh $vidDataDir $vidSaveDir $sid
 
-## Create behavior vids
-#jid1=$(sbatch make_behavior_vids.sh $expDate)
 
-# Concatenate vids
-#jid2=$(sbatch concatenate_vids.sh)
+
+
+
 

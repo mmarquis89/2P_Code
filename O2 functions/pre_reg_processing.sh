@@ -3,7 +3,7 @@
 #SBATCH -c 6                    			# Number of cores requested
 #SBATCH -t 4:00:00                   			# Runtime in minutes
 #SBATCH -p short                			# Partition (queue) to submit to
-#SBATCH --mem=64G               			# memory needed
+#SBATCH --mem=100G               			# memory needed
 #SBATCH --mail-user=mmarquis89@gmail.com
 #SBATCH --mail-type=END         			# Mail when the job ends  
 

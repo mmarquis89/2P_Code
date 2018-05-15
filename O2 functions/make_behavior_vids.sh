@@ -1,10 +1,12 @@
 #!/bin/bash
 
 #SBATCH -c 1                    			# Number of cores requested
-#SBATCH -t 00:05:00                   			# Runtime in minutes
+#SBATCH -t 00:10:00                   			# Runtime in minutes
 #SBATCH -p priority              			# Partition (queue) to submit to
 #SBATCH --mail-user=mmarquis89@gmail.com
 #SBATCH --mail-type=END         			# Mail when the job ends  
+
+echo make_behavior_vids
 
 vidDataDir=$1
 vidSaveDir=$2
@@ -34,3 +36,4 @@ jid2="${jid2//[!0-9]/}"
 
 # ------------- Create optic flow vid for anvil annotation -------------------------
 sbatch --dependency=afterok:$jid1:$jid2 create_optic_flow_vid.sh $vidSaveDir $sid
+

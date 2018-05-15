@@ -66,7 +66,7 @@ end
 framesPerTrial = mode(frameCounts);
 fclose(frameCountFile);
 
-% Calculate optic flow for each movie frame (unless file already exists)
+% Calculate optic flow for each movie frame
 vidFile = fullfile(parentDir, [inputVid, '.avi']);
 myVid = VideoReader(vidFile);
 frameCount = 0;
@@ -150,7 +150,7 @@ for iFrame = 1:nFrames
     % Optic flow plot
     trialBoundTimes = [];
     runningCount = 1;
-    for iTrial = 1:(length(frameCounts)-1)
+    for iTrial = 1:(length(frameCounts))
         if runningCount > length(frameTimes) % This prevents an error if the first one or more trials has zero frames
            runningCount = length(frameTimes); 
         end

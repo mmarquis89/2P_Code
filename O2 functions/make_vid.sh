@@ -1,12 +1,12 @@
 #!/bin/bash
 
-#SBATCH -c 4                   			    # Number of cores requested
+#SBATCH -c 1                   			    # Number of cores requested
 #SBATCH -t 15                   			# Runtime in minutes
 #SBATCH -p short                			# Partition (queue) to submit to
-#SBATCH --mem=8G               			    # memory needed (memory PER CORE)
-#SBATCH --mail-user=mmarquis89@gmail.com
-#SBATCH --mail-type=END         			# Mail when the job ends  
-#SBATCH --job-name="makeVid"
+#SBATCH --mem=6G               			    # memory needed (memory PER CORE)
+#SBATCH --job-name=makeVid
+
+echo make_vid
 
 vidDataDir=$1
 vidSaveDir=$2

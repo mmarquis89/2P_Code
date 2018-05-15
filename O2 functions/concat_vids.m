@@ -41,7 +41,7 @@ vidFiles = dir(fullfile(vidDir, fileStr));
 vidNames = sort({vidFiles.name});
 
 % Create vidWriter
-myVidWriter = VideoWriter(fullfile(vidDir, outputFileName), 'Uncompressed AVI');
+myVidWriter = VideoWriter(fullfile(vidDir, outputFileName), 'Motion JPEG AVI');
 myVidWriter.FrameRate = FRAME_RATE;
 open(myVidWriter)
 frameCount = 0;

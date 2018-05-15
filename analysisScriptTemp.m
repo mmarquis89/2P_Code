@@ -442,7 +442,7 @@ for iType = 1:nEventTypes
         if sum(onsetFilterVecs{iType}(:,iCond)) > 0
 
             [baselineData, respData] = extract_event_volumes(eventList, onsetFilterVecs{iType}(:,iCond), baselineDur, respDur, myData, ...
-                m, 'offsetAlign', 0); % --> [y, x, plane, volume, event]
+                wholeSession, 'offsetAlign', 0); % --> [y, x, plane, volume, event]
             
             baselineAvg = mean(mean(baselineData, 5), 4);                            % --> [y, x, plane]
             baselineRep = repmat(baselineAvg, 1, 1, 1, size(baselineData, 4));       % --> [y, x, plane, volume]

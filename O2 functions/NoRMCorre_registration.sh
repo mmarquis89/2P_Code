@@ -7,6 +7,7 @@
 #SBATCH --mail-user=mmarquis89@gmail.com
 #SBATCH --mail-type=END         			# Mail when the job ends  
 
+echo normcorre_registration
 parentDir=$1
 sid=$2
 

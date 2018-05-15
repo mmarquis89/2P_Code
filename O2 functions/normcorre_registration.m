@@ -17,7 +17,7 @@ function normcorre_registration(parentDir, fileName, varargin)
 %=========================================================================================================================================
 
 addpath('/home/mjm60/HelperFunctions') % if running on O2 cluster
-addpath('/home/mjm60/NoRMCorre-master') % if running on O2 cluster
+addpath('/home/mjm60/NoRMCorre-master/NoRMCorre-master') % if running on O2 cluster
 
 % Parse optional arguments
 p = inputParser;
@@ -28,9 +28,13 @@ outputDir = p.Results.OutputDir;
 load(fullfile(parentDir, fileName));
 if exist('regProduct', 'var')
     wholeSession = single(regProduct);
+    clear regProduct
 end
+wholeSessionSize = size(wholeSession);
 reshapeSize = [size(squeeze(wholeSession(:,:,:,1,1))), size(wholeSession, 4) * size(wholeSession, 5)];
 concatSession = reshape(wholeSession, reshapeSize);
+sz = size(concatSession);
+clear wholeSession
 
 % Make session folder for new files if necessary
 if ~isdir(outputDir)
@@ -41,7 +45,7 @@ end
 options_rigid = NoRMCorreSetParms('d1', sz(1), 'd2', sz(2), 'd3', sz(3), ...
                     'max_shift', [25, 25, 2], ...
                     'init_batch', 100, ...
-                    'us_fac', 50, ...
+                    'us_fac', 50 ...
                     ); 
 % options_nonRigid = NoRMCorreSetParms('d1', size(concatSession, 1), 'd2', size(concatSession, 2), 'd3', size(concatSession, 3), ...
 %                     'max_shift', [20, 20, 2], ...
@@ -50,16 +54,17 @@ options_rigid = NoRMCorreSetParms('d1', sz(1), 'd2', sz(2), 'd3', sz(3), ...
 %                     );
                 
 % Rigid registration
+parpool(5)
 tic; [M, ~, ~, ~] = normcorre_batch(concatSession, options_rigid); toc
-wholeSession = reshape(M, size(wholeSession));
+wholeSession = reshape(M, wholeSessionSize);
 
 % Save registered data
-save(fullfile(parentDir, ['rigid_', fileName]), 'wholeSession')
+save(fullfile(parentDir, ['rigid_', fileName]), 'wholeSession', '-v7.3')
 
 % Create and save reference images from registered data
 refImages = [];
-for iPlane = 1:size(regProduct, 3)
-    refImages{iPlane} = squeeze(mean(mean( regProduct(:,:,iPlane,:,:), 4), 5)); % --> [y, x]
+for iPlane = 1:size(wholeSession, 3)
+    refImages{iPlane} = squeeze(mean(mean( wholeSession(:,:,iPlane,:,:), 4), 5)); % --> [y, x]
 end
  save(fullfile(parentDir, ['refImages_Reg.mat']), 'refImages');
 

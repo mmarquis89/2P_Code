@@ -1,13 +1,11 @@
 #!/bin/bash
 
-#SBATCH -c 6                   			    # Number of cores requested
-#SBATCH -t 60                				# Runtime in minutes
+#SBATCH -c 1                   			    # Number of cores requested
+#SBATCH -t 02:00:00                			# Runtime in minutes
 #SBATCH -p short                			# Partition (queue) to submit to
-#SBATCH --mem=8G               			    # memory needed (memory PER CORE)
-#SBATCH --mail-user=mmarquis89@gmail.com
-#SBATCH --mail-type=END         			# Mail when the job ends  
+#SBATCH --mem=16G             			    # memory needed (memory PER CORE
 
-
+echo create_optic_flow_vid
 parentDir=$1
 sid=$2
 

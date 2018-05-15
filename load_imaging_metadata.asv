@@ -7,14 +7,10 @@ function [outputMetadata, dataFileObj] = load_imaging_metadata(varargin)
 %
 %  OPTIONAL NAME-VALUE PAIR ARGUMENTS:
 %
-%       'SessionFile'            = (default: prompts file selection dialog) note that the full path is required 
-%                                  for this file, unlike the other options, which assume the files are in the 
-%                                  same directory as the session file.
-%
 %  These are collectively the default assumtions for filenames, which should all be in the same directory as the 
 %  selected session data file. Pass arguments to override, or [] to prompt a file selection dialog for the 
 %  indicated filename.
-%       
+%       'SessionFile'            = (default: 'rigid_sid_0_wholeSession.mat') 
 %       'StimMetadataFile'       = (default: 'stimMetadata.mat')
 %       'AnnotFile'              = (default: 'Annotations.mat')
 %       'imgMetadataFile'        = (default: 'imgMetadata.mat')
@@ -51,7 +47,7 @@ function [outputMetadata, dataFileObj] = load_imaging_metadata(varargin)
 
 % Parse optional arguments
 p = inputParser;
-addParameter(p, 'SessionFile', []);
+addParameter(p, 'SessionFile', 'rigid_sid_0_wholeSession.mat');
 addParameter(p, 'StimMetadataFile', 'stimMetadata.mat');
 addParameter(p, 'AnnotFile', 'Annotations.mat');
 addParameter(p, 'imgMetadataFile', 'imgMetadata.mat');
@@ -60,7 +56,6 @@ parse(p, varargin{:});
 annotFileName = p.Results.AnnotFile;
 imgMetadataFileName = p.Results.imgMetadataFile;
 refImgFileName = p.Results.refImgFile;
-dataFile
 
 % Prompt user for imaging data file
 [dataFile, sessionDataPath, ~] = uigetfile('*.mat', 'Select an imaging data session file', 'B:\Dropbox (HMS)\2P Data\Imaging Data\');

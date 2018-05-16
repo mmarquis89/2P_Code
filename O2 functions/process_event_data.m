@@ -20,7 +20,7 @@ volumeRate = 6.44;
 
 saveFileName = 'EventData_Align_OdorAB_Filter_AnyMove.mat';
 
-% Load annotation data
+% Load annotation type data
 [annotTypeFileName, parentDir] = uigetfile('B:\Dropbox (HMS)\2P Data\Imaging Data');
 
 % Load annotation type data
@@ -200,6 +200,6 @@ end
 
 % Save data and metadata in a .mat file
 save(fullfile(parentDir, saveFileName), 'alignEventSummary', 'filterEventSummary', 'primaryEventNames', 'eventLists', ...
-    'nEventTypes', 'condNames', 'onsetFilterVecs', 'offsetFilterVecs');
+    'nEventTypes', 'condNames', 'onsetFilterVecs', 'offsetFilterVecs', 'analysisWindows');
 
 clear withOdor noOdor anyOdor startMove endMove contMove noMove anyMove withLaser noLaser anyLaser currType matchedFilterTypes currFilts currFiltNames

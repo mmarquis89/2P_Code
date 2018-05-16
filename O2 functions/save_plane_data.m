@@ -6,7 +6,7 @@ function save_plane_data(parentDir, sessionDataFile)
     [analysisMetadata, wholeSession] = load_imaging_data(parentDir, sessionDataFile);
     
     % Save one file containing the session data for each plane
-    for iPlane = analysisMetadata.nPlanes
+    for iPlane = 1:analysisMetadata.nPlanes
         planeData = squeeze(wholeSession(:,:,iPlane,:,:)); % --> [y, x, volume, trial]
         fileName = ['plane_', num2str(iPlane), '_sessionData'];
         save(fullfile(parentDir, fileName), 'planeData', '-v7.3')

@@ -8,6 +8,7 @@
 #SBATCH --mail-type=END         			# Mail when the job ends  
 
 echo initial_analysis_processing
+
 parentDir=$1
 sessionDataFile=$2
 

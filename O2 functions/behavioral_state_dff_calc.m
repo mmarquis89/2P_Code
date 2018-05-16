@@ -2,6 +2,8 @@ function behavioral_state_dff_calc(parentDir, sessionDataFile)
 
 % CALCULATE AND PLOT OVERALL MEAN dF/F ACROSS BEHAVIORAL STATES
 
+addpath('/home/mjm60/HelperFunctions') % if running on O2 cluster
+
 % Load data
 [analysisMetadata, wholeSession] = load_imaging_data(parentDir, sessionDataFile);
 
@@ -20,7 +22,7 @@ for iType = 1:numel(behaviorNames)
             
             % Pull out action numbers for each volume
             currActions = analysisMetadata.trialAnnotations{iTrial}.actionNums;
-            volActions = currActions(volFrames);
+            volActions = currActions(analysisMetadata.volFrames);
             
             % Identify volume actions
             actionVols(iTrial, :) =  ismember(volActions, actionLabel);   %--> [trial, vol]

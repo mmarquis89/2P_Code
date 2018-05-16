@@ -1,18 +1,27 @@
+%===================================================================================================
 % SEPARATE TRIALS BASED ON EVENT INTERACTIONS
 %
 % Required inputs:
 %       A .mat file with variables 'annotationTypes' and 'annotationTypeSummary'
+%       A .mat file with behavioral annotation data
 %
 % Outputs:
 %       A .mat file with the following variables:
-%                       
-%
-
-analysisWindows = []; overshoots = []; filterMatches = [];
+%           alignEventSummary
+%           filterEventSummary
+%           primaryEventNames
+%           eventLists
+%           nEventTypes
+%           condNames
+%           onsetFilterVecs
+%           offsetFilterVecs
+%===================================================================================================
 
 volumeRate = 6.44;
 
-% Load annotation data
+saveFileName = 'EventData_Align_OdorAB_Filter_AnyMove.mat';
+
+% Load annotation typedata
 [annotTypeFileName, parentDir] = uigetfile('B:\Dropbox (HMS)\2P Data\Imaging Data');
 
 % Load annotation type data
@@ -31,10 +40,8 @@ activeFilterTypes = [8];
 filterEventSummary = annotationTypeSummary(activeFilterTypes, 2);
 disp(filterEventSummary)
 
-saveFileName = 'EventData_Align_OdorAB_Filter_AnyMove_.mat';
-
-
 % --------- ALIGNMENT EVENTS -------------
+analysisWindows = []; overshoots = []; filterMatches = [];
 
 % Odor A
 analysisWindows(end+1,:) = [ 2  3 ];

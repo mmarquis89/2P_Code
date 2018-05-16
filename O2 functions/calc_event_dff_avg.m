@@ -1,9 +1,10 @@
-function calc_event_dff_avg(parentDir, filterStr)
+function calc_event_dff_avg(parentDir, filterStr, sessionDataFile)
 %===================================================================================================
 % Calculate volume- and trial-averaged dF/F for a set of event data
 %
 % Required inputs:
 %       A filter string using * as a wildcard that identifies the files in parentDir to be processed.
+%       The name of an imaging data file in the parent directory.
 %       That file should contain the following variables:
 %           alignEventSummary
 %           filterEventSummary
@@ -29,10 +30,16 @@ addpath('/home/mjm60/HelperFunctions') % if running on O2 cluster
 % Identify event data files
 eventDataFiles = dir(fullfile(parentDir, filterStr));
 
+% Load session data file
+[analysisMetadata, wholeSession] = load_imaging_data(parentDir, sessionDataFile);
+sessionSize = size(wholeSession);
+
 for iFile = 1:numel(eventDataFiles)
     
     % Load event data variables
     load(fullfile(parentDir, eventDataFiles(iFile).name));
+    disp(eventDataFiles(iFile).name);
+    whos
 %           alignEventSummary
 %           filterEventSummary
 %           primaryEventNames
@@ -41,7 +48,9 @@ for iFile = 1:numel(eventDataFiles)
 %           condNames
 %           onsetFilterVecs
 %           offsetFilterVecs
+%           analysisWindows
     
+
     % ----------------------------------------------------------------------------------------------
     % Calculate dF/F
     % ----------------------------------------------------------------------------------------------
@@ -67,7 +76,7 @@ for iFile = 1:numel(eventDataFiles)
             % Calculate dF/F for event onsets
             if sum(onsetFilterVecs{iType}(:,iCond)) > 0
                 
-                [baselineData, respData] = extract_event_volumes(eventList, onsetFilterVecs{iType}(:,iCond), baselineDur, respDur, myData, ...
+                [baselineData, respData] = extract_event_volumes(eventList, onsetFilterVecs{iType}(:,iCond), baselineDur, respDur, analysisMetadata, ...
                     wholeSession, 'offsetAlign', 0); % --> [y, x, plane, volume, event]
                 
                 currDffAvg = calc_dFF(respData, baselineData, [4 5]);                    % --> [y, x, plane]
@@ -82,8 +91,8 @@ for iFile = 1:numel(eventDataFiles)
             % Calculate dF/F for event offsets
             if sum(offsetFilterVecs{iType}(:,iCond)) > 0
                 
-                [baselineData, respData] = extract_event_volumes(eventList, offsetFilterVecs{iType}(:,iCond), baselineDur, respDur, myData, ...
-                    'offsetAlign', 1); % --> [y, x, plane, volume, event]
+                [baselineData, respData] = extract_event_volumes(eventList, offsetFilterVecs{iType}(:,iCond), baselineDur, respDur, analysisMetadata, ...
+                    wholeSession, 'offsetAlign', 1); % --> [y, x, plane, volume, event]
                 
                 currDffAvg = calc_dFF(respData, baselineData, [4 5]);                       % --> [y, x, plane]
                 

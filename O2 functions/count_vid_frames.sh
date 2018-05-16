@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH -c 1                   			    # Number of cores requested
-#SBATCH -t 30                   			# Runtime in minutes
+#SBATCH -t 20                   			# Runtime in minutes
 #SBATCH --mem=2G
 #SBATCH -p short                			# Partition (queue) to submit to
 

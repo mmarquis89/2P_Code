@@ -1,9 +1,9 @@
 #!/bin/bash
 
 #SBATCH -c 1                   			    # Number of cores requested
-#SBATCH -t 15                   			# Runtime in minutes
+#SBATCH -t 10                   			# Runtime in minutes
 #SBATCH -p short                			# Partition (queue) to submit to
-#SBATCH --mem=6G               			    # memory needed (memory PER CORE)
+#SBATCH --mem=2G               			    # memory needed (memory PER CORE)
 #SBATCH --job-name=makeVid
 
 echo make_vid

@@ -1,8 +1,9 @@
 #!/bin/bash
 
 #SBATCH -c 1                    			# Number of cores requested
-#SBATCH -t 00:10:00                   			# Runtime in minutes
+#SBATCH -t 00:10:00                   		# Runtime in minutes
 #SBATCH -p priority              			# Partition (queue) to submit to
+#SBATCH --mem=2G             			    # memory needed (memory PER CORE
 #SBATCH --mail-user=mmarquis89@gmail.com
 #SBATCH --mail-type=END         			# Mail when the job ends  
 

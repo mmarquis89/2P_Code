@@ -6,6 +6,8 @@
 #SBATCH --mail-user=mmarquis89@gmail.com
 #SBATCH --mail-type=END         			# Mail when the job ends  
 
+echo analysis_processing
+
 expDate=$1
 sid=$2
 
@@ -15,6 +17,7 @@ imgSaveDir="/home/mjm60/${expDate}/sid_${sid}/ImagingData"
 vidSaveDir="/home/mjm60/${expDate}/sid_${sid}/BehaviorVideo"
 
 sessionDataFile="rigid_sid_${sid}_sessionFile.mat"
+echo $sessionDataFile
 
 #------------- Create and save an analysis metadata file ---------------
 jid1=$(sbatch initial_analysis_processing.sh $imgSaveDir $sessionDataFile)
@@ -24,4 +27,4 @@ jid1="${jid1//[!0-9]/}"
 sbatch  --dependency=afterok:$jid1 save_plane_data.sh $imgSaveDir $sessionDataFile
 
 #------------------ Calculate overall behavior state dF/F ---------------------------
-sbatch  --dependency=afterok:$jid1 behavioral_state_dff_calc $imgSaveDir $sessionDataFile
+sbatch  --dependency=afterok:$jid1 behavioral_state_dff_calc.sh $imgSaveDir $sessionDataFile

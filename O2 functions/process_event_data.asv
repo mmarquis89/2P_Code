@@ -1,9 +1,9 @@
-%===================================================================================================
-% SEPARATE TRIALS BASED ON EVENT INTERACTIONS
-%
+%% ===================================================================================================
+%%% PROCESS EVENT DATA BASED ON TRIAL INTERACTIONS
+%% ===================================================================================================
+
 % Required inputs:
 %       A .mat file with variables 'annotationTypes' and 'annotationTypeSummary'
-%       A .mat file with behavioral annotation data
 %
 % Outputs:
 %       A .mat file with the following variables:
@@ -19,9 +19,9 @@
 
 volumeRate = 6.44;
 
-saveFileName = 'EventData_Align_OdorAB_Filter_AnyMove.mat';
+saveFileName = 'EventData_Align_Locomotion_Filter_OdorA_OdorB.mat';
 
-% Load annotation typedata
+% Load annotation type data
 [annotTypeFileName, parentDir] = uigetfile('B:\Dropbox (HMS)\2P Data\Imaging Data');
 
 % Load annotation type data
@@ -189,18 +189,18 @@ for iType = 1:nEventTypes
     % Get onset filter vecs for each condition
     for iCond = 1:numel(condNames{iType})
         onsetFilterVecs{iType}(:, iCond) = filter_event_data(eventLists{iType}, activeFilterEventVols, analysisWindows(iType, :), ...
-            filtWindows(~matchedFilterTypes, :), allCondFilters{iType}{iCond}, volumeRate, 'overshoot', overshoots(iType));
+            filtWindows(~matchedFilterTypes, :), allCondFilters{iType}{iCond}, 'volumeRate', volumeRate, 'overshoot', overshoots(iType));
     end
     
     % Get offset filter vecs for each condition
     for iCond = 1:numel(condNames{iType})
         offsetFilterVecs{iType}(:, iCond) = filter_event_data(eventLists{iType}, activeFilterEventVols, analysisWindows(iType, :), ...
-            filtWindows(~matchedFilterTypes, :), allCondFilters{iType}{iCond}, volumeRate, 'overshoot', overshoots(iType), 'offsetAlign', 1);
+            filtWindows(~matchedFilterTypes, :), allCondFilters{iType}{iCond}, 'volumeRate', volumeRate, 'overshoot', overshoots(iType), 'offsetAlign', 1);
     end
 end
 
 % Save data and metadata in a .mat file
 save(fullfile(parentDir, saveFileName), 'alignEventSummary', 'filterEventSummary', 'primaryEventNames', 'eventLists', ...
-    'nEventTypes', 'condNames', 'onsetFilterVecs', 'offsetFilterVecs');
+    'nEventTypes', 'condNames', 'onsetFilterVecs', 'offsetFilterVecs', 'analysisWindows');
 
 clear withOdor noOdor anyOdor startMove endMove contMove noMove anyMove withLaser noLaser anyLaser currType matchedFilterTypes currFilts currFiltNames

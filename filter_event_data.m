@@ -1,5 +1,5 @@
 function [filtOutput] = filter_event_data(eventList, filterEventData, analysisWindowIn, filterEventWindows, filterDirections, ...
-                                        volumeRate, varargin)
+                                        varargin)
 %========================================================================================================================
 % 
 % This function takes a list of annotation events (e.g. odor delivery, ball stopping, locomotion) and 
@@ -34,12 +34,12 @@ function [filtOutput] = filter_event_data(eventList, filterEventData, analysisWi
 %                                  period, but not in the window before the event (the post-response window is 
 %                                  irrelevant in this case because the filter direction is zero).
 %
-%       volumeRate          = imaging volume acquisition rate, for converting from seconds to volumes
+%       'volumeRate'          = (default = 6.44) imaging volume acquisition rate, for converting from seconds to volumes
 %
-%       offsetAlign         = <OPTIONAL> boolean value specifying whether or not to align the filtering to the onset or 
+%       'offsetAlign'         = <OPTIONAL> boolean value specifying whether or not to align the filtering to the onset or 
 %                             the offset of each target event (default == 0).
 %
-%       overshoot           = <OPTIONAL> a boolean value specifying whether to allow events that are shorter in duration 
+%       'overshoot'           = <OPTIONAL> a boolean value specifying whether to allow events that are shorter in duration 
 %                             than the response (if offsetAlign == 0) or the baseline (if offsetAlign == 1) period. 
 %                             Defaults to zero if no value is provided. 
 %
@@ -89,9 +89,11 @@ function [filtOutput] = filter_event_data(eventList, filterEventData, analysisWi
 % Parse optional arguments
 p = inputParser;
 addOptional(p, 'optArg', []);
+addParameter(p, 'volumeRate', 6.44);
 addParameter(p, 'offsetAlign', 0);
 addParameter(p, 'overshoot', 0);
 parse(p, varargin{:});
+volumeRate = p.Results.volumeRate;
 offsetAlign = p.Results.offsetAlign;
 overshoot = p.Results.overshoot;
 if ~isempty(p.Results.optArg)

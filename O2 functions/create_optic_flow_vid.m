@@ -12,7 +12,7 @@ function create_optic_flow_vid(parentDir, inputVid, roiDataFile, frameCountFile,
 %
 %       inputVid    = the name of the input video file to use (minus the file extension)
 %
-%       roiDataFile     = 
+%       roiDataFile    = name of a file containing an ROI around the fly for the behavior video
 % 
 %       frameCountFile = 
 %
@@ -24,8 +24,6 @@ function create_optic_flow_vid(parentDir, inputVid, roiDataFile, frameCountFile,
 % 
 %       'OutputDir' = (default: parentDir) the full path to the directory to save the output video in
 %
-%       'OpticFlowFile' = (default: []) the full path to a .mat file containing optic flow data
-%
 %       'OutputFileName' = (default: [inputVid, '_With_Optic_Flow']) name for the output video file
 %
 %========================================================================================================
@@ -36,20 +34,21 @@ addpath('/home/mjm60/HelperFunctions') % if running on O2 cluster
 p = inputParser;
 addParameter(p, 'FrameRate', 25);
 addParameter(p, 'OutputDir', parentDir);
-addParameter(p, 'OpticFlowFile', []);
 addParameter(p, 'OutputFileName', [inputVid, '_With_Optic_Flow']);
 parse(p, varargin{:});
 frameRate = p.Results.FrameRate;
 outputDir = p.Results.OutputDir;
-flowDataFile = p.Results.OpticFlowFile;
 outputFileName = p.Results.OutputFileName;
 
 
 logFile = fopen('logFile.txt', 'w');
 
+disp(parentDir)
+disp(outputDir)
+disp(outputFileName)
 
 % Load ROI data
-load(roiDataFile);
+load(fullfile(parentDir, roiDataFile));
 
 % Load frame count log
 frameCountFile = fopen(fullfile(parentDir, frameCountFile), 'r');

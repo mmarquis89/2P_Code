@@ -26,20 +26,13 @@ close all
 % Prompt user for ref images data file
 [dataFile, pathName, ~] = uigetfile('*.mat', 'Select reference image data file', 'B:\Dropbox (HMS)\2P Data\Imaging Data\');
 
-if dataFile == 0
-    
-    % Prompt user for imaging data file to get ref images
-    [myData, ~] = load_imaging_metadata();
-    refImages = myData.refImg;
-    nPlanes = myData.nPlanes;
-else
-    % Load ref images data file
-    disp(['Loading ' dataFile, '...'])
-    imgData = load([pathName, dataFile]); % 1 x nPlanes cell array
-    refImages = imgData.refImages;
-    nPlanes = length(refImages);
-    disp([dataFile, ' loaded'])
-end
+% Load ref images data file
+disp(['Loading ' dataFile, '...'])
+imgData = load([pathName, dataFile]); % 1 x nPlanes cell array
+refImages = imgData.refImages;
+nPlanes = length(refImages);
+disp([dataFile, ' loaded'])
+
 
 % Create hardcoded parameters
 maxInts = [];
@@ -224,7 +217,7 @@ roiSubtabGroup.Units = 'normalized';
 %---------------------------------------------------------------------------------------------------
     function ROISaveButton_Callback(~,~)
         
-        ROIdata = myData.ROIs;
+        ROImetadata = myData.ROIs;
         
         % Prompt user for save directory
         saveDir = uigetdir('B:\Dropbox (HMS)\2P Data\Imaging Data\', 'Select a save directory');
@@ -235,7 +228,7 @@ roiSubtabGroup.Units = 'normalized';
         end
         
         % Prompt user for file name
-        fileName = inputdlg('Please choose a file name', 'Save ROI data', 1, {'ROI_Data'});
+        fileName = inputdlg('Please choose a file name', 'Save ROI metadata', 1, {'ROImetadata'});
         fileName = fileName{:};
         
         % Warn user and offer to cancel save if this video will overwrite an existing file
@@ -250,7 +243,7 @@ roiSubtabGroup.Units = 'normalized';
         
         % Save ROI data
         if overwrite
-            save(fullfile(saveDir, [fileName, '.mat']), 'ROIdata');
+            save(fullfile(saveDir, [fileName, '.mat']), 'ROImetadata');
             disp('ROI data saved!')
         end
         

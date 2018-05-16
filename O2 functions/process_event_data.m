@@ -1,6 +1,7 @@
-%===================================================================================================
-% SEPARATE TRIALS BASED ON EVENT INTERACTIONS
-%
+%% ===================================================================================================
+%%% PROCESS EVENT DATA BASED ON TRIAL INTERACTIONS
+%% ===================================================================================================
+
 % Required inputs:
 %       A .mat file with variables 'annotationTypes' and 'annotationTypeSummary'
 %
@@ -18,7 +19,7 @@
 
 volumeRate = 6.44;
 
-saveFileName = 'EventData_Align_OdorAB_Filter_AnyMove.mat';
+saveFileName = 'EventData_Align_Locomotion_Filter_OdorA_OdorB.mat';
 
 % Load annotation type data
 [annotTypeFileName, parentDir] = uigetfile('B:\Dropbox (HMS)\2P Data\Imaging Data');
@@ -30,37 +31,37 @@ load(fullfile(parentDir, annotTypeFileName)) % Vars 'annotationTypes', 'annotati
 disp(annotationTypeSummary)
 
 % Choose active alignment events
-activeEventTypes = [2 3];
+activeEventTypes = [5];
 alignEventSummary = annotationTypeSummary(activeEventTypes, 2);
 disp(alignEventSummary)
 
 % Choose active filter events
-activeFilterTypes = [8];
+activeFilterTypes = [2 3];
 filterEventSummary = annotationTypeSummary(activeFilterTypes, 2);
 disp(filterEventSummary)
 
 % --------- ALIGNMENT EVENTS -------------
 analysisWindows = []; overshoots = []; filterMatches = [];
 
-% Odor A
-analysisWindows(end+1,:) = [ 2  3 ];
-overshoots(end+1)        = 1;
-filterMatches{end+1} = [];
-
-% Odor B
-analysisWindows(end+1,:) = [ 2  3 ];
-overshoots(end+1)        = 1;
-filterMatches{end+1} = [];
+% % Odor A
+% analysisWindows(end+1,:) = [ 2  3 ];
+% overshoots(end+1)        = 1;
+% filterMatches{end+1} = [];
+% 
+% % Odor B
+% analysisWindows(end+1,:) = [ 2  3 ];
+% overshoots(end+1)        = 1;
+% filterMatches{end+1} = [];
 
 % % All behavior
 % analysisWindows(end+1,:) = [ 1  2 ];
 % overshoots(end+1)        = 0;
 % filterMatches{end+1} = [2];
 
-% % Locomotion
-% analysisWindows(end+1,:) = [ 2  3 ];
-% overshoots(end+1)        = 0;
-% filterMatches{end+1} = [];
+% Locomotion
+analysisWindows(end+1,:) = [ 2  2 ];
+overshoots(end+1)        = 0;
+filterMatches{end+1} = [];
 
 % % Isolated Movement
 % analysisWindows(end+1,:) = [ 2  2 ];
@@ -85,21 +86,21 @@ allFilts = []; allFiltNames = []; filtWindows = [];
 % allFilts{end+1} = [withOdor; noOdor]; %
 % allFiltNames{end+1} = {'WithOdor', 'NoOdor'}; %
 
-% % Odor A
-% withOdorA =  [ 0  1  0 ];
-% noOdorA =    [-1 -1  0 ];
-% anyOdorA =   [ 0  0  0 ];
-% filtWindows(end+1,:)     = [  1  0  ];
-% allFilts{end+1} = [withOdorA; noOdorA]; %
-% allFiltNames{end+1} = {'WithOdorA', 'NoOdorA'}; %
-% 
-% % Odor B
-% withOdorB =  [ 0  1  0 ];
-% noOdorB =    [-1 -1  0 ];
-% anyOdorB =   [ 0  0  0 ];
-% filtWindows(end+1,:)     = [  1  0  ];
-% allFilts{end+1} = [withOdorB; noOdorB]; %
-% allFiltNames{end+1} = {'WithOdorB', 'NoOdorB'}; %
+% Odor A
+withOdorA =  [ 0  1  0 ];
+noOdorA =    [-1 -1  0 ];
+anyOdorA =   [ 0  0  0 ];
+filtWindows(end+1,:)     = [  1  0  ];
+allFilts{end+1} = [withOdorA; noOdorA]; %
+allFiltNames{end+1} = {'WithOdorA', 'NoOdorA'}; %
+
+% Odor B
+withOdorB =  [ 0  1  0 ];
+noOdorB =    [-1 -1  0 ];
+anyOdorB =   [ 0  0  0 ];
+filtWindows(end+1,:)     = [  1  0  ];
+allFilts{end+1} = [withOdorB; noOdorB]; %
+allFiltNames{end+1} = {'WithOdorB', 'NoOdorB'}; %
 
 % % Locomotion
 % startLoc = [-1  1  0 ];
@@ -137,15 +138,15 @@ allFilts = []; allFiltNames = []; filtWindows = [];
 % allFiltNames{end+1} = {'NoGroom', 'withGroom'}; %'EndMove', , 'AnyMove'
 % % 
 
-% All behavior
-startMove = [-1  1  0 ];
-endMove =   [ 1  0 -1 ];
-contMove =  [ 1  1  0 ];
-noMove =    [-1 -1 -1 ];
-anyMove =   [ 0  0  0 ];
-filtWindows(end+1,:)     = [ 0  0 ];
-allFilts{end+1} = [noMove; startMove; contMove]; %endMove; anyMove;
-allFiltNames{end+1} = {'NoMove', 'StartMove', 'ContMove'}; %'EndMove', , 'AnyMove'
+% % All behavior
+% startMove = [-1  1  0 ];
+% endMove =   [ 1  0 -1 ];
+% contMove =  [ 1  1  0 ];
+% noMove =    [-1 -1 -1 ];
+% anyMove =   [ 0  0  0 ];
+% filtWindows(end+1,:)     = [ 0  0 ];
+% allFilts{end+1} = [noMove; startMove; contMove]; %endMove; anyMove;
+% allFiltNames{end+1} = {'NoMove', 'StartMove', 'ContMove'}; %'EndMove', , 'AnyMove'
 
 %===================================================================================================
 %
@@ -188,13 +189,13 @@ for iType = 1:nEventTypes
     % Get onset filter vecs for each condition
     for iCond = 1:numel(condNames{iType})
         onsetFilterVecs{iType}(:, iCond) = filter_event_data(eventLists{iType}, activeFilterEventVols, analysisWindows(iType, :), ...
-            filtWindows(~matchedFilterTypes, :), allCondFilters{iType}{iCond}, volumeRate, 'overshoot', overshoots(iType));
+            filtWindows(~matchedFilterTypes, :), allCondFilters{iType}{iCond}, 'volumeRate', volumeRate, 'overshoot', overshoots(iType));
     end
     
     % Get offset filter vecs for each condition
     for iCond = 1:numel(condNames{iType})
         offsetFilterVecs{iType}(:, iCond) = filter_event_data(eventLists{iType}, activeFilterEventVols, analysisWindows(iType, :), ...
-            filtWindows(~matchedFilterTypes, :), allCondFilters{iType}{iCond}, volumeRate, 'overshoot', overshoots(iType), 'offsetAlign', 1);
+            filtWindows(~matchedFilterTypes, :), allCondFilters{iType}{iCond}, 'volumeRate', volumeRate, 'overshoot', overshoots(iType), 'offsetAlign', 1);
     end
 end
 

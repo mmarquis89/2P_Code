@@ -23,6 +23,15 @@ for iROI = 1:nROIs
         analysisMetadata.nVolumes, analysisMetadata.nTrials);                                   % --> [pixel, volume, trial, ROI]
     ROIDataAvg(:,:,iROI) = squeeze(mean(currDataLin, 1, 'omitnan'));                            % --> [volume, trial, ROI]
 end
-save(fullfile(parentDir, 'ROI_Data_Avg.mat'), 'ROIDataAvg', '-v7.3') % --> [volume, trial, ROI]
+
+% CALCULATE MEAN dF/F WITHIN ROIs THROUGHOUT ENTIRE EXPERIMENT
+
+% Using bottom 5% of entire ROI's mean value throughout each trial as baseline
+ROIDataAvgSorted = sort(ROIDataAvg, 1);                                     % --> [volume, trial, ROI] 
+baselineMean = mean(ROIDataAvgSorted(1:round(analysisMetadata.nVolumes * 0.05), :, :), 1);   % --> [trial, ROI] 
+baselineMeanRep = baselineMean(ones(1, analysisMetadata.nVolumes), :, :);                    % --> [volume, trial, ROI] 
+ROIDffAvg = (ROIDataAvg - baselineMeanRep) ./ baselineMeanRep;              % --> [volume, trial, ROI] 
+
+save(fullfile(parentDir, 'ROI_Data_Avg.mat'), 'ROIDataAvg', 'ROIDffAvg', '-v7.3') % --> [volume, trial, ROI]
 
 end

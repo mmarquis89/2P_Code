@@ -1,4 +1,4 @@
-function [baselineData, respData] = extract_event_volumes(eventList, filterVec, baselineDur, respDur, infoStruct, wholeSession, varargin)
+function [baselineData, respData] = extract_event_volumes(eventList, filterVec, baselineDur, respDur, infoStruct, imgData, varargin)
 %===========================================================================================================================
 % 
 % This function accepts a list of annotation events and a logical filtering vector specifying which events to extract, 
@@ -18,12 +18,12 @@ function [baselineData, respData] = extract_event_volumes(eventList, filterVec, 
 %       infoStruct     = structure containing information about the imaging data. Must have the fields
 %                       [nVolumes] and [volumeRate].
 % 
-%       wholeSession    = an array of imaging data named 'wholeSession' with dimensions [y, x, plane, volume, trial]
+%       imgData        = an array of imaging data with dimensions [y, x, plane, volume, trial] OR [ROI, volume, trial]
 %
 %       offsetAlign    = <OPTIONAL> a boolean value indicating whether to align the baseline and response data to the 
 %                        beginning or the end of each event (default = 0).   
 % OUTPUTS:
-%       baselineData   = array of baseline data for each event with dimensions: [y, x, plane, volume, event] 
+%       baselineData   = array of baseline data for each event with dimensions: [y, x, plane, volume, event] OR [ROI, volume, trial] 
 % 
 %       respData       = same as baselineData, but for the response period instead of the baseline.
 %
@@ -44,14 +44,15 @@ end
 % Set up variables
 baselineDurVols = sec2vols(baselineDur, infoStruct.volumeRate);
 respDurVols = sec2vols(respDur, infoStruct.volumeRate);
-sessionSize = size(wholeSession);
+imgDataSize = size(imgData);
+nDims = numel(imgDataSize); % Figure out whether input data is raw session data or ROI average data
 filteredList = eventList(filterVec, :);
 
 % Calculate starting and ending volumes for each event and run validation checks
 blStartVols = []; respEndVols = []; 
 for iEvent = 1:size(filteredList, 1)
     
-    [eventStartVol, eventEndVol, currTrial] = split_vector(filteredList(iEvent, :));
+    [eventStartVol, eventEndVol, ~] = split_vector(filteredList(iEvent, :));
         
     % Calculate starting, ending and alignment volumes
     if offsetAlign
@@ -69,12 +70,22 @@ respEndVols(blStartVols == 0) = respEndVols(blStartVols == 0) + 1;
 blStartVols(blStartVols == 0) = 1;
 
 % Loop through and pull out data
-baselineData = zeros([sessionSize(1:3), baselineDurVols + 1, size(filteredList, 1)]);
-respData = zeros([sessionSize(1:3), respDurVols + 1, size(filteredList, 1)]);
-for iEvent = 1:size(filteredList, 1)
-    currTrial = filteredList(iEvent, 3);
-    baselineData(:,:,:,:,iEvent) = wholeSession(:,:,:, blStartVols(iEvent):(alignVols(iEvent)-1), currTrial);    % --> [y, x, plane, volume, event]
-    respData(:,:,:,:,iEvent) = wholeSession(:,:,:, alignVols(iEvent):respEndVols(iEvent), currTrial);            % --> [y, x, plane, volume, event]
-end
-
+if nDims == 3 
+    % imgData is averaged over ROIs
+    baselineData = zeros([imgDataSize(1), baselineDurVols + 1, size(filteredList, 1)]);
+    respData = zeros([imgDataSize(1), respDurVols + 1, size(filteredList, 1)]);
+    for iEvent = 1:size(filteredList, 1)
+        currTrial = filteredList(iEvent, 3);
+        baselineData(:,:,iEvent) = imgData(:, blStartVols(iEvent):(alignVols(iEvent)-1), currTrial);    % --> [ROI, volume, event]
+        respData(:,:,iEvent) = imgData(:, alignVols(iEvent):respEndVols(iEvent), currTrial);            % --> [ROI, volume, event]
+    end
+elseif nDims == 5
+    % imgData is raw session data
+    baselineData = zeros([imgDataSize(1:3), baselineDurVols + 1, size(filteredList, 1)]);
+    respData = zeros([imgDataSize(1:3), respDurVols + 1, size(filteredList, 1)]);
+    for iEvent = 1:size(filteredList, 1)
+        currTrial = filteredList(iEvent, 3);
+        baselineData(:,:,:,:,iEvent) = imgData(:,:,:, blStartVols(iEvent):(alignVols(iEvent)-1), currTrial);    % --> [y, x, plane, volume, event]
+        respData(:,:,:,:,iEvent) = imgData(:,:,:, alignVols(iEvent):respEndVols(iEvent), currTrial);            % --> [y, x, plane, volume, event]
+    end
 end

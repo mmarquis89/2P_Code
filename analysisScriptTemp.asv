@@ -461,9 +461,9 @@ disp('ROI data loaded')
 
 clear parentDir metaDataFileName dffDataFileName 
 
-%% EXTRACT EVENT-TRIGGERED dF/F WITHIN ROIs
+%% CALCULATE EVENT-TRIGGERED dF/F WITHIN ROIs
 
-ROIEventDff = [];
+baselineROIDff = []; respROIDff = []; ROIEventDff = []; baselineDff = []; ROIEventDffAvgCell = [];
 for iType = 1:nEventTypes
     
     primaryFiltName = primaryEventNames{iType};
@@ -483,17 +483,56 @@ for iType = 1:nEventTypes
         % Get ROI data for event onsets
         offsetAlign = strcmp(currCondSum.Align{iCond}, 'offset');
         [baselineData, respData] = extract_event_volumes(eventList, combFilterVecs{iType}(:,iCond), baselineDur, respDur, analysisMetadata, ...
-            permute(ROIDffAvg, [3 1 2]), 'offsetAlign', offsetAlign);   % --> [ROI, volume, event]
-        baselineData = permute(baselineData, [2 3 1]);                  % --> [volume, event, ROI]
-        respData = permute(respData, [2 3 1]);                          % --> [volume, event, ROI]
-        combDff = cat(1, baselineDff, respData);                        % --> [volume, event, ROI]
-        ROIEventDff{iType}{iCond} = combDff;                            % --> {eventType}{cond}[volume, event, ROI]
+            permute(ROIDffAvg, [3 1 2]), 'offsetAlign', offsetAlign); % --> [ROI, volume, event]
+        
+        currBaselineROIAvg = []; currRespROIAvg = []; currROIDff = []; baselineDff = [];
+        for iROI = 1:nROIs
+            disp(['ROI #', num2str(iROI), ' of ', num2str(nROIs), '...'])
+            currMask = ROImetadata(iROI).mask;
+            currPlane = ROImetadata(iROI).plane;
+            nEvents = size(baselineData, numel(size(baselineData)));
+            
+            % Baseline period
+            baselineVols = size(baselineData, 2);
+            currPlaneBaselineData = squeeze(baselineData(:,:,currPlane,:,:));                       % --> [y, x, volume, event]
+            currPlaneBaselineData(~currMask(:,:, ones(1, baselineVols), ones(1, nEvents))) = nan;   % --> [y, x, volume, event]
+            currBaselineLin = reshape(currPlaneBaselineData, size(currPlaneBaselineData, 1)*size(currPlaneBaselineData, 2), ...
+                baselineVols, nEvents);                                               % --> [pixel, volume, event]
+            currBaselineROIAvg = squeeze(mean(currBaselineLin, 1, 'omitnan'));                      % --> [volume, event]
+            
+            % Response period
+            respVols = size(respData, 4);
+            currPlaneRespData = squeeze(respData(:,:,currPlane,:,:));                               % --> [y, x, volume, event]
+            currPlaneRespData(~currMask(:,:, ones(1, respVols), ones(1, nEvents))) = nan;           % --> [y, x, volume, event]
+            currRespLin = reshape(currPlaneRespData, size(currPlaneRespData, 1)*size(currPlaneRespData, 2), ...
+                respVols, nEvents);                                                   % --> [pixel, volume, event]
+            currRespROIAvg = squeeze(mean(currRespLin, 1, 'omitnan'));                              % --> [volume, event]
+            
+            % Get dF/F for entire period
+            baselineMean = mean(currBaselineROIAvg, 1);                                             % --> [event]
+            baselineRep = repmat(baselineMean, size(currRespROIAvg, 1), 1);                         % --> [volume, event]
+            currROIDff(:,:,iROI) = (currRespROIAvg - baselineRep) ./ baselineRep;                   % --> [volume, event, ROI]
+            baselineRep = repmat(baselineMean, size(currBaselineROIAvg, 1), 1);
+            baselineDff(:,:,iROI) = (currBaselineROIAvg - baselineRep) ./ baselineRep;              % --> [volume, event, ROI]
+        end%if
+        combDff = cat(1, baselineDff, currROIDff);                                                  % --> [volume, event, ROI]
+        ROIEventDff{iType}{iCond} = combDff;                                                        % --> {eventType}{cond}[volume, event, ROI]
+        ROIEventDffAvgCell{iType}{iCond} = squeeze(mean(combDff, 2));                               % --> {eventType}{cond}[volume, ROI]
         
     end%iCond
-    clear respData baselineData combDff
+    clear respData baselineData currRespLin currRespROIAvg baselineMean baselineRep respVols currPlaneRespData currPlaneBaselineData currBaselineLin baselineDff combDff
     disp('ROI event data extracted');
 end% iType
 clear primaryFiltName analysisWindow eventList baselineDur respDur currMask currPlan nEvents baselineVols
+
+% Collapse result to a single-level cell array
+ROIEventDffAvg = [];
+for iType = 1:nEventTypes
+    currDffAvg = ROIEventDffAvgCell{iType};         % --> {cond}[volume, ROI]}
+    ROIEventDffAvg{iType} = cat(3, currDffAvg{:});  % --> {eventType}[volume, ROI, cond];
+end
+clear currDffAvg currDff
+
 
 %% PLOT EVENT-ALIGNED dF/F WITHIN ROIs
 

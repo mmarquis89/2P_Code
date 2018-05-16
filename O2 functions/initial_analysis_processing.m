@@ -1,7 +1,7 @@
 function initial_analysis_processing(parentDir, sessionDataFile)
 %===================================================================================================
-% Save structure of analysis metadata + parameters
-% Process and save annotation types
+% Save structure of analysis metadata + parameters ('analysisMetadata.mat')
+% Process and save annotation types ('annotationTypes.mat')
 %===================================================================================================
 
 addpath('/home/mjm60/HelperFunctions') % if running on O2 cluster
@@ -28,6 +28,6 @@ elseif exist(fullfile(parentDir, 'skipTrials.txt'), 'file')
 end
 disp(analysisMetadata)
 [annotationTypes, annotationTypeSummary] = process_annotation_types(analysisMetadata, skipTrials);
-save(fullfile(parentDir, 'annotationTypes.mat'), 'annotationTypes', 'annotationTypeSummary');
+save(fullfile(parentDir, 'annotationTypes.mat'), 'annotationTypes', 'annotationTypeSummary', 'skipTrials');
 
 end

@@ -1,6 +1,6 @@
 function preReg_routine_MM(parentDir, sid, expDate, varargin)
 %===================================================================================================
-%% Load ScanImage 5.1 imaging data
+% Load ScanImage 5.1 imaging data
 %
 % INPUTS:
 %       parentDir   = directory containing the raw data that you want to process.

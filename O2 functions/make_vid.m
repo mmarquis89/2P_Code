@@ -1,7 +1,7 @@
 function make_vid(inputDir, sid, tid, varargin)
 %==============================================================================================================================
 % CREATE MOVIES FROM .TIF FILES
-% Creates a .mp4 movie from a directory of .tif files captured by the fly behavior camera.
+% Creates a .avi movie from a directory of .tif files captured by the fly behavior camera.
 %
 % Inputs:
 %
